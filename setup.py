@@ -32,7 +32,7 @@ def read_requirements(path):
 setup(
     name="traces_analyzer",
     version=read("traces_analyzer", "VERSION"),
-    description="Awesome traces_analyzer created by TOD-theses",
+    description="Analyze ethereum traces",
     url="https://github.com/TOD-theses/traces_analyzer/",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
