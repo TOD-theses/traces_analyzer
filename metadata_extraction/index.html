@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Metadata extraction - traces_analyzer</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Metadata extraction";
+        var mkdocs_page_input_path = "metadata_extraction.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> traces_analyzer
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Traces analyzer</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Metadata extraction</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#goal">Goal</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#planned-implementation">Planned implementation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#traces-data">Traces data</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#traces-preprocessing">Traces preprocessing</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#create-environmentchanges">Create EnvironmentChanges</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#parse-instructions">Parse Instructions</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#track-callframes">Track CallFrames</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#analysis">Analysis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#instruction-effect-changes">Instruction effect changes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#instruction-input-changes">Instruction input changes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#instruction-usage">Instruction usage</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#not-yet-covered">Not yet covered</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">traces_analyzer</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Metadata extraction</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="metadata-extraction">Metadata extraction</h1>
+<p>This section describes how labels will be extracted from the traces.</p>
+<h2 id="goal">Goal</h2>
+<p>Based on the four transaction traces (2 normal, 2 reverse order), automatically determine several labels and metadata related to TOD.</p>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>This does not detect if the amount of a Selfedestruct changed. In general, this is not detected by my method. Are there other TODs that are not visible in traces?</p>
+</div>
+<h2 id="planned-implementation">Planned implementation</h2>
+<h3 id="traces-data">Traces data</h3>
+<p>Here is an example for one event of an executed SLOAD instruction:</p>
+<pre><code class="language-json">{
+  &quot;pc&quot;: 1157,
+  &quot;op&quot;: 84,
+  &quot;gas&quot;: &quot;0x1f7b1&quot;,
+  &quot;gasCost&quot;: &quot;0x834&quot;,
+  &quot;stack&quot;: [
+    &quot;0xd0e30db0&quot;,
+    &quot;0x3d2&quot;,
+    &quot;0x62884461f1460000&quot;,
+    &quot;0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc&quot;,
+    &quot;0x0&quot;,
+    &quot;0x62884461f1460000&quot;,
+    &quot;0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc&quot;
+  ],
+  &quot;depth&quot;: 2,
+  &quot;returnData&quot;: &quot;0x&quot;,
+  &quot;refund&quot;: &quot;0x0&quot;,
+  &quot;memSize&quot;: &quot;96&quot;,
+  &quot;opName&quot;: &quot;SLOAD&quot;
+}
+</code></pre>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <a href="https://eips.ethereum.org/EIPS/eip-3155">EIP-3155</a> also specifies an optional "memory" field. This is not included by REVM per default. However, it is necessary to understand inputs and outputs from some instructions, eg CALL and LOGx.</p>
+</div>
+<h3 id="traces-preprocessing">Traces preprocessing</h3>
+<p>In general, we try not to load the whole trace into the memory. To achieve this goal, we iterate through the lines and process them on the go. Between each processing step we only pass the necessary data forward and forget all irrelevant data.</p>
+<h4 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h4>
+<p>This step simply maps a trace event from JSON to a python class (<code>TraceEvent</code>).</p>
+<p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
+<h4 id="create-environmentchanges">Create <code>EnvironmentChange</code>s</h4>
+<p>Based on two successive <code>TraceEvent</code>s, compute the change between the environments. This includes following changes:</p>
+<ul>
+<li><code>StackChange</code></li>
+<li><code>MemoryChange</code></li>
+<li><code>ProgramCounterChange</code></li>
+<li><code>CallDepthChange</code> (?)</li>
+<li><code>ReturnDataChange</code> (?)</li>
+</ul>
+<h4 id="parse-instructions">Parse <code>Instruction</code>s</h4>
+<p>Based on two successive <code>TraceEvent</code>s, parse the executed instruction. An <code>Instruction</code> includes:</p>
+<ul>
+<li>op</li>
+<li>inputs (as fields, depending on the instruction. eg <code>key</code> for <code>SLOAD</code>)</li>
+<li>outputs (as fields, depending on the instruction. eg <code>value</code> for <code>SLOAD</code>)</li>
+</ul>
+<p>NOTE: Maybe inputs and outputs should be available as lists too, to make it easier to compare?</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
+</div>
+<h4 id="track-callframes">Track <code>CallFrame</code>s</h4>
+<p>Based on the <code>TraceEvent</code>s and <code>CallDepthChange</code>s, keep track of the call stack. The call stack is a list of <code>CallFrame</code>s, with the last one being the current call frame. A <code>CallFrame</code> includes:</p>
+<ul>
+<li>depth</li>
+<li>from</li>
+<li>to</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We probably want to do this before/while parsing the instructions. The callframe is semantically connected to the instructions, eg a <code>SLOAD</code> loads data from the current contract, which is only known through the current <code>CallFrame</code>.</p>
+</div>
+<h2 id="analysis">Analysis</h2>
+<h3 id="instruction-effect-changes">Instruction effect changes</h3>
+<p>To understand, where the TOD occurs we compare the transaction trace from both cases. At each iteration, we compare the <code>EnvironmentChange</code>s of both traces. The first time they differ, is the point at which the same instruction had a different effect.</p>
+<p>This could happen at a <code>SLOAD</code> if the storage is influenced by the other transaction, a <code>BALANCE</code>, etc. This detection will simply report the instruction that was executed before the traces diverge.</p>
+<p><strong>Requires</strong>:</p>
+<ul>
+<li>comparison of two traces</li>
+<li>access to <code>EnvironmentChange</code>s</li>
+<li>access to <code>Instruction</code>s</li>
+</ul>
+<p><strong>Labels</strong>:</p>
+<ul>
+<li>TOD-source-instruction</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Check if this also works for reverts.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The same could be achieved by looking at the instruction outputs. However, this would require an exact modelling of all instruction outputs. Checking the stack, memory and pc is easier and less error-prone.</p>
+</div>
+<h3 id="instruction-input-changes">Instruction input changes</h3>
+<p>To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.</p>
+<p>Create a counter that counts how often an instruction has been called. An instruction is identified by (pc, inputs). For instructions in trace A, increment it. For instructions in the other trace, decrement it.</p>
+<p><strong>Requires</strong>:</p>
+<ul>
+<li>comparison of two traces</li>
+<li>access to <code>Instruction</code>s</li>
+</ul>
+<p><strong>Labels</strong>:</p>
+<ul>
+<li>TOD-Amount, TOD-Recipient, TOD-Transfer, TOD-Selfdestruct</li>
+<li>ether profits</li>
+<li>list of affected instructions</li>
+</ul>
+<p>If this includes inputs from the memory, further:</p>
+<ul>
+<li>call input changes</li>
+<li>log changes</li>
+<li>token profits (through log changes)</li>
+</ul>
+<h3 id="instruction-usage">Instruction usage</h3>
+<p>We record all executed unique instructions, eg to understand if hashing was used. We group this by the contract address that executed them.</p>
+<p><strong>Requires</strong>:</p>
+<ul>
+<li>access to <code>Instruction</code>s</li>
+<li>access to <code>CallFrame</code>s</li>
+</ul>
+<p><strong>Labels</strong>:</p>
+<ul>
+<li>cryptography usage (hashing, signatures)</li>
+<li>usage of recently introduce opcodes</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Solidity uses <code>keccak256</code> internally for mappings. Some detection tools based on the source code may understand Solidity mappings, but not usage of <code>keccak256</code> in other cases.</p>
+</div>
+<h2 id="not-yet-covered">Not yet covered</h2>
+<ul>
+<li>usage of precompiled contracts (see <a href="https://www.evm.codes/precompiled">https://www.evm.codes/precompiled</a>)</li>
+<li>attacker-preconditions (eg. if the address from the attacker was returned from a SLOAD or a SLOAD with the attackers address as index returned != 0? Maybe hard to understand without information flow analysis)</li>
+<li>control flow differences (where and through what? implement eg with changes or by comparing instructions)</li>
+<li>attack symmetry (if the order was different, would the "victim" be an "attacker"?)</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Traces analyzer"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
