@@ -31,6 +31,23 @@ jobs:
       - name: Run linter
         run: make lint
 
+  deploy_docs:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install mkdocs
+        run: pip install mkdocs
+      - name: Deploy docs
+        run: mkdocs gh-deploy --force --clean --verbose
+
   tests_linux:
     needs: linter
     strategy:

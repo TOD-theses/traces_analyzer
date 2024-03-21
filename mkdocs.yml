@@ -1,2 +1,5 @@
 site_name: traces_analyzer
 theme: readthedocs
+
+markdown_extensions:
+- admonition
