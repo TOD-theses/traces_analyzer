@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Metadata extraction - traces_analyzer</title>
+    <title>Metadata extraction - Traces Analyzer</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -30,7 +30,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
-          <a href=".." class="icon icon-home"> traces_analyzer
+          <a href=".." class="icon icon-home"> Traces Analyzer
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
       <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
@@ -56,11 +56,9 @@
         <ul>
     <li class="toctree-l4"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#create-environmentchanges">Create EnvironmentChanges</a>
-    </li>
     <li class="toctree-l4"><a class="reference internal" href="#parse-instructions">Parse Instructions</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#track-callframes">Track CallFrames</a>
+    <li class="toctree-l4"><a class="reference internal" href="#create-environmentchanges">Create EnvironmentChanges</a>
     </li>
         </ul>
     </li>
@@ -88,7 +86,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
       <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="..">traces_analyzer</a>
+          <a href="..">Traces Analyzer</a>
         
       </nav>
       <div class="wy-nav-content">
@@ -145,6 +143,24 @@
 <h4 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h4>
 <p>This step simply maps a trace event from JSON to a python class (<code>TraceEvent</code>).</p>
 <p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
+<h4 id="parse-instructions">Parse <code>Instruction</code>s</h4>
+<p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
+<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current <code>CallFrame</code> to it. For instance, a <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
+<p>If we encounter a <code>CALL</code> we create a new <code>CallFrame</code>, or on a <code>RETURN</code> we go back to the previous one. To be sure, we also check if the <code>depth</code> parameter changes. If it changes, thought the instruction is neither <code>CALL</code> or <code>RETURN</code>, we raise an Exception.</p>
+<p>The <code>Instruction</code> includes:</p>
+<ul>
+<li>opcode</li>
+<li>program_counter</li>
+<li>inputs_from_stack (as a list)</li>
+<li>outputs_from_stack (as a list)</li>
+<li>callframe</li>
+<li>[additional fields based on the instruction type, eg <code>key</code> for <code>SLOAD</code>]</li>
+</ul>
+<p>NOTE: Maybe inputs and outputs should be available as lists too, to make it easier to compare?</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
+</div>
 <h4 id="create-environmentchanges">Create <code>EnvironmentChange</code>s</h4>
 <p>Based on two successive <code>TraceEvent</code>s, compute the change between the environments. This includes following changes:</p>
 <ul>
@@ -154,29 +170,6 @@
 <li><code>CallDepthChange</code> (?)</li>
 <li><code>ReturnDataChange</code> (?)</li>
 </ul>
-<h4 id="parse-instructions">Parse <code>Instruction</code>s</h4>
-<p>Based on two successive <code>TraceEvent</code>s, parse the executed instruction. An <code>Instruction</code> includes:</p>
-<ul>
-<li>op</li>
-<li>inputs (as fields, depending on the instruction. eg <code>key</code> for <code>SLOAD</code>)</li>
-<li>outputs (as fields, depending on the instruction. eg <code>value</code> for <code>SLOAD</code>)</li>
-</ul>
-<p>NOTE: Maybe inputs and outputs should be available as lists too, to make it easier to compare?</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
-</div>
-<h4 id="track-callframes">Track <code>CallFrame</code>s</h4>
-<p>Based on the <code>TraceEvent</code>s and <code>CallDepthChange</code>s, keep track of the call stack. The call stack is a list of <code>CallFrame</code>s, with the last one being the current call frame. A <code>CallFrame</code> includes:</p>
-<ul>
-<li>depth</li>
-<li>from</li>
-<li>to</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>We probably want to do this before/while parsing the instructions. The callframe is semantically connected to the instructions, eg a <code>SLOAD</code> loads data from the current contract, which is only known through the current <code>CallFrame</code>.</p>
-</div>
 <h2 id="analysis">Analysis</h2>
 <h3 id="instruction-effect-changes">Instruction effect changes</h3>
 <p>To understand, where the TOD occurs we compare the transaction trace from both cases. At each iteration, we compare the <code>EnvironmentChange</code>s of both traces. The first time they differ, is the point at which the same instruction had a different effect.</p>
