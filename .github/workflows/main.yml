@@ -13,6 +13,12 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   linter:
     strategy:
@@ -30,6 +36,23 @@ jobs:
         run: make install
       - name: Run linter
         run: make lint
+
+  deploy_docs:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install mkdocs
+        run: pip install mkdocs
+      - name: Deploy docs
+        run: mkdocs gh-deploy --force --clean --verbose
 
   tests_linux:
     needs: linter
