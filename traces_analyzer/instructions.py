@@ -82,6 +82,16 @@ class RETURN(StackInstruction):
     stack_input_count = 2
 
 
+class REVERT(StackInstruction):
+    opcode = 0xFD
+    stack_input_count = 2
+
+
+class SELFDESTRUCT(StackInstruction):
+    opcode = 0xFF
+    stack_input_count = 1
+
+
 class SLOAD(StackInstruction):
     opcode = 0x54
     stack_input_count = 1
@@ -93,7 +103,7 @@ class SLOAD(StackInstruction):
         self.result = self.stack_outputs[0]
 
 
-DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, STATICCALL]
+DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, REVERT, SELFDESTRUCT, STATICCALL]
 OPCODE_TO_INSTRUCTION_TYPE: dict[int, type[Instruction]] = dict((i.opcode, i) for i in DEFINED_INSTRUCTIONS)
 
 # sanity check that we always specified the opcode

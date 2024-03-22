@@ -1,7 +1,16 @@
 from collections.abc import Iterable
 
 from traces_analyzer.call_frame import CallFrame
-from traces_analyzer.instructions import CALL, RETURN, STATICCALL, STOP, Instruction, parse_instruction
+from traces_analyzer.instructions import (
+    CALL,
+    RETURN,
+    REVERT,
+    SELFDESTRUCT,
+    STATICCALL,
+    STOP,
+    Instruction,
+    parse_instruction,
+)
 from traces_analyzer.trace_reader import TraceEvent
 
 
@@ -42,8 +51,7 @@ def update_call_frame(
             msg_sender=current_call_frame.address,
             address=instruction.address,
         )
-    # TODO: REVERT, SELFDESTRUCT
-    elif isinstance(instruction, (STOP, RETURN)):
+    elif isinstance(instruction, (STOP, RETURN, REVERT, SELFDESTRUCT)):
         if not current_call_frame.parent:
             raise Exception(
                 "Tried to return to parent call frame, while already being at the root."
