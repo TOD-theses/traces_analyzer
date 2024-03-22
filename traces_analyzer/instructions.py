@@ -1,6 +1,4 @@
 from abc import ABC
-from dataclasses import dataclass
-from typing import Dict
 
 from typing_extensions import Self
 
@@ -8,11 +6,10 @@ from traces_analyzer.call_frame import CallFrame
 from traces_analyzer.trace_reader import TraceEvent
 
 
-@dataclass
 class Instruction(ABC):
-    opcode: int
-    program_counter: int
-    call_frame: CallFrame
+    # statically defined opcode for the class
+    # will be overwritten by the trace events opcode on an instance level
+    opcode: int = -1
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         self.opcode = event.op
@@ -31,11 +28,11 @@ class StackInstruction(Instruction):
     # stack outputs are only parsed from the next events stack
     # so we can't use this for eg CALL, where the output is only known many events later
     stack_output_count = 0
-    stack_inputs: tuple[str, ...] = ()
-    stack_outputs: tuple[str, ...] = ()
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
+        self.stack_inputs: tuple[str, ...] = ()
+        self.stack_outputs: tuple[str, ...] = ()
 
         if self.stack_input_count:
             self.stack_inputs = tuple(reversed(event.stack[-self.stack_input_count :]))
@@ -48,14 +45,8 @@ class Unknown(Instruction):
 
 
 class CALL(StackInstruction):
+    opcode = 0xF1
     stack_input_count = 7
-    gas: str
-    address: str
-    value: str
-    args_offset: str
-    args_size: str
-    ret_offset: str
-    ret_size: str
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
@@ -69,13 +60,8 @@ class CALL(StackInstruction):
 
 
 class STATICCALL(StackInstruction):
+    opcode = 0xFA
     stack_input_count = 6
-    gas: str
-    address: str
-    args_offset: str
-    args_size: str
-    ret_offset: str
-    ret_size: str
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
@@ -88,18 +74,18 @@ class STATICCALL(StackInstruction):
 
 
 class STOP(Instruction):
-    pass
+    opcode = 0x0
 
 
 class RETURN(StackInstruction):
+    opcode = 0xF3
     stack_input_count = 2
 
 
 class SLOAD(StackInstruction):
+    opcode = 0x54
     stack_input_count = 1
     stack_output_count = 1
-    key: str
-    result: str
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
@@ -107,13 +93,13 @@ class SLOAD(StackInstruction):
         self.result = self.stack_outputs[0]
 
 
-OPCODE_TO_INSTRUCTION_TYPE: Dict[int, type[Instruction]] = {
-    0x0: STOP,
-    0x54: SLOAD,
-    0xF1: CALL,
-    0xF3: RETURN,
-    0xFA: STATICCALL,
-}
+DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, STATICCALL]
+OPCODE_TO_INSTRUCTION_TYPE: dict[int, type[Instruction]] = dict((i.opcode, i) for i in DEFINED_INSTRUCTIONS)
+
+# sanity check that we always specified the opcode
+for opcode, instruction_type in OPCODE_TO_INSTRUCTION_TYPE.items():
+    if opcode < 0:
+        raise Exception(f"Please specify the opcode for {instruction_type} (found {opcode})")
 
 
 def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
