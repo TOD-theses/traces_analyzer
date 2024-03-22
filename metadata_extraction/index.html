@@ -155,12 +155,11 @@
 <ul>
 <li>opcode</li>
 <li>program_counter</li>
-<li>inputs_from_stack (as a list)</li>
-<li>outputs_from_stack (as a list)</li>
-<li>callframe</li>
+<li>call_frame</li>
+<li>[stack_inputs] (if it's a <code>StackInstruction</code>)</li>
+<li>[stack_outputs] (if it's a <code>StackInstruction</code>)</li>
 <li>[additional fields based on the instruction type, eg <code>key</code> for <code>SLOAD</code>]</li>
 </ul>
-<p>NOTE: Maybe inputs and outputs should be available as lists too, to make it easier to compare?</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
