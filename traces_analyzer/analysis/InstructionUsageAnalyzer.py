@@ -12,7 +12,6 @@ class InstructionUsageAnalyzer(TraceAnalyzer):
 
     used_opcodes_per_contract: Dict[str, set[int]] = defaultdict(lambda: set())
 
-    # TODO per contract
     @override
     def on_instruction(self, instruction: Instruction):
         contract_address = instruction.call_frame.address

@@ -31,15 +31,18 @@ def test_instruction_input_analyzer():
             dummy_event,
             root_frame,
         ),
-        Unknown(dummy_event, dummy_event, child_frame),
+        Unknown(TraceEvent(2, 0xEE, [], 1), dummy_event, child_frame),
         STOP(dummy_event, dummy_event, child_frame),
     ]
     analyzer = InstructionInputAnalyzer()
     for a, b in zip_longest(first_trace, second_trace):
         analyzer.on_instructions(a, b)
 
-    assert len(analyzer.counter) == 2
-    assert analyzer.counter.total() == 0
+    # the two calls differ and the Unknown is only in the second
+    assert len(analyzer.counter) == 3
+    # the two different calls are +1 and -1, the additionall Unknown-0xEE is +1
+    assert analyzer.counter.total() == -1
 
-    # TODO: assert call values are correctly preserved
-    # TODO: should this analyzer also cover missing instructions without inputs? eg Unknown?
+    assert any(first_call_value in key.stack_inputs for key in analyzer.counter.keys())
+    assert any(second_call_value in key.stack_inputs for key in analyzer.counter.keys())
+    assert any(key.opcode == 0xEE for key in analyzer.counter.keys())

@@ -12,7 +12,7 @@ class InstructionKey:
     address: str
     program_counter: int
     opcode: int
-    stack_inputs: tuple
+    stack_inputs: tuple[str, ...]
 
 
 class InstructionInputAnalyzer(TraceComparisonAnalyzer):
@@ -22,25 +22,29 @@ class InstructionInputAnalyzer(TraceComparisonAnalyzer):
 
     @override
     def on_instructions(self, first_instruction: Instruction | None, second_instruction: Instruction | None):
-        if isinstance(first_instruction, StackInstruction):
+        if first_instruction:
             key = to_key(first_instruction)
             self.counter.update([key])
+            self._delete_if_zero(key)
 
-            if self.counter[key] == 0:
-                self.counter.pop(key)
-
-        if isinstance(second_instruction, StackInstruction):
+        if second_instruction:
             key = to_key(second_instruction)
             self.counter.subtract([key])
+            self._delete_if_zero(key)
+    
+    def _delete_if_zero(self, key: InstructionKey):
+        if self.counter[key] == 0:
+            self.counter.pop(key)
 
-            if self.counter[key] == 0:
-                self.counter.pop(key)
 
+def to_key(instruction: Instruction) -> InstructionKey:
+    stack_inputs: tuple[str, ...] = ()
+    if isinstance(instruction, StackInstruction):
+        stack_inputs = instruction.stack_inputs
 
-def to_key(instruction: StackInstruction) -> InstructionKey:
     return InstructionKey(
         address=instruction.call_frame.address,
         program_counter=instruction.program_counter,
         opcode=instruction.opcode,
-        stack_inputs=instruction.stack_inputs,
+        stack_inputs=stack_inputs,
     )
