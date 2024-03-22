@@ -1,10 +1,10 @@
 # Metadata extraction
 
-This section describes how labels will be extracted from the traces.
+This page describes how metadata will be extracted from the traces.
 
 ## Goal
 
-Based on the four transaction traces (2 normal, 2 reverse order), automatically determine several labels and metadata related to TOD.
+Based on the four transaction traces (2 normal, 2 reverse order), we automatically determine several labels and metadata related to TOD.
 
 !!! danger
 
@@ -14,11 +14,17 @@ Based on the four transaction traces (2 normal, 2 reverse order), automatically 
 
     We currently ignore, that the effects of a transaction can be reverted, either due an exceptional halt (out of gas, invalid instruction, etc.) or a normal halt (`RETURN`, `REVERT`, `STOP`, `SELFDESTRUCT`). For instance, even if a LOG statement is part of a trace, it can still be reverted. How should we handle this? Maybe as a `CallFrame.reverted` flag?
 
-## Planned implementation
+## Traces preprocessing
 
-### Traces data
+### Traces input
 
-Here is an example for one event of an executed SLOAD instruction:
+As inputs we take the execution traces from the transactions. These are based on the non-finalized [EIP-3155](https://eips.ethereum.org/EIPS/eip-3155) EVM trace specification.
+
+!!! note
+
+    We require the "pc", "op", "stack" and "depth" fields. For deeper analysis, the "memory" field should also be present, eg to identify the CALL input.
+
+Here is an example trace for an SLOAD instruction:
 
 ```json
 {
@@ -28,11 +34,7 @@ Here is an example for one event of an executed SLOAD instruction:
   "gasCost": "0x834",
   "stack": [
     "0xd0e30db0",
-    "0x3d2",
-    "0x62884461f1460000",
-    "0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc",
-    "0x0",
-    "0x62884461f1460000",
+    "...",
     "0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc"
   ],
   "depth": 2,
@@ -43,27 +45,23 @@ Here is an example for one event of an executed SLOAD instruction:
 }
 ```
 
-!!! warning
+In general, we try not to load the whole trace into the memory. To achieve this goal, we iterate through the lines and process them on the go. We only keep the current events and forget all prior ones.
 
-    The [EIP-3155](https://eips.ethereum.org/EIPS/eip-3155) also specifies an optional "memory" field. This is not included by REVM per default. However, it is necessary to understand inputs and outputs from some instructions, eg CALL and LOGx.
-
-### Traces preprocessing
-
-In general, we try not to load the whole trace into the memory. To achieve this goal, we iterate through the lines and process them on the go. Between each processing step we only pass the necessary data forward and forget all irrelevant data.
-
-#### Map each JSON to a `TraceEvent`
+### Map each JSON to a `TraceEvent`
 
 This step simply maps a trace event from JSON to a python class (`TraceEvent`).
 
 Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to `TraceEvent`, as long as the necessary information is included in the trace.
 
-#### Parse `Instruction`s
+### Parse `Instruction`s
+
+Here, we parse the instructions and keep track in which contract they were executed.
 
 We start the process with an initial `CallFrame`, which stores who created the transaction and which contract/EOA is called.
 
-Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current `CallFrame` to it. For instance, a `SLOAD` instruction loads the data from the current contracts storage.
+Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current `CallFrame` to the instruction. For instance, an `SLOAD` instruction loads the data from the current contracts storage.
 
-If we encounter a `CALL` we create a new `CallFrame`, or on a `RETURN` we go back to the previous one. To be sure, we also check if the `depth` parameter changes. If it changes, thought the instruction is neither `CALL` or `RETURN`, we raise an Exception.
+If we encounter a `CALL` or `STATICCALL` we create a new `CallFrame`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we go back to the previous `CallFrame`. To be sure, we also verify if the `depth` from the trace event matches our calculation. If not, we raise an Exception.
 
 The `Instruction` includes:
 
@@ -80,17 +78,8 @@ The `Instruction` includes:
 
 !!! warning
 
-    How should the `CallFrame` for `DELEGATECALL` be implemented? Split into `code_address` and `storage_address`?
+    How should we implement `DELEGATECALL` and `CALLCODE`? Split into `code_address` and `storage_address`?
 
-#### Create `EnvironmentChange`s
-
-Based on two successive `TraceEvent`s, compute the change between the environments. This includes following changes:
-
-- `StackChange`
-- `MemoryChange`
-- `ProgramCounterChange`
-- `CallDepthChange` (?)
-- `ReturnDataChange` (?)
 
 ## Analysis
 
@@ -122,7 +111,9 @@ For instance, if the storage is different for both executions, the `SLOAD` will 
 
 To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.
 
-Create a counter that counts how often an instruction has been called. An instruction is identified by (pc, inputs). For instructions in trace A, increment it. For instructions in the other trace, decrement it.
+For each instruction we count how often it has been exected in each trace. We identify the instruction by the code_address, pc, opcode and inputs. For instructions in trace A, we increment the counter. For instructions in the other trace, decrement it. Thus, if the instruction occurs in both traces, the count will balance to 0. If the inputs differ, we will have two different elements, one with a +1 count and one with -1.
+
+At the end, we group the instructions only by code_address, pc and opcode, so instructions with different inputs will be grouped together. These are matched between the traces to identify which parameters have changed and outputted as such. If no match exists, we output them as only being executed by one trace.
 
 **Requires**:
 
@@ -131,7 +122,7 @@ Create a counter that counts how often an instruction has been called. An instru
 
 **Labels**:
 
-- TOD-Amount, TOD-Recipient, TOD-Transfer, TOD-Selfdestruct
+- TOD-Amount, TOD-Recipient, TOD-Selfdestruct, (TOD-Transfer also uses `CALL`)
 - ether profits
 - list of affected instructions
 
@@ -162,6 +153,6 @@ We record all executed unique instructions, eg to understand if hashing was used
 ## Not yet covered
 
 - usage of precompiled contracts (see [https://www.evm.codes/precompiled](https://www.evm.codes/precompiled))
-- attacker-preconditions (eg. if the address from the attacker was returned from a SLOAD or a SLOAD with the attackers address as index returned != 0? Maybe hard to understand without information flow analysis)
+- attacker-preconditions (eg. if the address from the attacker was returned from a SLOAD or a SLOAD with the attackers address as index returned != 0? Hard to understand without information flow analysis)
 - control flow differences (where and through what? implement eg with changes or by comparing instructions)
 - attack symmetry (if the order was different, would the "victim" be an "attacker"?)
