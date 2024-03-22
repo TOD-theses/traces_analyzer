@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 
 from traces_analyzer.call_frame import CallFrame
-from traces_analyzer.instructions import CALL, RETURN, SLOAD, STATICCALL, STOP, Instruction, Unknown
+from traces_analyzer.instructions import CALL, RETURN, STATICCALL, STOP, Instruction, parse_instruction
 from traces_analyzer.trace_reader import TraceEvent
 
 
@@ -26,20 +26,7 @@ def parse_events(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
     # NOTE: for the last event, we pass None instead of next_event
     # if this breaks something in the future (eg if the last TraceEvent is a SLOAD
     # that tries to read the stack for the result), I'll need to change this
-    yield parse_instruction(current_event, None, call_frame)  # type: ignore
-
-
-INSTRUCTIONS = [CALL, STATICCALL, STOP, RETURN, SLOAD]
-OPCODE_TO_INSTRUCTION = dict((i.op, i) for i in INSTRUCTIONS)  # type: ignore
-
-
-def parse_instruction(event: TraceEvent, next_event: TraceEvent | None, call_frame: CallFrame):
-    if event.op in OPCODE_TO_INSTRUCTION:
-        instruction_type = OPCODE_TO_INSTRUCTION[event.op]
-    else:
-        instruction_type = Unknown
-
-    return instruction_type.from_event(event, next_event, call_frame)  # type: ignore
+    yield parse_instruction(current_event, None, call_frame)  # type: ignore[arg-type]
 
 
 def update_call_frame(
