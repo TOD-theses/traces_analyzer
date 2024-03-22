@@ -1,20 +1,9 @@
-import os
-from pathlib import Path
-
-from pytest import fixture
 from traces_analyzer.instructions import (
     CALL,
     SLOAD,
 )
 from traces_analyzer.trace_reader import read_trace_file
 from traces_analyzer.parser import parse_events
-
-
-@fixture
-def sample_traces_path(request) -> Path:
-    filename = request.module.__file__
-    test_dir, _ = os.path.splitext(filename)
-    return Path(test_dir).parent.parent / "sample_traces"
 
 
 def test_parse_traces(sample_traces_path):
