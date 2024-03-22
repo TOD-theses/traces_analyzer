@@ -179,12 +179,12 @@
 </ul>
 <h2 id="analysis">Analysis</h2>
 <h3 id="instruction-effect-changes">Instruction effect changes</h3>
-<p>To understand, where the TOD occurs we compare the transaction trace from both cases. At each iteration, we compare the <code>EnvironmentChange</code>s of both traces. The first time they differ, is the point at which the same instruction had a different effect.</p>
-<p>This could happen at a <code>SLOAD</code> if the storage is influenced by the other transaction, a <code>BALANCE</code>, etc. This detection will simply report the instruction that was executed before the traces diverge.</p>
+<p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>TraceEvent</code>s, including the program counter, the call depth and the stack. The first time they differ, is the point at which the previous instruction had a different effect.</p>
+<p>For instance, if the storage is different for both executions, the <code>SLOAD</code> will output a different result to the stack. We report the instruction that was executed before (and caused) the traces diverge, in this case before the stacks diverge.</p>
 <p><strong>Requires</strong>:</p>
 <ul>
 <li>comparison of two traces</li>
-<li>access to <code>EnvironmentChange</code>s</li>
+<li>access to next <code>TraceEvent</code>s</li>
 <li>access to <code>Instruction</code>s</li>
 </ul>
 <p><strong>Labels</strong>:</p>
@@ -198,10 +198,6 @@
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The same could be achieved by looking at the instruction outputs. However, this would require an exact modelling of all instruction outputs. Checking the stack, memory and pc is easier and less error-prone.</p>
 </div>
 <h3 id="instruction-input-changes">Instruction input changes</h3>
 <p>To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.</p>
