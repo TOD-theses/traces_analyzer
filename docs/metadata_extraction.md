@@ -96,14 +96,14 @@ Based on two successive `TraceEvent`s, compute the change between the environmen
 
 ### Instruction effect changes
 
-To understand, where the TOD occurs we compare the transaction trace from both cases. At each iteration, we compare the `EnvironmentChange`s of both traces. The first time they differ, is the point at which the same instruction had a different effect.
+To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the `TraceEvent`s, including the program counter, the call depth and the stack. The first time they differ, is the point at which the previous instruction had a different effect.
 
-This could happen at a `SLOAD` if the storage is influenced by the other transaction, a `BALANCE`, etc. This detection will simply report the instruction that was executed before the traces diverge.
+For instance, if the storage is different for both executions, the `SLOAD` will output a different result to the stack. We report the instruction that was executed before (and caused) the traces diverge, in this case before the stacks diverge.
 
 **Requires**:
 
 - comparison of two traces
-- access to `EnvironmentChange`s
+- access to next `TraceEvent`s
 - access to `Instruction`s
 
 **Labels**:
@@ -117,10 +117,6 @@ This could happen at a `SLOAD` if the storage is influenced by the other transac
 !!! note
 
     There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.
-
-!!! note
-
-    The same could be achieved by looking at the instruction outputs. However, this would require an exact modelling of all instruction outputs. Checking the stack, memory and pc is easier and less error-prone.
 
 ### Instruction input changes
 
