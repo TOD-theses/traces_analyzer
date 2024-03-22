@@ -42,5 +42,5 @@ def to_key(instruction: StackInstruction) -> InstructionKey:
         address=instruction.call_frame.address,
         program_counter=instruction.program_counter,
         opcode=instruction.opcode,
-        stack_inputs=tuple(instruction.stack_inputs),
+        stack_inputs=instruction.stack_inputs,
     )

@@ -31,16 +31,16 @@ class StackInstruction(Instruction):
     # stack outputs are only parsed from the next events stack
     # so we can't use this for eg CALL, where the output is only known many events later
     stack_output_count = 0
-    stack_inputs: list[str] = []
-    stack_outputs: list[str] = []
+    stack_inputs: tuple[str, ...] = ()
+    stack_outputs: tuple[str, ...] = ()
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
 
         if self.stack_input_count:
-            self.stack_inputs = list(reversed(event.stack[-self.stack_input_count :]))
+            self.stack_inputs = tuple(reversed(event.stack[-self.stack_input_count :]))
         if self.stack_output_count:
-            self.stack_outputs = list(reversed(next_event.stack[-self.stack_output_count :]))
+            self.stack_outputs = tuple(reversed(next_event.stack[-self.stack_output_count :]))
 
 
 class Unknown(Instruction):
