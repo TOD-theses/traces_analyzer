@@ -1,5 +1,5 @@
 from itertools import zip_longest
-from traces_analyzer.analysis.TODSourceAnalyzer import TODSourceAnalyzer
+from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.instructions import SLOAD
 from traces_analyzer.parser import parse_events
 from traces_analyzer.trace_reader import read_trace_file

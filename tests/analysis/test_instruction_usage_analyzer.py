@@ -1,4 +1,4 @@
-from traces_analyzer.analysis.InstructionUsageAnalyzer import InstructionUsageAnalyzer
+from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.call_frame import CallFrame
 from traces_analyzer.instructions import CALL, STOP, Unknown
 from traces_analyzer.trace_reader import TraceEvent

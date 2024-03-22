@@ -1,5 +1,5 @@
 from itertools import zip_longest
-from traces_analyzer.analysis.InstructionInputAnalyzer import InstructionInputAnalyzer
+from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.call_frame import CallFrame
 from traces_analyzer.instructions import CALL, STOP, Unknown
 from traces_analyzer.parser import parse_events
