@@ -8,7 +8,11 @@ Based on the four transaction traces (2 normal, 2 reverse order), automatically 
 
 !!! danger
 
-    This does not detect if the amount of a Selfedestruct changed. In general, this is not detected by my method. Are there other TODs that are not visible in traces?
+    This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?
+
+!!! danger
+
+    We currently ignore, that the effects of a transaction can be reverted, either due an exceptional halt (out of gas, invalid instruction, etc.) or a normal halt (`RETURN`, `REVERT`, `STOP`, `SELFDESTRUCT`). For instance, even if a LOG statement is part of a trace, it can still be reverted. How should we handle this? Maybe as a `CallFrame.reverted` flag?
 
 ## Planned implementation
 
@@ -75,6 +79,10 @@ NOTE: Maybe inputs and outputs should be available as lists too, to make it easi
 !!! warning
 
     How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?
+
+!!! warning
+
+    How should the `CallFrame` for `DELEGATECALL` be implemented? Split into `code_address` and `storage_address`?
 
 #### Create `EnvironmentChange`s
 

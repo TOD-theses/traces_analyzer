@@ -47,6 +47,7 @@ def update_call_frame(
     instruction: Instruction,
     expected_depth: int,
 ):
+    # TODO: CALLCODE, DELEGATECALL
     if isinstance(instruction, (CALL, STATICCALL)):
         current_call_frame = CallFrame(
             parent=current_call_frame,
@@ -54,6 +55,7 @@ def update_call_frame(
             msg_sender=current_call_frame.address,
             address=instruction.address,
         )
+    # TODO: REVERT, SELFDESTRUCT
     elif isinstance(instruction, (STOP, RETURN)):
         if not current_call_frame.parent:
             raise Exception(
