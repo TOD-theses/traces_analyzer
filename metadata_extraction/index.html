@@ -48,19 +48,13 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#goal">Goal</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#planned-implementation">Planned implementation</a>
+    <li class="toctree-l2"><a class="reference internal" href="#traces-preprocessing">Traces preprocessing</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#traces-data">Traces data</a>
+    <li class="toctree-l3"><a class="reference internal" href="#traces-input">Traces input</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#traces-preprocessing">Traces preprocessing</a>
-        <ul>
-    <li class="toctree-l4"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
+    <li class="toctree-l3"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#parse-instructions">Parse Instructions</a>
-    </li>
-    <li class="toctree-l4"><a class="reference internal" href="#create-environmentchanges">Create EnvironmentChanges</a>
-    </li>
-        </ul>
+    <li class="toctree-l3"><a class="reference internal" href="#parse-instructions">Parse Instructions</a>
     </li>
         </ul>
     </li>
@@ -103,9 +97,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="metadata-extraction">Metadata extraction</h1>
-<p>This section describes how labels will be extracted from the traces.</p>
+<p>This page describes how metadata will be extracted from the traces.</p>
 <h2 id="goal">Goal</h2>
-<p>Based on the four transaction traces (2 normal, 2 reverse order), automatically determine several labels and metadata related to TOD.</p>
+<p>Based on the four transaction traces (2 normal, 2 reverse order), we automatically determine several labels and metadata related to TOD.</p>
 <div class="admonition danger">
 <p class="admonition-title">Danger</p>
 <p>This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?</p>
@@ -114,9 +108,14 @@
 <p class="admonition-title">Danger</p>
 <p>We currently ignore, that the effects of a transaction can be reverted, either due an exceptional halt (out of gas, invalid instruction, etc.) or a normal halt (<code>RETURN</code>, <code>REVERT</code>, <code>STOP</code>, <code>SELFDESTRUCT</code>). For instance, even if a LOG statement is part of a trace, it can still be reverted. How should we handle this? Maybe as a <code>CallFrame.reverted</code> flag?</p>
 </div>
-<h2 id="planned-implementation">Planned implementation</h2>
-<h3 id="traces-data">Traces data</h3>
-<p>Here is an example for one event of an executed SLOAD instruction:</p>
+<h2 id="traces-preprocessing">Traces preprocessing</h2>
+<h3 id="traces-input">Traces input</h3>
+<p>As inputs we take the execution traces from the transactions. These are based on the non-finalized <a href="https://eips.ethereum.org/EIPS/eip-3155">EIP-3155</a> EVM trace specification.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We require the "pc", "op", "stack" and "depth" fields. For deeper analysis, the "memory" field should also be present, eg to identify the CALL input.</p>
+</div>
+<p>Here is an example trace for an SLOAD instruction:</p>
 <pre><code class="language-json">{
   &quot;pc&quot;: 1157,
   &quot;op&quot;: 84,
@@ -124,11 +123,7 @@
   &quot;gasCost&quot;: &quot;0x834&quot;,
   &quot;stack&quot;: [
     &quot;0xd0e30db0&quot;,
-    &quot;0x3d2&quot;,
-    &quot;0x62884461f1460000&quot;,
-    &quot;0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc&quot;,
-    &quot;0x0&quot;,
-    &quot;0x62884461f1460000&quot;,
+    &quot;...&quot;,
     &quot;0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc&quot;
   ],
   &quot;depth&quot;: 2,
@@ -138,19 +133,15 @@
   &quot;opName&quot;: &quot;SLOAD&quot;
 }
 </code></pre>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The <a href="https://eips.ethereum.org/EIPS/eip-3155">EIP-3155</a> also specifies an optional "memory" field. This is not included by REVM per default. However, it is necessary to understand inputs and outputs from some instructions, eg CALL and LOGx.</p>
-</div>
-<h3 id="traces-preprocessing">Traces preprocessing</h3>
-<p>In general, we try not to load the whole trace into the memory. To achieve this goal, we iterate through the lines and process them on the go. Between each processing step we only pass the necessary data forward and forget all irrelevant data.</p>
-<h4 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h4>
+<p>In general, we try not to load the whole trace into the memory. To achieve this goal, we iterate through the lines and process them on the go. We only keep the current events and forget all prior ones.</p>
+<h3 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h3>
 <p>This step simply maps a trace event from JSON to a python class (<code>TraceEvent</code>).</p>
 <p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
-<h4 id="parse-instructions">Parse <code>Instruction</code>s</h4>
+<h3 id="parse-instructions">Parse <code>Instruction</code>s</h3>
+<p>Here, we parse the instructions and keep track in which contract they were executed.</p>
 <p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
-<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current <code>CallFrame</code> to it. For instance, a <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
-<p>If we encounter a <code>CALL</code> we create a new <code>CallFrame</code>, or on a <code>RETURN</code> we go back to the previous one. To be sure, we also check if the <code>depth</code> parameter changes. If it changes, thought the instruction is neither <code>CALL</code> or <code>RETURN</code>, we raise an Exception.</p>
+<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
+<p>If we encounter a <code>CALL</code> or <code>STATICCALL</code> we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we go back to the previous <code>CallFrame</code>. To be sure, we also verify if the <code>depth</code> from the trace event matches our calculation. If not, we raise an Exception.</p>
 <p>The <code>Instruction</code> includes:</p>
 <ul>
 <li>opcode</li>
@@ -166,17 +157,8 @@
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>How should the <code>CallFrame</code> for <code>DELEGATECALL</code> be implemented? Split into <code>code_address</code> and <code>storage_address</code>?</p>
+<p>How should we implement <code>DELEGATECALL</code> and <code>CALLCODE</code>? Split into <code>code_address</code> and <code>storage_address</code>?</p>
 </div>
-<h4 id="create-environmentchanges">Create <code>EnvironmentChange</code>s</h4>
-<p>Based on two successive <code>TraceEvent</code>s, compute the change between the environments. This includes following changes:</p>
-<ul>
-<li><code>StackChange</code></li>
-<li><code>MemoryChange</code></li>
-<li><code>ProgramCounterChange</code></li>
-<li><code>CallDepthChange</code> (?)</li>
-<li><code>ReturnDataChange</code> (?)</li>
-</ul>
 <h2 id="analysis">Analysis</h2>
 <h3 id="instruction-effect-changes">Instruction effect changes</h3>
 <p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>TraceEvent</code>s, including the program counter, the call depth and the stack. The first time they differ, is the point at which the previous instruction had a different effect.</p>
@@ -201,7 +183,8 @@
 </div>
 <h3 id="instruction-input-changes">Instruction input changes</h3>
 <p>To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.</p>
-<p>Create a counter that counts how often an instruction has been called. An instruction is identified by (pc, inputs). For instructions in trace A, increment it. For instructions in the other trace, decrement it.</p>
+<p>For each instruction we count how often it has been exected in each trace. We identify the instruction by the code_address, pc, opcode and inputs. For instructions in trace A, we increment the counter. For instructions in the other trace, decrement it. Thus, if the instruction occurs in both traces, the count will balance to 0. If the inputs differ, we will have two different elements, one with a +1 count and one with -1.</p>
+<p>At the end, we group the instructions only by code_address, pc and opcode, so instructions with different inputs will be grouped together. These are matched between the traces to identify which parameters have changed and outputted as such. If no match exists, we output them as only being executed by one trace.</p>
 <p><strong>Requires</strong>:</p>
 <ul>
 <li>comparison of two traces</li>
@@ -209,7 +192,7 @@
 </ul>
 <p><strong>Labels</strong>:</p>
 <ul>
-<li>TOD-Amount, TOD-Recipient, TOD-Transfer, TOD-Selfdestruct</li>
+<li>TOD-Amount, TOD-Recipient, TOD-Selfdestruct, (TOD-Transfer also uses <code>CALL</code>)</li>
 <li>ether profits</li>
 <li>list of affected instructions</li>
 </ul>
@@ -238,7 +221,7 @@
 <h2 id="not-yet-covered">Not yet covered</h2>
 <ul>
 <li>usage of precompiled contracts (see <a href="https://www.evm.codes/precompiled">https://www.evm.codes/precompiled</a>)</li>
-<li>attacker-preconditions (eg. if the address from the attacker was returned from a SLOAD or a SLOAD with the attackers address as index returned != 0? Maybe hard to understand without information flow analysis)</li>
+<li>attacker-preconditions (eg. if the address from the attacker was returned from a SLOAD or a SLOAD with the attackers address as index returned != 0? Hard to understand without information flow analysis)</li>
 <li>control flow differences (where and through what? implement eg with changes or by comparing instructions)</li>
 <li>attack symmetry (if the order was different, would the "victim" be an "attacker"?)</li>
 </ul>
