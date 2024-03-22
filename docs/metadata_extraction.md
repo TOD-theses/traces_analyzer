@@ -69,12 +69,10 @@ The `Instruction` includes:
 
 - opcode
 - program_counter
-- inputs_from_stack (as a list)
-- outputs_from_stack (as a list)
-- callframe
+- call_frame
+- [stack_inputs] (if it's a `StackInstruction`)
+- [stack_outputs] (if it's a `StackInstruction`)
 - [additional fields based on the instruction type, eg `key` for `SLOAD`]
-
-NOTE: Maybe inputs and outputs should be available as lists too, to make it easier to compare?
 
 !!! warning
 

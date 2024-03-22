@@ -38,6 +38,8 @@ def test_parse_traces(sample_traces_path):
 
         calls = [instruction for instruction in instructions if isinstance(instruction, CALL)]
         assert len(calls) == expected_calls
+        assert calls[0].address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+        assert calls[0].value == "0x62884461f1460000"
 
         sloads = [instruction for instruction in instructions if isinstance(instruction, SLOAD)]
         assert len(sloads) == expected_sloads
