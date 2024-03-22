@@ -108,7 +108,11 @@
 <p>Based on the four transaction traces (2 normal, 2 reverse order), automatically determine several labels and metadata related to TOD.</p>
 <div class="admonition danger">
 <p class="admonition-title">Danger</p>
-<p>This does not detect if the amount of a Selfedestruct changed. In general, this is not detected by my method. Are there other TODs that are not visible in traces?</p>
+<p>This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?</p>
+</div>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>We currently ignore, that the effects of a transaction can be reverted, either due an exceptional halt (out of gas, invalid instruction, etc.) or a normal halt (<code>RETURN</code>, <code>REVERT</code>, <code>STOP</code>, <code>SELFDESTRUCT</code>). For instance, even if a LOG statement is part of a trace, it can still be reverted. How should we handle this? Maybe as a <code>CallFrame.reverted</code> flag?</p>
 </div>
 <h2 id="planned-implementation">Planned implementation</h2>
 <h3 id="traces-data">Traces data</h3>
@@ -160,6 +164,10 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>How should the <code>CallFrame</code> for <code>DELEGATECALL</code> be implemented? Split into <code>code_address</code> and <code>storage_address</code>?</p>
 </div>
 <h4 id="create-environmentchanges">Create <code>EnvironmentChange</code>s</h4>
 <p>Based on two successive <code>TraceEvent</code>s, compute the change between the environments. This includes following changes:</p>
