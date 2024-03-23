@@ -2,11 +2,11 @@ from collections import defaultdict
 
 from typing_extensions import override
 
-from traces_analyzer.analysis.analyzer import TraceAnalyzer
+from traces_analyzer.analysis.analyzer import SingleInstructionAnalyzer
 from traces_analyzer.instructions import Instruction
 
 
-class InstructionUsageAnalyzer(TraceAnalyzer):
+class InstructionUsageAnalyzer(SingleInstructionAnalyzer):
     """Analyze which instructions are used in a trace"""
 
     def __init__(self) -> None:

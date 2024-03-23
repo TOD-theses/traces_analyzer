@@ -1,4 +1,5 @@
 from itertools import zip_longest
+from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.instructions import SLOAD
 from traces_analyzer.parser import parse_events
@@ -35,7 +36,14 @@ def test_tod_source_analyzer_with_traces(sample_traces_path):
             zip_longest(trace_normal_events, trace_normal_events[1:]),
             zip_longest(trace_attack_events, trace_attack_events[1:]),
         ):
-            analyzer.on_trace_events_history(instr_a, instr_b, events_a, events_b)
+            analyzer.on_analysis_step(
+                AnalysisStepDoubleTrace(
+                    trace_events_one=events_a,
+                    trace_events_two=events_b,
+                    instruction_one=instr_a,
+                    instruction_two=instr_b,
+                )
+            )
 
         tod_source_first, tod_source_second = analyzer.get_tod_source()
 

@@ -1,6 +1,8 @@
 from itertools import zip_longest
 from pathlib import Path
+from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
+from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.instructions import SLOAD
 from traces_analyzer.parser import parse_events
@@ -23,11 +25,12 @@ def test_runner(sample_traces_path: Path):
     )
 
     with open(trace_normal_path) as trace_normal_file, open(trace_attack_path) as trace_attack_file:
+        instruction_usage_analyzer = SingleToDoubleTraceAnalyzer(InstructionUsageAnalyzer(), InstructionUsageAnalyzer())
         tod_source_analyzer = TODSourceAnalyzer()
         instruction_input_analyzer = InstructionInputAnalyzer()
 
         run_info = RunInfo(
-            analyzers=[tod_source_analyzer, instruction_input_analyzer],
+            analyzers=[instruction_usage_analyzer, tod_source_analyzer, instruction_input_analyzer],
             traces_jsons=(trace_normal_file, trace_attack_file),
         )
 
@@ -35,6 +38,10 @@ def test_runner(sample_traces_path: Path):
         runner.run()
 
         # assert that analysis tools found something
+        assert len(instruction_usage_analyzer.one.used_opcodes_per_contract) == 4
+        assert len(instruction_usage_analyzer.two.used_opcodes_per_contract) == 4
+
         assert tod_source_analyzer.found_tod_source()
+
         _, only_second = instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
         assert only_second
