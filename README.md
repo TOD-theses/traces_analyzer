@@ -7,24 +7,17 @@ See https://tod-theses.github.io/traces_analyzer/metadata_extraction/.
 
 ## Install
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to setup this project.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for installation instructions.
 
 ## Usage
 
-```py
-from traces_analyzer import BaseClass
-from traces_analyzer import base_function
-
-BaseClass().base_method()
-base_function()
-```
+After installing it, you can run it as following:
 
 ```bash
-$ python -m traces_analyzer
+$ python -m traces_analyzer directory_path
 #or
-$ traces_analyzer
+$ traces_analyzer directory_path
+
+# for instance
+$ traces_analyzer sample_traces/62a8b9ece30161692b68cbb5/
 ```
-
-## Development
-
-Read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
