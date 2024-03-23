@@ -37,7 +37,7 @@ def test_tod_source_analyzer_with_traces(sample_traces_path):
         ):
             analyzer.on_trace_events_history(instr_a, instr_b, events_a, events_b)
 
-        tod_source_first, tod_source_second = analyzer._tod_source_instructions
+        tod_source_first, tod_source_second = analyzer.get_tod_source()
 
         # instructions should be equal, except for the outcome
         assert tod_source_first and tod_source_second
