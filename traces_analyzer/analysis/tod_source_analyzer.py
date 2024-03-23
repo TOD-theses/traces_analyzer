@@ -14,10 +14,10 @@ class TODSourceAnalyzer(TraceEventComparisonAnalyzer):
         self,
         first_instruction: Instruction,
         second_instruction: Instruction,
-        first_events: tuple[TraceEvent, TraceEvent],
-        second_events: tuple[TraceEvent, TraceEvent],
+        first_events: tuple[TraceEvent, TraceEvent | None],
+        second_events: tuple[TraceEvent, TraceEvent | None],
     ):
-        if self._found_tod_source():
+        if self.found_tod_source():
             return
 
         if first_events[0] != second_events[0]:
@@ -29,7 +29,7 @@ class TODSourceAnalyzer(TraceEventComparisonAnalyzer):
         if first_events[1] != second_events[1]:
             self._tod_source_instructions = first_instruction, second_instruction
 
-    def _found_tod_source(self) -> bool:
+    def found_tod_source(self) -> bool:
         return self._tod_source_instructions is not None
 
     def get_tod_source(self) -> tuple[Instruction, Instruction] | None:
