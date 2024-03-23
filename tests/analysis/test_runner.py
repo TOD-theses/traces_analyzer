@@ -1,13 +1,9 @@
-from itertools import zip_longest
 from pathlib import Path
 from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
-from traces_analyzer.preprocessing.instructions import SLOAD
-from traces_analyzer.preprocessing.instructions_parser import parse_instructions
 from traces_analyzer.analysis.analysis_runner import RunInfo, AnalysisRunner
-from traces_analyzer.preprocessing.events_parser import parse_events
 
 
 def test_runner(sample_traces_path: Path):
@@ -41,7 +37,7 @@ def test_runner(sample_traces_path: Path):
         assert len(instruction_usage_analyzer.one.used_opcodes_per_contract) == 4
         assert len(instruction_usage_analyzer.two.used_opcodes_per_contract) == 4
 
-        assert tod_source_analyzer.found_tod_source()
+        assert tod_source_analyzer.get_tod_source().found
 
         _, only_second = instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
         assert only_second

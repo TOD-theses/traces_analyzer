@@ -45,7 +45,10 @@ def test_tod_source_analyzer_with_traces(sample_traces_path):
                 )
             )
 
-        tod_source_first, tod_source_second = analyzer.get_tod_source()
+        tod_source = analyzer.get_tod_source()
+        assert tod_source.found
+        tod_source_first = tod_source.instruction_one
+        tod_source_second = tod_source.instruction_two
 
         # instructions should be equal, except for the outcome
         assert tod_source_first and tod_source_second

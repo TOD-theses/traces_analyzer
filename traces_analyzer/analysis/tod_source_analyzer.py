@@ -1,5 +1,14 @@
+from dataclasses import dataclass
+
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
 from traces_analyzer.preprocessing.instructions import Instruction
+
+
+@dataclass
+class TODSource:
+    found: bool
+    instruction_one: Instruction
+    instruction_two: Instruction
 
 
 class TODSourceAnalyzer(DoubleTraceAnalyzer):
@@ -10,7 +19,7 @@ class TODSourceAnalyzer(DoubleTraceAnalyzer):
         self._tod_source_instructions: tuple[Instruction, Instruction] | None = None
 
     def on_analysis_step(self, step: AnalysisStepDoubleTrace):
-        if self.found_tod_source():
+        if self._tod_source_instructions:
             return
 
         if step.trace_events_one[0] != step.trace_events_two[0]:
@@ -22,8 +31,11 @@ class TODSourceAnalyzer(DoubleTraceAnalyzer):
         if step.trace_events_one[1] != step.trace_events_two[1]:
             self._tod_source_instructions = step.instruction_one, step.instruction_two
 
-    def found_tod_source(self) -> bool:
-        return self._tod_source_instructions is not None
-
-    def get_tod_source(self) -> tuple[Instruction, Instruction] | None:
-        return self._tod_source_instructions
+    def get_tod_source(self) -> TODSource:
+        if not self._tod_source_instructions:
+            return TODSource(found=False, instruction_one=None, instruction_two=None)  # type: ignore[arg-type]
+        return TODSource(
+            found=True,
+            instruction_one=self._tod_source_instructions[0],
+            instruction_two=self._tod_source_instructions[1],
+        )
