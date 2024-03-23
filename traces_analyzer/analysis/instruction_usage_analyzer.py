@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing_extensions import override
 
 from traces_analyzer.analysis.analyzer import SingleInstructionAnalyzer
-from traces_analyzer.instructions import Instruction
+from traces_analyzer.preprocessing.instructions import Instruction
 
 
 class InstructionUsageAnalyzer(SingleInstructionAnalyzer):

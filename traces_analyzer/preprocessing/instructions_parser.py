@@ -1,7 +1,8 @@
 from collections.abc import Iterable
 
-from traces_analyzer.call_frame import CallFrame
-from traces_analyzer.instructions import (
+from traces_analyzer.preprocessing.call_frame import CallFrame
+from traces_analyzer.preprocessing.events_parser import TraceEvent
+from traces_analyzer.preprocessing.instructions import (
     CALL,
     RETURN,
     REVERT,
@@ -11,10 +12,9 @@ from traces_analyzer.instructions import (
     Instruction,
     parse_instruction,
 )
-from traces_analyzer.trace_reader import TraceEvent
 
 
-def parse_events(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
+def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
     call_frame = CallFrame(
         parent=None,
         depth=1,

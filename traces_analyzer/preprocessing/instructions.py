@@ -2,8 +2,8 @@ from abc import ABC
 
 from typing_extensions import Self
 
-from traces_analyzer.call_frame import CallFrame
-from traces_analyzer.trace_reader import TraceEvent
+from traces_analyzer.preprocessing.call_frame import CallFrame
+from traces_analyzer.preprocessing.events_parser import TraceEvent
 
 
 class Instruction(ABC):

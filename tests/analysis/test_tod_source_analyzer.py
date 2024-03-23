@@ -1,9 +1,9 @@
 from itertools import zip_longest
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
-from traces_analyzer.instructions import SLOAD
-from traces_analyzer.parser import parse_events
-from traces_analyzer.trace_reader import read_trace_file
+from traces_analyzer.preprocessing.instructions import SLOAD
+from traces_analyzer.preprocessing.instructions_parser import parse_instructions
+from traces_analyzer.preprocessing.events_parser import parse_events
 
 
 def test_tod_source_analyzer_with_traces(sample_traces_path):
@@ -21,11 +21,11 @@ def test_tod_source_analyzer_with_traces(sample_traces_path):
     )
 
     with open(trace_normal_path) as trace_normal_file, open(trace_attack_path) as trace_attack_file:
-        trace_normal_events = list(read_trace_file(trace_normal_file))
-        trace_attack_events = list(read_trace_file(trace_attack_file))
+        trace_normal_events = list(parse_events(trace_normal_file))
+        trace_attack_events = list(parse_events(trace_attack_file))
 
-        instructions_normal = list(parse_events(trace_normal_events))
-        instructions_attack = list(parse_events(trace_attack_events))
+        instructions_normal = list(parse_instructions(trace_normal_events))
+        instructions_attack = list(parse_instructions(trace_attack_events))
 
         analyzer = TODSourceAnalyzer()
 

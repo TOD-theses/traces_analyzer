@@ -3,8 +3,8 @@ from itertools import zip_longest
 from typing import Iterable
 
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
-from traces_analyzer.parser import parse_events
-from traces_analyzer.trace_reader import read_trace_file
+from traces_analyzer.preprocessing.events_parser import parse_events
+from traces_analyzer.preprocessing.instructions_parser import parse_instructions
 
 
 @dataclass
@@ -13,7 +13,7 @@ class RunInfo:
     traces_jsons: tuple[Iterable[str], Iterable[str]]
 
 
-class Runner:
+class AnalysisRunner:
     def __init__(self, run_info: RunInfo) -> None:
         self.analyzers = run_info.analyzers
         self.trace_one = run_info.traces_jsons[0]
@@ -24,11 +24,11 @@ class Runner:
         # likely also requires a rethinking of parse_events, maybe make it a class instead
         # TODO: test how this covers the edge cases (eg if the last trace events are analyzed)
 
-        trace_events_one = list(read_trace_file(self.trace_one))
-        trace_events_two = list(read_trace_file(self.trace_two))
+        trace_events_one = list(parse_events(self.trace_one))
+        trace_events_two = list(parse_events(self.trace_two))
 
-        instructions_one = parse_events(trace_events_one)
-        instructions_two = parse_events(trace_events_two)
+        instructions_one = parse_instructions(trace_events_one)
+        instructions_two = parse_instructions(trace_events_two)
 
         # for both traces, take current instructions, and current+next trace events
         for instr_a, instr_b, events_a, events_b in zip_longest(

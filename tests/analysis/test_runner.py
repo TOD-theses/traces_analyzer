@@ -4,10 +4,10 @@ from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
-from traces_analyzer.instructions import SLOAD
-from traces_analyzer.parser import parse_events
-from traces_analyzer.runner.runner import RunInfo, Runner
-from traces_analyzer.trace_reader import read_trace_file
+from traces_analyzer.preprocessing.instructions import SLOAD
+from traces_analyzer.preprocessing.instructions_parser import parse_instructions
+from traces_analyzer.analysis.analysis_runner import RunInfo, AnalysisRunner
+from traces_analyzer.preprocessing.events_parser import parse_events
 
 
 def test_runner(sample_traces_path: Path):
@@ -34,7 +34,7 @@ def test_runner(sample_traces_path: Path):
             traces_jsons=(trace_normal_file, trace_attack_file),
         )
 
-        runner = Runner(run_info)
+        runner = AnalysisRunner(run_info)
         runner.run()
 
         # assert that analysis tools found something

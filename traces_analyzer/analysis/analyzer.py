@@ -4,8 +4,8 @@ from typing import Generic, TypeVar
 
 from typing_extensions import override
 
-from traces_analyzer.instructions import Instruction
-from traces_analyzer.trace_reader import TraceEvent
+from traces_analyzer.preprocessing.events_parser import TraceEvent
+from traces_analyzer.preprocessing.instructions import Instruction
 
 
 @dataclass

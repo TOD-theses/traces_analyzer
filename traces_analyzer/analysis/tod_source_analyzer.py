@@ -1,5 +1,5 @@
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
-from traces_analyzer.instructions import Instruction
+from traces_analyzer.preprocessing.instructions import Instruction
 
 
 class TODSourceAnalyzer(DoubleTraceAnalyzer):

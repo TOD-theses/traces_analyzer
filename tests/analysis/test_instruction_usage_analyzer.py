@@ -1,7 +1,7 @@
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
-from traces_analyzer.call_frame import CallFrame
-from traces_analyzer.instructions import CALL, STOP, Unknown
-from traces_analyzer.trace_reader import TraceEvent
+from traces_analyzer.preprocessing.call_frame import CallFrame
+from traces_analyzer.preprocessing.instructions import CALL, STOP, Unknown
+from traces_analyzer.preprocessing.events_parser import TraceEvent
 
 
 def test_instruction_usage_analyzer():

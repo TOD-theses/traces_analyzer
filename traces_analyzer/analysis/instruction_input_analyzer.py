@@ -7,7 +7,7 @@ from typing import Iterable
 from typing_extensions import override
 
 from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
-from traces_analyzer.instructions import Instruction, StackInstruction
+from traces_analyzer.preprocessing.instructions import Instruction, StackInstruction
 
 
 @dataclass(frozen=True)

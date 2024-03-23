@@ -1,9 +1,9 @@
-from traces_analyzer.instructions import (
+from traces_analyzer.preprocessing.instructions import (
     CALL,
     SLOAD,
 )
-from traces_analyzer.trace_reader import read_trace_file
-from traces_analyzer.parser import parse_events
+from traces_analyzer.preprocessing.events_parser import parse_events
+from traces_analyzer.preprocessing.instructions_parser import parse_instructions
 
 
 def test_parse_traces(sample_traces_path):
@@ -19,10 +19,10 @@ def test_parse_traces(sample_traces_path):
     expected_sloads = 23
 
     with open(trace_path) as trace_file:
-        trace_events = list(read_trace_file(trace_file))
+        trace_events = list(parse_events(trace_file))
         assert len(trace_events) == expected_trace_events
 
-        instructions = list(parse_events(trace_events))
+        instructions = list(parse_instructions(trace_events))
         assert len(instructions) == len(trace_events)
 
         calls = [instruction for instruction in instructions if isinstance(instruction, CALL)]

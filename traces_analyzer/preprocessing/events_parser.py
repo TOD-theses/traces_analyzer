@@ -11,7 +11,7 @@ class TraceEvent:
     depth: int
 
 
-def read_trace_file(lines: Iterable[str]) -> Iterable[TraceEvent]:
+def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
     for line in lines:
         obj = json.loads(line)
         if "pc" not in obj:
