@@ -6,8 +6,10 @@ from pathlib import Path
 from typing import Iterable
 
 from traces_analyzer.analysis.analysis_runner import AnalysisRunner, RunInfo
+from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.evaluation.evaluation import Evaluation
+from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 
@@ -33,11 +35,12 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]):
     print(f"Comparing traces for {tx_hash}")
 
     tod_source_analyzer = TODSourceAnalyzer()
+    instruction_changes_analyzer = InstructionInputAnalyzer()
 
     start = time.time()
     runner = AnalysisRunner(
         RunInfo(
-            analyzers=[tod_source_analyzer],
+            analyzers=[tod_source_analyzer, instruction_changes_analyzer],
             traces_jsons=traces,
         )
     )
@@ -47,7 +50,13 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]):
 
     print("Results:\n")
 
-    evaluations: list[Evaluation] = [TODSourceEvaluation(tod_source_analyzer.get_tod_source())]
+    evaluations: list[Evaluation] = [
+        TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
+        InstructionDifferencesEvaluation(
+            occurrence_changes=instruction_changes_analyzer.get_instructions_only_executed_by_one_trace(),
+            input_changes=instruction_changes_analyzer.get_instructions_with_different_inputs(),
+        ),
+    ]
 
     for evaluation in evaluations:
         print(evaluation.cli_report())
