@@ -9,6 +9,15 @@ class TraceEvent:
     op: int
     stack: list[str]
     depth: int
+    memory: str | None = None
+
+    def mem_at(self, offset_bytes: int, size_bytes: int) -> str | None:
+        """Return the specified memory slice. If memory is not set, return None."""
+        if not self.memory:
+            return None
+        start = 2 * offset_bytes
+        end = 2 * (offset_bytes + size_bytes)
+        return self.memory[start:end]
 
 
 def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
@@ -20,5 +29,6 @@ def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
             pc=obj["pc"],
             op=obj["op"],
             stack=obj["stack"],
+            memory=obj.get("memory"),
             depth=obj["depth"],
         )

@@ -71,6 +71,8 @@ class CALL(StackInstruction):
         self.ret_offset = self.stack_inputs[5]
         self.ret_size = self.stack_inputs[6]
 
+        self.call_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+
 
 class STATICCALL(StackInstruction):
     opcode = 0xFA
