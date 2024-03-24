@@ -133,7 +133,6 @@
   &quot;opName&quot;: &quot;SLOAD&quot;
 }
 </code></pre>
-<p>The analyzers are built in a way, that they don't need access to the whole trace at once. This would allow to analyze the traces on the go, without loading all of them into the memory at the same time. However, currently it loads everything into the memory and the performance and memory did not cause issues.</p>
 <h3 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h3>
 <p>This step simply maps a trace event from JSON to a python class (<code>TraceEvent</code>).</p>
 <p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
@@ -147,8 +146,10 @@
 <li>opcode</li>
 <li>program_counter</li>
 <li>call_frame</li>
-<li>[stack_inputs] (if it's a <code>StackInstruction</code>)</li>
-<li>[stack_outputs] (if it's a <code>StackInstruction</code>)</li>
+<li>stack_inputs</li>
+<li>stack_outputs</li>
+<li>memory_input</li>
+<li>memory_output</li>
 <li>[additional fields based on the instruction type, eg <code>key</code> for <code>SLOAD</code>]</li>
 </ul>
 <div class="admonition warning">
@@ -156,6 +157,7 @@
 <p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
 </div>
 <h2 id="analysis">Analysis</h2>
+<p>The analyzers are built in a way, that they don't need access to the whole trace at once. This way, we do not need to load the whole trace into memory at the same time, but instead iterate through the events and analyze them on the go. This is mainly a memory improvement.</p>
 <h3 id="instruction-effect-changes">Instruction effect changes</h3>
 <p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>TraceEvent</code>s, including the program counter, the call depth and the stack. The first time they differ, is the point at which the previous instruction had a different effect.</p>
 <p>For instance, if the storage is different for both executions, the <code>SLOAD</code> will output a different result to the stack. We report the instruction that was executed before (and caused) the traces diverge, in this case before the stacks diverge.</p>
