@@ -45,8 +45,6 @@ Here is an example trace for an SLOAD instruction:
 }
 ```
 
-The analyzers are built in a way, that they don't need access to the whole trace at once. This would allow to analyze the traces on the go, without loading all of them into the memory at the same time. However, currently it loads everything into the memory and the performance and memory did not cause issues.
-
 ### Map each JSON to a `TraceEvent`
 
 This step simply maps a trace event from JSON to a python class (`TraceEvent`).
@@ -80,6 +78,8 @@ The `Instruction` includes:
 
 
 ## Analysis
+
+The analyzers are built in a way, that they don't need access to the whole trace at once. This way, we do not need to load the whole trace into memory at the same time, but instead iterate through the events and analyze them on the go. This is mainly a memory improvement.
 
 ### Instruction effect changes
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from itertools import zip_longest
+from itertools import tee, zip_longest
 from typing import Iterable
 
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
@@ -20,29 +20,38 @@ class AnalysisRunner:
         self.trace_two = run_info.traces_jsons[1]
 
     def run(self):
-        # NOTE: this reads all events into memory.
-        # if memory issues occur, remove the list(...) call. Maybe replace with itertools.tee
-        trace_events_one = list(parse_events(self.trace_one))
-        trace_events_two = list(parse_events(self.trace_two))
+        trace_events_one = parse_events(self.trace_one)
+        trace_events_two = parse_events(self.trace_two)
 
-        instructions_one = parse_instructions(trace_events_one)
-        instructions_two = parse_instructions(trace_events_two)
+        # we use tee to copy the iterable so we can pass the copied iterable
+        # to parse_instructions while still using the original iterable here
+        # a more readable solution is likely to rewrite parse_instructions not to take an iterable
+        trace_events_one, trace_events_one_copy = tee(trace_events_one)
+        trace_events_two, trace_events_two_copy = tee(trace_events_two)
+
+        instructions_one = parse_instructions(trace_events_one_copy)
+        instructions_two = parse_instructions(trace_events_two_copy)
+
+        current_event_one = next(trace_events_one)
+        current_event_two = next(trace_events_two)
 
         # for both traces, take current instructions, and current+next trace events
-        for instr_a, instr_b, events_a, events_b in zip_longest(
+        for instr_a, instr_b, next_event_one, next_event_two in zip_longest(
             instructions_one,
             instructions_two,
-            zip_longest(trace_events_one, trace_events_one[1:]),
-            zip_longest(trace_events_two, trace_events_two[1:]),
+            trace_events_one,
+            trace_events_two,
         ):
             self._process_step(
                 AnalysisStepDoubleTrace(
-                    trace_events_one=events_a,
-                    trace_events_two=events_b,
+                    trace_events_one=(current_event_one, next_event_one),
+                    trace_events_two=(current_event_two, next_event_two),
                     instruction_one=instr_a,
                     instruction_two=instr_b,
                 )
             )
+            current_event_one = next_event_one
+            current_event_two = next_event_two
 
     def _process_step(self, step: AnalysisStepDoubleTrace):
         for analyzer in self.analyzers:
