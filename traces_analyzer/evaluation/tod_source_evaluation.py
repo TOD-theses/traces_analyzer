@@ -19,7 +19,7 @@ class TODSourceEvaluation(Evaluation):
         if self._tod_source.found:
             source = {
                 "location": {
-                    "address": self._tod_source.instruction_one.call_frame.address,
+                    "address": self._tod_source.instruction_one.call_frame.code_address,
                     "pc": self._tod_source.instruction_one.program_counter,
                 },
                 "instruction": {
@@ -41,6 +41,6 @@ class TODSourceEvaluation(Evaluation):
             f"> opcode: {hex(self._tod_source.instruction_one.opcode)}\n"
             "\n"
             "Location: \n"
-            f"> address: {self._tod_source.instruction_one.call_frame.address}\n"
+            f"> address: {self._tod_source.instruction_one.call_frame.code_address}\n"
             f"> pc: {self._tod_source.instruction_one.program_counter}\n"
         )

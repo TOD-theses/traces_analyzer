@@ -16,7 +16,7 @@ class InstructionUsageAnalyzer(SingleInstructionAnalyzer):
 
     @override
     def on_instruction(self, instruction: Instruction):
-        contract_address = instruction.call_frame.address
+        contract_address = instruction.call_frame.code_address
         self._used_opcodes_per_contract[contract_address].add(instruction.opcode)
 
     def get_used_opcodes_per_contract(self) -> Mapping[str, set[int]]:

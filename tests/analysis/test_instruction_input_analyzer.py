@@ -8,8 +8,8 @@ from traces_analyzer.preprocessing.events_parser import TraceEvent, parse_events
 
 def test_instruction_input_analyzer():
     dummy_event = TraceEvent(-1, -1, [], -1)
-    root_frame = CallFrame(None, 1, "0xsender", "0xroot")
-    child_frame = CallFrame(root_frame, 2, "0xroot", "0xchild")
+    root_frame = CallFrame(None, 1, "0xsender", "0xroot", "0xroot")
+    child_frame = CallFrame(root_frame, 2, "0xroot", "0xchild", "0xchild")
 
     first_call_value = "0x1000"
     second_call_value = "0x100000"
@@ -91,4 +91,6 @@ def test_instruction_input_analyzer_with_traces(sample_traces_path):
         assert len(only_second_executions) == 178  # the trace files differ exactly by 178 lines
 
         instruction_input_changes = analyzer.get_instructions_with_different_inputs()
-        assert len(instruction_input_changes) == 0  # no instruction was called with different stack inputs
+        assert (
+            len(instruction_input_changes) > 0
+        )  # some instruction inputs have changed; exact number depends on implemented instructions

@@ -29,7 +29,7 @@ class Instruction(ABC):
             "<Instruction"
             f" name={self.name}"
             f" op={hex(self.opcode)}"
-            f" location={self.program_counter}@{self.call_frame.address}"
+            f" location={self.program_counter}@{self.call_frame.code_address}"
             ">"
         )
 
@@ -86,6 +86,35 @@ class STATICCALL(StackInstruction):
         self.ret_size = self.stack_inputs[5]
 
 
+class DELEGATECALL(StackInstruction):
+    opcode = 0xF4
+    stack_input_count = 6
+
+    def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
+        super().__init__(event, next_event, call_frame)
+        self.gas = self.stack_inputs[0]
+        self.address = self.stack_inputs[1]
+        self.args_offset = self.stack_inputs[2]
+        self.args_size = self.stack_inputs[3]
+        self.ret_offset = self.stack_inputs[4]
+        self.ret_size = self.stack_inputs[5]
+
+
+class CALLCODE(StackInstruction):
+    opcode = 0xF2
+    stack_input_count = 7
+
+    def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
+        super().__init__(event, next_event, call_frame)
+        self.gas = self.stack_inputs[0]
+        self.address = self.stack_inputs[1]
+        self.value = self.stack_inputs[2]
+        self.args_offset = self.stack_inputs[3]
+        self.args_size = self.stack_inputs[4]
+        self.ret_offset = self.stack_inputs[5]
+        self.ret_size = self.stack_inputs[6]
+
+
 class STOP(Instruction):
     opcode = 0x0
 
@@ -116,7 +145,12 @@ class SLOAD(StackInstruction):
         self.result = self.stack_outputs[0]
 
 
-DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, REVERT, SELFDESTRUCT, STATICCALL]
+class POP(StackInstruction):
+    opcode = 0x50
+    stack_input_count = 1
+
+
+DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, REVERT, SELFDESTRUCT, STATICCALL, CALLCODE, DELEGATECALL, POP]
 OPCODE_TO_INSTRUCTION_TYPE: dict[int, type[Instruction]] = dict((i.opcode, i) for i in DEFINED_INSTRUCTIONS)
 
 # sanity check that we always specified the opcode

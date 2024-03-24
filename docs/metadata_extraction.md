@@ -59,9 +59,9 @@ Here, we parse the instructions and keep track in which contract they were execu
 
 We start the process with an initial `CallFrame`, which stores who created the transaction and which contract/EOA is called.
 
-Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current `CallFrame` to the instruction. For instance, an `SLOAD` instruction loads the data from the current contracts storage.
+Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current `CallFrame` to the instruction. For instance, an `SLOAD` instruction loads the data from the current contracts storage.
 
-If we encounter a `CALL` or `STATICCALL` we create a new `CallFrame`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we go back to the previous `CallFrame`. To be sure, we also verify if the `depth` from the trace event matches our calculation. If not, we raise an Exception.
+If we encounter a call instruction (`CALL`, `STATICCALL`, `CALLCODE` or `DELEGATECALL`) we create a new `CallFrame`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we go back to the previous `CallFrame`. To be sure, we also verify if the `depth` from the trace event matches our calculation. If not, we raise an Exception.
 
 The `Instruction` includes:
 
@@ -75,10 +75,6 @@ The `Instruction` includes:
 !!! warning
 
     How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?
-
-!!! warning
-
-    How should we implement `DELEGATECALL` and `CALLCODE`? Split into `code_address` and `storage_address`?
 
 
 ## Analysis

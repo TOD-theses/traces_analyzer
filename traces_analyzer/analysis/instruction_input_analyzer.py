@@ -146,7 +146,7 @@ def to_key(instruction: Instruction) -> InstructionKeyWithInputs:
         stack_inputs = instruction.stack_inputs
 
     return InstructionKeyWithInputs(
-        address=instruction.call_frame.address,
+        address=instruction.call_frame.code_address,
         program_counter=instruction.program_counter,
         opcode=instruction.opcode,
         stack_inputs=stack_inputs,

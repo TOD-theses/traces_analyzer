@@ -6,8 +6,8 @@ from traces_analyzer.preprocessing.events_parser import TraceEvent
 
 def test_instruction_usage_analyzer():
     dummy_event = TraceEvent(-1, -1, [], -1)
-    root_frame = CallFrame(None, 1, "0xsender", "0xroot")
-    child_frame = CallFrame(root_frame, 2, "0xroot", "0xchild")
+    root_frame = CallFrame(None, 1, "0xsender", "0xroot", "0xroot")
+    child_frame = CallFrame(root_frame, 2, "0xroot", "0xchild", "0xchild")
 
     trace = [
         Unknown(TraceEvent(0, 0xAA, ["stack"], 1), dummy_event, root_frame),

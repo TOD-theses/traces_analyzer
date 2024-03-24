@@ -4,6 +4,8 @@ from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.events_parser import TraceEvent
 from traces_analyzer.preprocessing.instructions import (
     CALL,
+    CALLCODE,
+    DELEGATECALL,
     RETURN,
     REVERT,
     SELFDESTRUCT,
@@ -19,7 +21,8 @@ def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
         parent=None,
         depth=1,
         msg_sender="0xTODO_msg_sender",
-        address="0xTODO_address",
+        code_address="0xTODO_address",
+        storage_address="0xTODO_address",
     )
 
     events_iterator = events.__iter__()
@@ -43,13 +46,21 @@ def update_call_frame(
     instruction: Instruction,
     expected_depth: int,
 ):
-    # TODO: CALLCODE, DELEGATECALL
     if isinstance(instruction, (CALL, STATICCALL)):
         current_call_frame = CallFrame(
             parent=current_call_frame,
             depth=current_call_frame.depth + 1,
-            msg_sender=current_call_frame.address,
-            address=instruction.address,
+            msg_sender=current_call_frame.code_address,
+            code_address=instruction.address,
+            storage_address=instruction.address,
+        )
+    elif isinstance(instruction, (CALLCODE, DELEGATECALL)):
+        current_call_frame = CallFrame(
+            parent=current_call_frame,
+            depth=current_call_frame.depth + 1,
+            msg_sender=current_call_frame.code_address,
+            code_address=instruction.address,
+            storage_address=current_call_frame.storage_address,
         )
     elif isinstance(instruction, (STOP, RETURN, REVERT, SELFDESTRUCT)):
         if not current_call_frame.parent:

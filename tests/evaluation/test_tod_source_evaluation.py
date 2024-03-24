@@ -9,7 +9,9 @@ def test_tod_source_evaluation_found():
     sload_event = TraceEvent(1234, SLOAD.opcode, ["0x1122"], 0)
     event_first_trace = TraceEvent(1235, 0x0, ["0x10"], 0)
     event_second_trace = TraceEvent(1235, 0x0, ["0x20"], 0)
-    call_frame = CallFrame(parent=None, depth=0, msg_sender="0xsender", address="0xaddress")
+    call_frame = CallFrame(
+        parent=None, depth=0, msg_sender="0xsender", code_address="0xaddress", storage_address="0xaddress"
+    )
 
     tod_source = TODSource(
         found=True,

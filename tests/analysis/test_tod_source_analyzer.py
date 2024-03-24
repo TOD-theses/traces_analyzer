@@ -56,8 +56,8 @@ def test_tod_source_analyzer_with_traces(sample_traces_path):
         assert tod_source_first.opcode == tod_source_second.opcode == SLOAD.opcode
         assert tod_source_first.program_counter == tod_source_second.program_counter == 2401
         assert (
-            tod_source_first.call_frame.address
-            == tod_source_second.call_frame.address
+            tod_source_first.call_frame.code_address
+            == tod_source_second.call_frame.code_address
             == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
         )
         assert (
