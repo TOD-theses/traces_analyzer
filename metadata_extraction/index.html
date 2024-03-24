@@ -140,8 +140,8 @@
 <h3 id="parse-instructions">Parse <code>Instruction</code>s</h3>
 <p>Here, we parse the instructions and keep track in which contract they were executed.</p>
 <p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
-<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the currently executed contract is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
-<p>If we encounter a <code>CALL</code> or <code>STATICCALL</code> we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we go back to the previous <code>CallFrame</code>. To be sure, we also verify if the <code>depth</code> from the trace event matches our calculation. If not, we raise an Exception.</p>
+<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
+<p>If we encounter a call instruction (<code>CALL</code>, <code>STATICCALL</code>, <code>CALLCODE</code> or <code>DELEGATECALL</code>) we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we go back to the previous <code>CallFrame</code>. To be sure, we also verify if the <code>depth</code> from the trace event matches our calculation. If not, we raise an Exception.</p>
 <p>The <code>Instruction</code> includes:</p>
 <ul>
 <li>opcode</li>
@@ -154,10 +154,6 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>How should we implement <code>DELEGATECALL</code> and <code>CALLCODE</code>? Split into <code>code_address</code> and <code>storage_address</code>?</p>
 </div>
 <h2 id="analysis">Analysis</h2>
 <h3 id="instruction-effect-changes">Instruction effect changes</h3>
