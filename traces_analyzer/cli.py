@@ -1,5 +1,6 @@
 """CLI interface for traces_analyzer project."""
 
+import json
 import sys
 import time
 from pathlib import Path
@@ -20,18 +21,20 @@ def main():  # pragma: no cover
         quit()
 
     directory_path = Path(sys.argv[1]).resolve()
+    out_dir = Path("out")
+    out_dir.mkdir(exist_ok=True)
 
-    analyze_transactions_in_dir(directory_path)
+    analyze_transactions_in_dir(directory_path, out_dir)
 
 
-def analyze_transactions_in_dir(dir: Path):
+def analyze_transactions_in_dir(dir: Path, out_dir):
     bundle = DirectoryLoader(dir).load()
 
-    compare_traces(bundle.tx_victim.hash, (bundle.tx_victim.trace_one, bundle.tx_victim.trace_two))
-    compare_traces(bundle.tx_attack.hash, (bundle.tx_attack.trace_one, bundle.tx_attack.trace_two))
+    compare_traces(bundle.tx_victim.hash, (bundle.tx_victim.trace_one, bundle.tx_victim.trace_two), out_dir)
+    compare_traces(bundle.tx_attack.hash, (bundle.tx_attack.trace_one, bundle.tx_attack.trace_two), out_dir)
 
 
-def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]):
+def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]], out_dir: Path):
     print(f"Comparing traces for {tx_hash}")
 
     tod_source_analyzer = TODSourceAnalyzer()
@@ -58,5 +61,12 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]):
         ),
     ]
 
+    reports = {}
+
     for evaluation in evaluations:
         print(evaluation.cli_report())
+        dict_report = evaluation.dict_report()
+        reports[dict_report["evaluation_type"]] = dict_report["report"]
+    out_file_path = out_dir / (tx_hash + ".json")
+    out_file_path.write_text(json.dumps(reports, indent=2))
+    print(f"Saved report to {out_file_path}")
