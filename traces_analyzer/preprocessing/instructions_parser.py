@@ -14,15 +14,16 @@ from traces_analyzer.preprocessing.instructions import (
     Instruction,
     parse_instruction,
 )
+from traces_analyzer.preprocessing.precompiled_contracts import is_precompiled_contract
 
 
 def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
     call_frame = CallFrame(
         parent=None,
         depth=1,
-        msg_sender="0xTODO_msg_sender",
-        code_address="0xTODO_address",
-        storage_address="0xTODO_address",
+        msg_sender="0x1111111111111111111111111111111111111111",
+        code_address="0x1234123412341234123412341234123412341234",
+        storage_address="0x1234123412341234123412341234123412341234",
     )
 
     events_iterator = events.__iter__()
@@ -46,8 +47,10 @@ def update_call_frame(
     instruction: Instruction,
     expected_depth: int,
 ):
+    next_call_frame = current_call_frame
+
     if isinstance(instruction, (CALL, STATICCALL)):
-        current_call_frame = CallFrame(
+        next_call_frame = CallFrame(
             parent=current_call_frame,
             depth=current_call_frame.depth + 1,
             msg_sender=current_call_frame.code_address,
@@ -55,7 +58,7 @@ def update_call_frame(
             storage_address=instruction.address,
         )
     elif isinstance(instruction, (CALLCODE, DELEGATECALL)):
-        current_call_frame = CallFrame(
+        next_call_frame = CallFrame(
             parent=current_call_frame,
             depth=current_call_frame.depth + 1,
             msg_sender=current_call_frame.code_address,
@@ -68,12 +71,16 @@ def update_call_frame(
                 "Tried to return to parent call frame, while already being at the root."
                 f"{current_call_frame}. {instruction}"
             )
-        current_call_frame = current_call_frame.parent
+        next_call_frame = current_call_frame.parent
 
-    if current_call_frame.depth != expected_depth:
+    # precompiled contracts don't produce any trace events, so we automatically change the frame back to the current one
+    if is_precompiled_contract(next_call_frame.code_address):
+        next_call_frame = current_call_frame
+
+    if next_call_frame.depth != expected_depth:
         raise Exception(
-            f"Unexpected call depth: CallFrame has {current_call_frame.depth},"
-            f" expected {expected_depth}. {instruction}. {current_call_frame}"
+            f"Unexpected call depth: CallFrame has {next_call_frame.depth},"
+            f" expected {expected_depth}. {instruction}. {next_call_frame}"
         )
 
-    return current_call_frame
+    return next_call_frame

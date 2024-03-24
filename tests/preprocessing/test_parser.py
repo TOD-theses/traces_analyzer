@@ -52,11 +52,11 @@ def test_call_frame_parsing():
         return TraceEvent(1234, POP.opcode, ["0x1122"], depth)
 
     addr = {
-        "root": "0xTODO_address",
-        "call": "0xcall",
-        "delegatecall": "0xdelegatecall",
-        "staticcall": "0xstaticcall",
-        "callcode": "0xcallcode",
+        "root": "0x1234123412341234123412341234123412341234",
+        "call": "0x1111",
+        "delegatecall": "0x2222",
+        "staticcall": "0x3333",
+        "callcode": "0x4444",
     }
 
     test_events = [
@@ -126,3 +126,17 @@ def test_call_frame_parsing():
     # SELFDESTRUCT
     assert_code_addr(12, addr["root"])
     assert_storage_addr(12, addr["root"])
+
+
+def test_call_frame_ignores_precompiled_contracts():
+    precompiled_contract_addr = "0x1"
+    initial_code_addr = "0x1234123412341234123412341234123412341234"
+
+    test_events = [
+        TraceEvent(1234, CALL.opcode, ["0x0", "0x0", "0x0", "0x0", "0x0", precompiled_contract_addr, "0x0"], 1),
+        TraceEvent(1235, POP.opcode, [], 1),
+    ]
+
+    instructions = list(parse_instructions(test_events))
+
+    assert instructions[1].call_frame.code_address == initial_code_addr
