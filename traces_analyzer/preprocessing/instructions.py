@@ -4,6 +4,9 @@ from typing_extensions import Self
 
 from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.events_parser import TraceEvent
+from traces_analyzer.preprocessing.mnemonics import opcode_to_name
+
+INSTRUCTION_UNKNOWN_NAME = "UNKNOWN"
 
 
 class Instruction(ABC):
@@ -13,12 +16,22 @@ class Instruction(ABC):
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         self.opcode = event.op
+        self.name = opcode_to_name(self.opcode, INSTRUCTION_UNKNOWN_NAME)
         self.program_counter = event.pc
         self.call_frame = call_frame
 
     @classmethod
     def from_event(cls, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Self:
         return cls(event, next_event, call_frame)
+
+    def __str__(self) -> str:
+        return (
+            "<Instruction"
+            f" name={self.name}"
+            f" op={hex(self.opcode)}"
+            f" location={self.program_counter}@{self.call_frame.address}"
+            ">"
+        )
 
 
 class StackInstruction(Instruction):
