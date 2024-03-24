@@ -128,13 +128,28 @@ def test_call_frame_parsing():
     assert_storage_addr(12, addr["root"])
 
 
-def test_call_frame_ignores_precompiled_contracts():
-    precompiled_contract_addr = "0x1"
-    initial_code_addr = "0x1234123412341234123412341234123412341234"
+def test_call_frame_updates_on_depth_change():
+    call_target = "0x1111111111111111111111111111111111111111"
 
     test_events = [
-        TraceEvent(1234, CALL.opcode, ["0x0", "0x0", "0x0", "0x0", "0x0", precompiled_contract_addr, "0x0"], 1),
-        TraceEvent(1235, POP.opcode, [], 1),
+        TraceEvent(1234, CALL.opcode, ["0x0", "0x0", "0x0", "0x0", "0x0", call_target, "0x0"], depth=1),
+        TraceEvent(1235, POP.opcode, [], depth=2),
+    ]
+
+    instructions = list(parse_instructions(test_events))
+
+    assert instructions[1].call_frame.code_address == call_target
+
+
+def test_call_frame_does_not_update_with_same_depth():
+    # this is necessary for CALLs to externally owned contracts which don't create a new context
+    # and for precompiled contracts
+    initial_code_addr = "0x1234123412341234123412341234123412341234"
+    call_target = "0x1111111111111111111111111111111111111111"
+
+    test_events = [
+        TraceEvent(1234, CALL.opcode, ["0x0", "0x0", "0x0", "0x0", "0x0", call_target, "0x0"], depth=1),
+        TraceEvent(1235, POP.opcode, [], depth=1),
     ]
 
     instructions = list(parse_instructions(test_events))

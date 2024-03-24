@@ -14,7 +14,6 @@ from traces_analyzer.preprocessing.instructions import (
     Instruction,
     parse_instruction,
 )
-from traces_analyzer.preprocessing.precompiled_contracts import is_precompiled_contract
 
 
 def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
@@ -47,7 +46,8 @@ def update_call_frame(
     instruction: Instruction,
     expected_depth: int,
 ):
-    next_call_frame = current_call_frame
+    if current_call_frame.depth == expected_depth:
+        return current_call_frame
 
     if isinstance(instruction, (CALL, STATICCALL)):
         next_call_frame = CallFrame(
@@ -72,10 +72,12 @@ def update_call_frame(
                 f"{current_call_frame}. {instruction}"
             )
         next_call_frame = current_call_frame.parent
-
-    # precompiled contracts don't produce any trace events, so we automatically change the frame back to the current one
-    if is_precompiled_contract(next_call_frame.code_address):
-        next_call_frame = current_call_frame
+    else:
+        raise Exception(
+            "Could not change call frame: the trace showed a change in the call depth,"
+            "however the instruction should not change the depth."
+            f" Expected depth change from {expected_depth} to {current_call_frame.depth}. Instruction: {instruction}."
+        )
 
     if next_call_frame.depth != expected_depth:
         raise Exception(
