@@ -27,5 +27,7 @@ def test_instruction_usage_analyzer():
     for instruction in trace:
         analyzer.on_instruction(instruction)
 
-    assert analyzer.used_opcodes_per_contract["0xroot"] == {0xAA, 0xAB, 0xF1}
-    assert analyzer.used_opcodes_per_contract["0xchild"] == {0xAB, 0xAC, 0x0}
+    used_opcodes_per_contract = analyzer.get_used_opcodes_per_contract()
+
+    assert used_opcodes_per_contract["0xroot"] == {0xAA, 0xAB, 0xF1}
+    assert used_opcodes_per_contract["0xchild"] == {0xAB, 0xAC, 0x0}

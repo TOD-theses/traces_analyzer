@@ -34,8 +34,8 @@ def test_runner(sample_traces_path: Path):
         runner.run()
 
         # assert that analysis tools found something
-        assert len(instruction_usage_analyzer.one.used_opcodes_per_contract) == 4
-        assert len(instruction_usage_analyzer.two.used_opcodes_per_contract) == 4
+        assert len(instruction_usage_analyzer.one.get_used_opcodes_per_contract()) == 4
+        assert len(instruction_usage_analyzer.two.get_used_opcodes_per_contract()) == 4
 
         assert tod_source_analyzer.get_tod_source().found
 

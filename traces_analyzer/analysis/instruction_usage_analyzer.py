@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Mapping
 
 from typing_extensions import override
 
@@ -11,9 +12,12 @@ class InstructionUsageAnalyzer(SingleInstructionAnalyzer):
 
     def __init__(self) -> None:
         super().__init__()
-        self.used_opcodes_per_contract: dict[str, set[int]] = defaultdict(lambda: set())
+        self._used_opcodes_per_contract: dict[str, set[int]] = defaultdict(lambda: set())
 
     @override
     def on_instruction(self, instruction: Instruction):
         contract_address = instruction.call_frame.address
-        self.used_opcodes_per_contract[contract_address].add(instruction.opcode)
+        self._used_opcodes_per_contract[contract_address].add(instruction.opcode)
+
+    def get_used_opcodes_per_contract(self) -> Mapping[str, set[int]]:
+        return self._used_opcodes_per_contract
