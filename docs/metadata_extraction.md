@@ -45,7 +45,7 @@ Here is an example trace for an SLOAD instruction:
 }
 ```
 
-In general, we try not to load the whole trace into the memory. To achieve this goal, we iterate through the lines and process them on the go. We only keep the current events and forget all prior ones.
+The analyzers are built in a way, that they don't need access to the whole trace at once. This would allow to analyze the traces on the go, without loading all of them into the memory at the same time. However, currently it loads everything into the memory and the performance and memory did not cause issues.
 
 ### Map each JSON to a `TraceEvent`
 

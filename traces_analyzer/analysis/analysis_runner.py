@@ -20,10 +20,8 @@ class AnalysisRunner:
         self.trace_two = run_info.traces_jsons[1]
 
     def run(self):
-        # TODO: reimplement without parsing everything upfront
-        # likely also requires a rethinking of parse_events, maybe make it a class instead
-        # TODO: test how this covers the edge cases (eg if the last trace events are analyzed)
-
+        # NOTE: this reads all events into memory.
+        # if memory issues occur, remove the list(...) call. Maybe replace with itertools.tee
         trace_events_one = list(parse_events(self.trace_one))
         trace_events_two = list(parse_events(self.trace_two))
 
