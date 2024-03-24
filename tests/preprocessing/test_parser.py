@@ -156,8 +156,9 @@ def test_call_frame_does_not_update_with_same_depth():
 
     assert instructions[1].call_frame.code_address == initial_code_addr
 
+
 def test_call_inputs_memory_parsing():
-    stack = ["0x0","0x4bb","0x24","0xb","0x0","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2","0x940f"]
+    stack = ["0x0", "0x4bb", "0x24", "0xb", "0x0", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "0x940f"]
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
 
     call_event = TraceEvent(pc=1234, op=CALL.opcode, stack=stack, memory=memory, depth=1)
@@ -165,4 +166,4 @@ def test_call_inputs_memory_parsing():
     call_instruction = instructions[0]
 
     assert isinstance(call_instruction, CALL)
-    assert call_instruction.call_input == '2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000'
+    assert call_instruction.memory_input == "2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000"

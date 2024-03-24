@@ -68,8 +68,10 @@ The `Instruction` includes:
 - opcode
 - program_counter
 - call_frame
-- [stack_inputs] (if it's a `StackInstruction`)
-- [stack_outputs] (if it's a `StackInstruction`)
+- stack_inputs
+- stack_outputs
+- memory_input
+- memory_output
 - [additional fields based on the instruction type, eg `key` for `SLOAD`]
 
 !!! warning

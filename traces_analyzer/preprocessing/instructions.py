@@ -14,11 +14,29 @@ class Instruction(ABC):
     # will be overwritten by the trace events opcode on an instance level
     opcode: int = -1
 
+    stack_input_count = 0
+    # stack outputs are only parsed from the next events stack
+    # so we can't use this for eg CALL, where the output is only known many events later
+    stack_output_count = 0
+
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         self.opcode = event.op
         self.name = opcode_to_name(self.opcode, INSTRUCTION_UNKNOWN_NAME)
         self.program_counter = event.pc
         self.call_frame = call_frame
+
+        self._parse_inputs(event, next_event)
+
+    def _parse_inputs(self, event: TraceEvent, next_event: TraceEvent):
+        self.stack_inputs: tuple[str, ...] = ()
+        self.stack_outputs: tuple[str, ...] = ()
+        self.memory_input: str | None = None
+        self.memory_output: str | None = None
+
+        if self.stack_input_count:
+            self.stack_inputs = tuple(reversed(event.stack[-self.stack_input_count :]))
+        if self.stack_output_count:
+            self.stack_outputs = tuple(reversed(next_event.stack[-self.stack_output_count :]))
 
     @classmethod
     def from_event(cls, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Self:
@@ -34,30 +52,11 @@ class Instruction(ABC):
         )
 
 
-class StackInstruction(Instruction):
-    """Instruction that takes arguments from the stack and/or pushes to the next events stack"""
-
-    stack_input_count = 0
-    # stack outputs are only parsed from the next events stack
-    # so we can't use this for eg CALL, where the output is only known many events later
-    stack_output_count = 0
-
-    def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
-        super().__init__(event, next_event, call_frame)
-        self.stack_inputs: tuple[str, ...] = ()
-        self.stack_outputs: tuple[str, ...] = ()
-
-        if self.stack_input_count:
-            self.stack_inputs = tuple(reversed(event.stack[-self.stack_input_count :]))
-        if self.stack_output_count:
-            self.stack_outputs = tuple(reversed(next_event.stack[-self.stack_output_count :]))
-
-
 class Unknown(Instruction):
     pass
 
 
-class CALL(StackInstruction):
+class CALL(Instruction):
     opcode = 0xF1
     stack_input_count = 7
 
@@ -71,10 +70,10 @@ class CALL(StackInstruction):
         self.ret_offset = self.stack_inputs[5]
         self.ret_size = self.stack_inputs[6]
 
-        self.call_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
 
 
-class STATICCALL(StackInstruction):
+class STATICCALL(Instruction):
     opcode = 0xFA
     stack_input_count = 6
 
@@ -87,8 +86,10 @@ class STATICCALL(StackInstruction):
         self.ret_offset = self.stack_inputs[4]
         self.ret_size = self.stack_inputs[5]
 
+        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
 
-class DELEGATECALL(StackInstruction):
+
+class DELEGATECALL(Instruction):
     opcode = 0xF4
     stack_input_count = 6
 
@@ -101,8 +102,10 @@ class DELEGATECALL(StackInstruction):
         self.ret_offset = self.stack_inputs[4]
         self.ret_size = self.stack_inputs[5]
 
+        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
 
-class CALLCODE(StackInstruction):
+
+class CALLCODE(Instruction):
     opcode = 0xF2
     stack_input_count = 7
 
@@ -116,27 +119,29 @@ class CALLCODE(StackInstruction):
         self.ret_offset = self.stack_inputs[5]
         self.ret_size = self.stack_inputs[6]
 
+        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+
 
 class STOP(Instruction):
     opcode = 0x0
 
 
-class RETURN(StackInstruction):
+class RETURN(Instruction):
     opcode = 0xF3
     stack_input_count = 2
 
 
-class REVERT(StackInstruction):
+class REVERT(Instruction):
     opcode = 0xFD
     stack_input_count = 2
 
 
-class SELFDESTRUCT(StackInstruction):
+class SELFDESTRUCT(Instruction):
     opcode = 0xFF
     stack_input_count = 1
 
 
-class SLOAD(StackInstruction):
+class SLOAD(Instruction):
     opcode = 0x54
     stack_input_count = 1
     stack_output_count = 1
@@ -147,7 +152,7 @@ class SLOAD(StackInstruction):
         self.result = self.stack_outputs[0]
 
 
-class POP(StackInstruction):
+class POP(Instruction):
     opcode = 0x50
     stack_input_count = 1
 

@@ -7,7 +7,7 @@ from typing import Iterable
 from typing_extensions import override
 
 from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
-from traces_analyzer.preprocessing.instructions import Instruction, StackInstruction
+from traces_analyzer.preprocessing.instructions import Instruction
 
 
 @dataclass(frozen=True)
@@ -141,9 +141,7 @@ def flatten(matrix: list[list]) -> list:
 
 
 def to_key(instruction: Instruction) -> InstructionKeyWithInputs:
-    stack_inputs: tuple[str, ...] = ()
-    if isinstance(instruction, StackInstruction):
-        stack_inputs = instruction.stack_inputs
+    stack_inputs: tuple[str, ...] = instruction.stack_inputs
 
     return InstructionKeyWithInputs(
         address=instruction.call_frame.code_address,
