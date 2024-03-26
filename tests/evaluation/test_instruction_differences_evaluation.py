@@ -1,11 +1,10 @@
 from traces_analyzer.analysis.instruction_input_analyzer import (
-    InputChange,
+    MemoryInputChange,
+    StackInputChange,
     InstructionExecution,
     InstructionInputChange,
 )
-from traces_analyzer.analysis.tod_source_analyzer import TODSource
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
-from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.preprocessing.instructions import CALL, SLOAD
 
 
@@ -15,12 +14,15 @@ def test_instruction_differences_evaluation():
             address="0xtest",
             program_counter=5,
             opcode=CALL.opcode,
-            first_input=("val_1", "val_2", "val_3"),
-            second_input=("val_1", "val_2_x", "val_3_x"),
-            input_changes=[
-                InputChange(index=1, first_value="val_2", second_value="val_2_x"),
-                InputChange(index=2, first_value="val_3", second_value="val_3_x"),
+            first_stack_input=("val_1", "val_2", "val_3"),
+            second_stack_input=("val_1", "val_2_x", "val_3_x"),
+            first_memory_input="1111",
+            second_memory_input="2222",
+            stack_input_changes=[
+                StackInputChange(index=1, first_value="val_2", second_value="val_2_x"),
+                StackInputChange(index=2, first_value="val_3", second_value="val_3_x"),
             ],
+            memory_input_change=MemoryInputChange("1111", "2222"),
         )
     ]
     only_first = [
@@ -51,9 +53,17 @@ def test_instruction_differences_evaluation():
                     "instruction": {
                         "opcode": CALL.opcode,
                     },
-                    "first_input": ("val_1", "val_2", "val_3"),
-                    "second_input": ("val_1", "val_2_x", "val_3_x"),
-                    "input_changes": [
+                    "inputs": [
+                        {
+                            "stack": ("val_1", "val_2", "val_3"),
+                            "memory": "1111",
+                        },
+                        {
+                            "stack": ("val_1", "val_2_x", "val_3_x"),
+                            "memory": "2222",
+                        },
+                    ],
+                    "stack_input_changes": [
                         {
                             "index": 1,
                             "first_value": "val_2",
@@ -65,6 +75,10 @@ def test_instruction_differences_evaluation():
                             "second_value": "val_3_x",
                         },
                     ],
+                    "memory_input_change": {
+                        "first_value": "1111",
+                        "second_value": "2222",
+                    },
                 }
             ],
             "occurrence_changes": {

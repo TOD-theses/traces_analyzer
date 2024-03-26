@@ -44,13 +44,13 @@ def test_instruction_input_analyzer():
     # check if it detected the different CALL values
     instruction_input_changes = analyzer.get_instructions_with_different_inputs()
     assert len(instruction_input_changes) == 1
-    assert len(instruction_input_changes[0].input_changes) == 1
+    assert len(instruction_input_changes[0].stack_input_changes) == 1
 
     assert instruction_input_changes[0].address == "0xroot"
-    assert len(instruction_input_changes[0].input_changes) == 1
-    assert instruction_input_changes[0].input_changes[0].index == 2
-    assert instruction_input_changes[0].input_changes[0].first_value == first_call_value
-    assert instruction_input_changes[0].input_changes[0].second_value == second_call_value
+    assert len(instruction_input_changes[0].stack_input_changes) == 1
+    assert instruction_input_changes[0].stack_input_changes[0].index == 2
+    assert instruction_input_changes[0].stack_input_changes[0].first_value == first_call_value
+    assert instruction_input_changes[0].stack_input_changes[0].second_value == second_call_value
 
     # check if it detected the additional Unkown(opcode=0xEE) instruction in the 2nd trace
     only_first_executions, only_second_executions = analyzer.get_instructions_only_executed_by_one_trace()
@@ -58,6 +58,35 @@ def test_instruction_input_analyzer():
     assert len(only_first_executions) == 0
     assert len(only_second_executions) == 1
     assert only_second_executions[0].opcode == 0xEE
+
+
+def test_instruction_input_analyzer_reports_stack_differences():
+    memory_one = "0000000011110000"
+    memory_two = "0000000022220000"
+    mem_offset = "0x4"
+    mem_size = "0x2"
+
+    common_stack = list(reversed(["0x0", "0xchild", "0x0", mem_offset, mem_size, "0x0", "0x0"]))
+    dummy_event = TraceEvent(-1, -1, [], -1)
+    root_frame = CallFrame(None, 1, "0xsender", "0xroot", "0xroot")
+
+    instruction_one = CALL(TraceEvent(1, CALL.opcode, common_stack, 1, memory_one), dummy_event, root_frame)
+    instruction_two = CALL(TraceEvent(1, CALL.opcode, common_stack, 1, memory_two), dummy_event, root_frame)
+
+    # run analysis
+    analyzer = InstructionInputAnalyzer()
+    for a, b in zip_longest([instruction_one], [instruction_two]):
+        analyzer.on_instructions(a, b)
+
+    # check if it detected the different CALL inputs
+    instruction_input_changes = analyzer.get_instructions_with_different_inputs()
+    assert len(instruction_input_changes) == 1
+    change = instruction_input_changes[0]
+
+    assert change.opcode == CALL.opcode
+    assert change.memory_input_change is not None
+    assert change.memory_input_change.first_value == "1111"
+    assert change.memory_input_change.second_value == "2222"
 
 
 def test_instruction_input_analyzer_with_traces(sample_traces_path):

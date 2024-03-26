@@ -65,11 +65,12 @@ class InstructionDifferencesEvaluation(Evaluation):
                 "Location:\n"
                 f"> address: {change.address}\n"
                 f"> pc: {change.program_counter}\n"
-                "Inputs:\n"
-                f"> first trace: ({','.join(change.first_input)})\n"
-                f"> second trace: ({','.join(change.second_input)})\n"
-                f"> changes: " + str(change.input_changes) + "\n"
+                "Change:\n"
             )
+            if change.memory_input_change:
+                result += f'> memory: "{change.first_memory_input}" vs "{change.second_memory_input}"\n'
+            if change.stack_input_changes:
+                result += "> stack: " + str(change.stack_input_changes) + "\n"
         return result
 
     def _cli_report_occurrence_changes(self, changes: list[InstructionExecution]) -> str:
@@ -107,7 +108,10 @@ def instruction_input_change_to_dict(input_change: InstructionInputChange) -> di
         "instruction": {
             "opcode": input_change.opcode,
         },
-        "first_input": input_change.first_input,
-        "second_input": input_change.second_input,
-        "input_changes": [asdict(change) for change in input_change.input_changes],
+        "inputs": [
+            {"stack": input_change.first_stack_input, "memory": input_change.first_memory_input},
+            {"stack": input_change.second_stack_input, "memory": input_change.second_memory_input},
+        ],
+        "stack_input_changes": [asdict(change) for change in input_change.stack_input_changes],
+        "memory_input_change": asdict(input_change.memory_input_change) if input_change.memory_input_change else None,
     }

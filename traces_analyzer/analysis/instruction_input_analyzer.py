@@ -20,6 +20,7 @@ class InstructionKey:
 @dataclass(frozen=True)
 class InstructionKeyWithInputs(InstructionKey):
     stack_inputs: tuple[str, ...]
+    memory_input: str | None
 
     def without_inputs(self) -> InstructionKey:
         return InstructionKey(
@@ -30,10 +31,16 @@ class InstructionKeyWithInputs(InstructionKey):
 
 
 @dataclass(frozen=True)
-class InputChange:
+class StackInputChange:
     index: int
     first_value: str
     second_value: str
+
+
+@dataclass(frozen=True)
+class MemoryInputChange:
+    first_value: str | None
+    second_value: str | None
 
 
 @dataclass(frozen=True)
@@ -44,9 +51,12 @@ class InstructionInputChange:
     program_counter: int
     opcode: int
 
-    first_input: tuple[str, ...]
-    second_input: tuple[str, ...]
-    input_changes: list[InputChange]
+    first_stack_input: tuple[str, ...]
+    second_stack_input: tuple[str, ...]
+    first_memory_input: str | None
+    second_memory_input: str | None
+    stack_input_changes: list[StackInputChange]
+    memory_input_change: MemoryInputChange | None
 
 
 @dataclass
@@ -141,13 +151,12 @@ def flatten(matrix: list[list]) -> list:
 
 
 def to_key(instruction: Instruction) -> InstructionKeyWithInputs:
-    stack_inputs: tuple[str, ...] = instruction.stack_inputs
-
     return InstructionKeyWithInputs(
         address=instruction.call_frame.code_address,
         program_counter=instruction.program_counter,
         opcode=instruction.opcode,
-        stack_inputs=stack_inputs,
+        stack_inputs=instruction.stack_inputs,
+        memory_input=instruction.memory_input,
     )
 
 
@@ -184,16 +193,24 @@ def get_additional_keys_first_group(
 def create_input_change(
     first_key: InstructionKeyWithInputs, second_key: InstructionKeyWithInputs
 ) -> InstructionInputChange:
-    input_changes: list[InputChange] = []
+    stack_input_changes: list[StackInputChange] = []
+    memory_change: MemoryInputChange | None = None
+
     for i, (first_input, second_input) in enumerate(zip_longest(first_key.stack_inputs, second_key.stack_inputs)):
         if first_input != second_input:
-            input_changes.append(InputChange(index=i, first_value=first_input, second_value=second_input))
+            stack_input_changes.append(StackInputChange(index=i, first_value=first_input, second_value=second_input))
+
+    if first_key.memory_input != second_key.memory_input:
+        memory_change = MemoryInputChange(first_key.memory_input, second_key.memory_input)
 
     return InstructionInputChange(
         address=first_key.address,
         program_counter=first_key.program_counter,
         opcode=first_key.opcode,
-        first_input=first_key.stack_inputs,
-        second_input=second_key.stack_inputs,
-        input_changes=input_changes,
+        first_stack_input=first_key.stack_inputs,
+        second_stack_input=second_key.stack_inputs,
+        first_memory_input=first_key.memory_input,
+        second_memory_input=second_key.memory_input,
+        stack_input_changes=stack_input_changes,
+        memory_input_change=memory_change,
     )
