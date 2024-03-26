@@ -32,10 +32,6 @@ class AnalysisRunner:
         instructions_one = parse_instructions(trace_events_one_copy)
         instructions_two = parse_instructions(trace_events_two_copy)
 
-        current_event_one = next(trace_events_one)
-        current_event_two = next(trace_events_two)
-
-        # for both traces, take current instructions, and current+next trace events
         for instr_a, instr_b, next_event_one, next_event_two in zip_longest(
             instructions_one,
             instructions_two,
@@ -44,14 +40,12 @@ class AnalysisRunner:
         ):
             self._process_step(
                 AnalysisStepDoubleTrace(
-                    trace_events_one=(current_event_one, next_event_one),
-                    trace_events_two=(current_event_two, next_event_two),
+                    trace_event_one=next_event_one,
+                    trace_event_two=next_event_two,
                     instruction_one=instr_a,
                     instruction_two=instr_b,
                 )
             )
-            current_event_one = next_event_one
-            current_event_two = next_event_two
 
     def _process_step(self, step: AnalysisStepDoubleTrace):
         for analyzer in self.analyzers:

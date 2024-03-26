@@ -17,19 +17,16 @@ class TODSourceAnalyzer(DoubleTraceAnalyzer):
     def __init__(self) -> None:
         super().__init__()
         self._tod_source_instructions: tuple[Instruction, Instruction] | None = None
+        self._previous_instructions: tuple[Instruction, Instruction] | None = None
 
     def on_analysis_step(self, step: AnalysisStepDoubleTrace):
         if self._tod_source_instructions:
             return
 
-        if step.trace_events_one[0] != step.trace_events_two[0]:
-            raise Exception(
-                "Error at determining TOD source. "
-                f"Events differed before source was determined: {step.trace_events_one[0]} {step.trace_events_two[0]}"
-            )
+        if step.trace_event_one != step.trace_event_two:
+            self._tod_source_instructions = self._previous_instructions
 
-        if step.trace_events_one[1] != step.trace_events_two[1]:
-            self._tod_source_instructions = step.instruction_one, step.instruction_two
+        self._previous_instructions = (step.instruction_one, step.instruction_two)
 
     def get_tod_source(self) -> TODSource:
         if not self._tod_source_instructions:

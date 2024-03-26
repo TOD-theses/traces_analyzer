@@ -12,7 +12,7 @@ from traces_analyzer.preprocessing.instructions import Instruction
 class AnalysisStepSingleTrace:
     """Info about the current step"""
 
-    trace_events: tuple[TraceEvent, TraceEvent | None]
+    trace_event: TraceEvent | None
     instruction: Instruction
 
 
@@ -20,10 +20,10 @@ class AnalysisStepSingleTrace:
 class AnalysisStepDoubleTrace:
     """Info about the current step and if available the next step"""
 
-    trace_events_one: tuple[TraceEvent, TraceEvent | None]
+    trace_event_one: TraceEvent | None
     instruction_one: Instruction
 
-    trace_events_two: tuple[TraceEvent, TraceEvent | None]
+    trace_event_two: TraceEvent | None
     instruction_two: Instruction
 
 
@@ -51,8 +51,8 @@ class SingleToDoubleTraceAnalyzer(DoubleTraceAnalyzer, Generic[A]):
 
     @override
     def on_analysis_step(self, step: AnalysisStepDoubleTrace):
-        single_step_one = AnalysisStepSingleTrace(trace_events=step.trace_events_one, instruction=step.instruction_one)
-        single_step_two = AnalysisStepSingleTrace(trace_events=step.trace_events_two, instruction=step.instruction_one)
+        single_step_one = AnalysisStepSingleTrace(trace_event=step.trace_event_one, instruction=step.instruction_one)
+        single_step_two = AnalysisStepSingleTrace(trace_event=step.trace_event_two, instruction=step.instruction_one)
 
         # TODO: consider to only call these steps if the single steps are non-empty
         self.one.on_analysis_step(single_step_one)
@@ -61,8 +61,6 @@ class SingleToDoubleTraceAnalyzer(DoubleTraceAnalyzer, Generic[A]):
 
 class SingleInstructionAnalyzer(SingleTraceAnalyzer):
     def on_analysis_step(self, step: AnalysisStepSingleTrace):
-        # TODO: according to the types this should not be necessary
-        # but probably for the last step it is called with None?
         if step.instruction:
             self.on_instruction(step.instruction)
 
@@ -87,8 +85,8 @@ class TraceEventComparisonAnalyzer(DoubleTraceAnalyzer):
         self.on_trace_events_history(
             step.instruction_one,
             step.instruction_two,
-            step.trace_events_one,
-            step.trace_events_two,
+            step.trace_event_one,
+            step.trace_event_two,
         )
 
     @abstractmethod
@@ -96,8 +94,8 @@ class TraceEventComparisonAnalyzer(DoubleTraceAnalyzer):
         self,
         first_instruction: Instruction,
         second_instruction: Instruction,
-        first_events: tuple[TraceEvent, TraceEvent | None],
-        second_events: tuple[TraceEvent, TraceEvent | None],
+        first_event: TraceEvent | None,
+        second_event: TraceEvent | None,
     ):
         """Hook each instruction of two traces and the current and next TraceEvents"""
         pass

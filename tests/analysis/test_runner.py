@@ -4,6 +4,7 @@ from traces_analyzer.analysis.instruction_input_analyzer import InstructionInput
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.analysis.analysis_runner import RunInfo, AnalysisRunner
+from traces_analyzer.preprocessing.instructions import SLOAD
 
 
 def test_runner(sample_traces_path: Path):
@@ -38,6 +39,7 @@ def test_runner(sample_traces_path: Path):
         assert len(instruction_usage_analyzer.two.get_used_opcodes_per_contract()) == 4
 
         assert tod_source_analyzer.get_tod_source().found
+        assert tod_source_analyzer.get_tod_source().instruction_one.opcode == SLOAD.opcode
 
         _, only_second = instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
         assert only_second

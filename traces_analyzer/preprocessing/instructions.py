@@ -157,6 +157,11 @@ class POP(Instruction):
     stack_input_count = 1
 
 
+class PUSH0(Instruction):
+    opcode = 0x5F
+    stack_output_count = 1
+
+
 DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, REVERT, SELFDESTRUCT, STATICCALL, CALLCODE, DELEGATECALL, POP]
 OPCODE_TO_INSTRUCTION_TYPE: dict[int, type[Instruction]] = dict((i.opcode, i) for i in DEFINED_INSTRUCTIONS)
 
