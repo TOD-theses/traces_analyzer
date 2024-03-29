@@ -1,6 +1,10 @@
 # analysis output
 out/
 
+# traces
+traces/**/*
+sample_traces/**/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
