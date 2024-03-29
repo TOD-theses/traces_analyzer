@@ -1,3 +1,4 @@
+import pytest
 from traces_analyzer.preprocessing.instructions import (
     CALL,
     CALLCODE,
@@ -11,7 +12,7 @@ from traces_analyzer.preprocessing.instructions import (
     STOP,
 )
 from traces_analyzer.preprocessing.events_parser import TraceEvent, parse_events
-from traces_analyzer.preprocessing.instructions_parser import parse_instructions
+from traces_analyzer.preprocessing.instructions_parser import UnexpectedDepthChange, parse_instructions
 
 
 def test_parse_traces(sample_traces_path):
@@ -44,8 +45,10 @@ def test_parse_traces(sample_traces_path):
         assert sloads[0].key == "0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc"
         assert sloads[0].result == "0x1"
 
+
 def test_parser_empty_events():
     assert list(parse_instructions([])) == []
+
 
 def test_call_frame_parsing():
     # a -> CALL -> b -> DELEGATECALL -> c -> STATICCALL -> d -> CALLCODE -> e
@@ -157,6 +160,32 @@ def test_call_frame_does_not_update_with_same_depth():
     instructions = list(parse_instructions(test_events))
 
     assert instructions[1].call_frame.code_address == initial_code_addr
+
+
+def test_call_frame_makes_exceptional_halt():
+    # we assume an exceptional halt if the depth decreases by one
+    initial_code_addr = "0x1234123412341234123412341234123412341234"
+    call_target = "0x1111111111111111111111111111111111111111"
+
+    test_events = [
+        TraceEvent(1234, CALL.opcode, ["0x0", "0x0", "0x0", "0x0", "0x0", call_target, "0x0"], depth=1),
+        TraceEvent(1234, POP.opcode, [], depth=2),
+        TraceEvent(1235, POP.opcode, [], depth=1),
+    ]
+
+    instructions = list(parse_instructions(test_events))
+
+    assert instructions[2].call_frame.code_address == initial_code_addr
+
+
+def test_call_frame_parsing_throws_on_unexpected_depth_change():
+    test_events = [
+        TraceEvent(1234, POP.opcode, [], depth=1),
+        TraceEvent(1235, POP.opcode, [], depth=2),
+    ]
+
+    with pytest.raises(UnexpectedDepthChange):
+        list(parse_instructions(test_events))
 
 
 def test_call_inputs_memory_parsing():

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import TypeGuard
 
 from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.events_parser import TraceEvent
@@ -45,6 +46,10 @@ def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
     yield parse_instruction(current_event, None, call_frame)  # type: ignore[arg-type]
 
 
+class UnexpectedDepthChange(Exception):
+    pass
+
+
 def update_call_frame(
     current_call_frame: CallFrame,
     instruction: Instruction,
@@ -53,7 +58,7 @@ def update_call_frame(
     if current_call_frame.depth == expected_depth:
         return current_call_frame
 
-    if isinstance(instruction, (CALL, STATICCALL)):
+    if enters_call_frame_normal(instruction):
         next_call_frame = CallFrame(
             parent=current_call_frame,
             depth=current_call_frame.depth + 1,
@@ -61,7 +66,7 @@ def update_call_frame(
             code_address=instruction.address,
             storage_address=instruction.address,
         )
-    elif isinstance(instruction, (CALLCODE, DELEGATECALL)):
+    elif enters_call_frame_without_storage(instruction):
         next_call_frame = CallFrame(
             parent=current_call_frame,
             depth=current_call_frame.depth + 1,
@@ -69,18 +74,18 @@ def update_call_frame(
             code_address=instruction.address,
             storage_address=current_call_frame.storage_address,
         )
-    elif isinstance(instruction, (STOP, RETURN, REVERT, SELFDESTRUCT)):
+    elif makes_normal_halt(instruction) or makes_exceptional_halt(current_call_frame.depth, expected_depth):
         if not current_call_frame.parent:
             raise Exception(
                 "Tried to return to parent call frame, while already being at the root."
-                f"{current_call_frame}. {instruction}"
+                f" {current_call_frame}. {instruction}"
             )
         next_call_frame = current_call_frame.parent
     else:
-        raise Exception(
+        raise UnexpectedDepthChange(
             "Could not change call frame: the trace showed a change in the call depth,"
-            "however the instruction should not change the depth."
-            f" Expected depth change from {expected_depth} to {current_call_frame.depth}. Instruction: {instruction}."
+            " however the instruction should not change the depth."
+            f" Expected depth change from {current_call_frame.depth} to {expected_depth}. Instruction: {instruction}."
         )
 
     if next_call_frame.depth != expected_depth:
@@ -90,3 +95,19 @@ def update_call_frame(
         )
 
     return next_call_frame
+
+
+def enters_call_frame_normal(instruction: Instruction) -> TypeGuard[CALL | STATICCALL]:
+    return isinstance(instruction, (CALL, STATICCALL))
+
+
+def enters_call_frame_without_storage(instruction: Instruction) -> TypeGuard[DELEGATECALL | CALLCODE]:
+    return isinstance(instruction, (DELEGATECALL, CALLCODE))
+
+
+def makes_normal_halt(instruction: Instruction) -> TypeGuard[STOP | REVERT | RETURN | SELFDESTRUCT]:
+    return isinstance(instruction, (STOP, REVERT, RETURN, SELFDESTRUCT))
+
+
+def makes_exceptional_halt(current_depth: int, expected_depth: int):
+    return expected_depth == current_depth - 1
