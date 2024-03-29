@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 from typing import Iterable
 
+from tqdm import tqdm
+
 from traces_analyzer.analysis.analysis_runner import AnalysisRunner, RunInfo
 from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
@@ -21,24 +23,40 @@ from traces_analyzer.preprocessing.instructions import CALL, STATICCALL
 
 def main():  # pragma: no cover
     if not len(sys.argv) > 1:
-        print("Please provide the directory path")
+        print("Please provide at least one directory path")
         quit()
 
-    directory_path = Path(sys.argv[1]).resolve()
+    directories = sys.argv[1:]
+    directory_paths = [Path(dir) for dir in directories]
+
     out_dir = Path("out")
     out_dir.mkdir(exist_ok=True)
 
-    analyze_transactions_in_dir(directory_path, out_dir)
+    for path in tqdm(directory_paths):
+        analyze_transactions_in_dir(path, out_dir, False)
 
 
-def analyze_transactions_in_dir(dir: Path, out_dir):
+def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: bool):
     bundle = DirectoryLoader(dir).load()
 
-    compare_traces(bundle.tx_victim.hash, (bundle.tx_victim.trace_one, bundle.tx_victim.trace_two), out_dir)
-    compare_traces(bundle.tx_attack.hash, (bundle.tx_attack.trace_one, bundle.tx_attack.trace_two), out_dir)
+    evaluations_victim = compare_traces(
+        bundle.tx_victim.hash, (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse)
+    )
+    evaluations_attacker = compare_traces(
+        bundle.tx_attack.hash, (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse)
+    )
+
+    save_evaluations(evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json")
+    save_evaluations(evaluations_attacker, out_dir / f"{bundle.id}_{bundle.tx_attack.hash}.json")
+
+    if print_evaluations:
+        for evaluation in evaluations_victim:
+            print(evaluation.cli_report())
+        for evaluation in evaluations_attacker:
+            print(evaluation.cli_report())
 
 
-def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]], out_dir: Path):
+def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]) -> list[Evaluation]:
     print(f"Comparing traces for {tx_hash}")
 
     tod_source_analyzer = TODSourceAnalyzer()
@@ -56,8 +74,6 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]], ou
 
     print(f"Finished analysis in {int((time.time() - start) * 1000)}ms")
 
-    print("Results:\n")
-
     evaluations: list[Evaluation] = [
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
         InstructionDifferencesEvaluation(
@@ -71,13 +87,15 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]], ou
         ),
     ]
 
+    return evaluations
+
+
+def save_evaluations(evaluations: list[Evaluation], path: Path):
     reports = {}
 
     for evaluation in evaluations:
-        print(evaluation.cli_report())
         dict_report = evaluation.dict_report()
         reports[dict_report["evaluation_type"]] = dict_report["report"]
 
-    out_file_path = out_dir / (tx_hash + ".json")
-    out_file_path.write_text(json.dumps(reports, indent=2))
-    print(f"Saved report to {out_file_path}")
+    path.write_text(json.dumps(reports, indent=2))
+    print(f"Saved report to {path}")

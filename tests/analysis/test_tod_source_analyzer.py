@@ -7,33 +7,33 @@ from traces_analyzer.preprocessing.events_parser import TraceEvent, parse_events
 
 
 def test_tod_source_analyzer_with_traces(sample_traces_path):
-    trace_normal_path = (
+    trace_actual_path = (
         sample_traces_path
         / "62a8b9ece30161692b68cbb5"
-        / "trace_normal"
+        / "actual"
         / "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0.jsonl"
     )
-    trace_attack_path = (
+    trace_reverse_path = (
         sample_traces_path
         / "62a8b9ece30161692b68cbb5"
-        / "trace_attack"
+        / "reverse"
         / "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0.jsonl"
     )
 
-    with open(trace_normal_path) as trace_normal_file, open(trace_attack_path) as trace_attack_file:
-        trace_normal_events = list(parse_events(trace_normal_file))
-        trace_attack_events = list(parse_events(trace_attack_file))
+    with open(trace_reverse_path) as trace_reverse_file, open(trace_actual_path) as trace_actual_file:
+        trace_actual_events = list(parse_events(trace_actual_file))
+        trace_reverse_events = list(parse_events(trace_reverse_file))
 
-        instructions_normal = list(parse_instructions(trace_normal_events))
-        instructions_attack = list(parse_instructions(trace_attack_events))
+        instructions_actual = list(parse_instructions(trace_actual_events))
+        instructions_reverse = list(parse_instructions(trace_reverse_events))
 
         analyzer = TODSourceAnalyzer()
 
         for instr_a, instr_b, event_a, event_b in zip_longest(
-            instructions_normal,
-            instructions_attack,
-            trace_normal_events,
-            trace_attack_events,
+            instructions_reverse,
+            instructions_actual,
+            trace_reverse_events,
+            trace_actual_events,
         ):
             analyzer.on_analysis_step(
                 AnalysisStepDoubleTrace(

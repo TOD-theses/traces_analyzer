@@ -18,7 +18,7 @@ def test_parse_traces(sample_traces_path):
     trace_path = (
         sample_traces_path
         / "62a8b9ece30161692b68cbb5"
-        / "trace_attack"
+        / "actual"
         / "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0.jsonl"
     )
     trace_path = trace_path.absolute()
