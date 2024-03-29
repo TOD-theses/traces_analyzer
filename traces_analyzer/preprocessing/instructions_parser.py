@@ -26,7 +26,11 @@ def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
     )
 
     events_iterator = events.__iter__()
-    current_event = next(events_iterator)
+    try:
+        current_event = next(events_iterator)
+    except StopIteration:
+        # no events to parse
+        return []
 
     for next_event in events_iterator:
         instruction = parse_instruction(current_event, next_event, call_frame)

@@ -44,6 +44,8 @@ def test_parse_traces(sample_traces_path):
         assert sloads[0].key == "0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc"
         assert sloads[0].result == "0x1"
 
+def test_parser_empty_events():
+    assert list(parse_instructions([])) == []
 
 def test_call_frame_parsing():
     # a -> CALL -> b -> DELEGATECALL -> c -> STATICCALL -> d -> CALLCODE -> e
