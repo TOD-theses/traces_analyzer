@@ -25,10 +25,13 @@ def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
         obj = json.loads(line)
         if "pc" not in obj:
             continue
+        memory = None
+        if "memory" in obj:
+            memory = obj["memory"].removeprefix('0x')
         yield TraceEvent(
             pc=obj["pc"],
             op=obj["op"],
             stack=obj["stack"],
-            memory=obj.get("memory"),
+            memory=memory,
             depth=obj["depth"],
         )
