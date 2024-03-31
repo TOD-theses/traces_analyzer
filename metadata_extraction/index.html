@@ -104,10 +104,6 @@
 <p class="admonition-title">Danger</p>
 <p>This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?</p>
 </div>
-<div class="admonition danger">
-<p class="admonition-title">Danger</p>
-<p>We currently ignore, that the effects of a transaction can be reverted, either due an exceptional halt (out of gas, invalid instruction, etc.) or a normal halt (<code>RETURN</code>, <code>REVERT</code>, <code>STOP</code>, <code>SELFDESTRUCT</code>). For instance, even if a LOG statement is part of a trace, it can still be reverted. How should we handle this? Maybe as a <code>CallFrame.reverted</code> flag?</p>
-</div>
 <h2 id="traces-preprocessing">Traces preprocessing</h2>
 <h3 id="traces-input">Traces input</h3>
 <p>As inputs we take the execution traces from the transactions. These are based on the non-finalized <a href="https://eips.ethereum.org/EIPS/eip-3155">EIP-3155</a> EVM trace specification.</p>
@@ -140,7 +136,7 @@
 <p>Here, we parse the instructions and keep track in which contract they were executed.</p>
 <p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
 <p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
-<p>If we encounter a call instruction (<code>CALL</code>, <code>STATICCALL</code>, <code>CALLCODE</code> or <code>DELEGATECALL</code>) we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we go back to the previous <code>CallFrame</code>. To be sure, we also verify if the <code>depth</code> from the trace event matches our calculation. If not, we raise an Exception.</p>
+<p>If we encounter a call instruction (<code>CALL</code>, <code>STATICCALL</code>, <code>CALLCODE</code> or <code>DELEGATECALL</code>) we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we mark the current one as reverted and go back to the previous <code>CallFrame</code>. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an <code>UnexpectedDepthChange</code> Exception.</p>
 <p>The <code>Instruction</code> includes:</p>
 <ul>
 <li>opcode</li>
