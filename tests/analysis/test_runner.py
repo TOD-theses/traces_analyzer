@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer

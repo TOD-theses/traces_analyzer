@@ -1,16 +1,22 @@
-from pytest import fixture
+from pytest import FixtureRequest, fixture
 from pathlib import Path
+import pytest
 import sys
 
 
 @fixture
-def root_dir(request) -> Path:
+def root_dir(request: FixtureRequest) -> Path:
     return request.config.rootpath
 
 
 @fixture
-def sample_traces_path(root_dir) -> Path:
-    return root_dir / "sample_traces"
+def sample_traces_path(root_dir: Path) -> Path:
+    sample_traces_path = root_dir / "sample_traces"
+
+    if not sample_traces_path.is_dir():
+        pytest.skip("This test requires traces from sample_traces")
+
+    return sample_traces_path
 
 
 # each test runs on cwd to its temp dir
