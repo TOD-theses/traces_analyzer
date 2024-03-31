@@ -178,7 +178,7 @@ def _make_log_n_instruction(op: int, topics: int):
             self.topics = [self.stack_inputs[2:]]
 
             if self.opcode == LOG3.opcode and self.program_counter == 10748:
-                print('LOG3', event.memory, self)
+                print("LOG3", event.memory, self)
             self.memory_input = event.mem_at(int(self.offset, 16), int(self.size, 16))
 
     return LOG_N

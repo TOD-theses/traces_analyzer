@@ -67,10 +67,10 @@ def test_sample_traces_analysis(sample_traces_path: Path):
         "0x822beb1cd1bd7148d07e4107b636fd15118913bc",
     )
     assert transfer_log.program_counter == 10748
-    assert transfer_log.address == '0xdac17f958d2ee523a2206206994597c13d831ec7'
+    assert transfer_log.address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
     # NOTE: The value does not match the etherscan logs
     # the reason is likely, that the transaction is executed at the beginning of the block
     # but there are many other transac 45th transaction also makes a transfer of Tether: USDT Stablecoin (influencing the price)
     # eg https://etherscan.io/tx/0xa3c5c292cac5fe09ff3e3bd325c698fc6ad2be8558903453b330e38deb1cea03#eventlog
-    assert transfer_log.first_memory_input == '000000000000000000000000000000000000000000000000000000069be06e4a'
-    assert transfer_log.second_memory_input == '000000000000000000000000000000000000000000000000000000069f7ec680'
+    assert transfer_log.first_memory_input == "000000000000000000000000000000000000000000000000000000069be06e4a"
+    assert transfer_log.second_memory_input == "000000000000000000000000000000000000000000000000000000069f7ec680"

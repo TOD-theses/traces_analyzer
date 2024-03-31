@@ -27,7 +27,7 @@ def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
             continue
         memory = None
         if "memory" in obj:
-            memory = obj["memory"].removeprefix('0x')
+            memory = obj["memory"].removeprefix("0x")
         yield TraceEvent(
             pc=obj["pc"],
             op=obj["op"],
