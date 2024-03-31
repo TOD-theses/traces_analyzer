@@ -1,22 +1,14 @@
+from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
 from traces_analyzer.analysis.tod_source_analyzer import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instructions import SLOAD, Instruction
+from traces_analyzer.preprocessing.instructions import SLOAD
 
 
 def test_tod_source_evaluation_found():
-    sload_event = TraceEvent(1234, SLOAD.opcode, ["0x1122"], 0)
-    event_first_trace = TraceEvent(1235, 0x0, ["0x10"], 0)
-    event_second_trace = TraceEvent(1235, 0x0, ["0x20"], 0)
-    call_frame = CallFrame(
-        parent=None, depth=0, msg_sender="0xsender", code_address="0xaddress", storage_address="0xaddress"
-    )
-
     tod_source = TODSource(
         found=True,
-        instruction_one=Instruction(sload_event, event_first_trace, call_frame),
-        instruction_two=Instruction(sload_event, event_second_trace, call_frame),
+        instruction_one=make_instruction(SLOAD, pc=1234, stack=["0x1122"], stack_after=["0x10"]),
+        instruction_two=make_instruction(SLOAD, pc=1234, stack=["0x1122"], stack_after=["0x20"]),
     )
 
     evaluation = TODSourceEvaluation(tod_source)
@@ -28,7 +20,7 @@ def test_tod_source_evaluation_found():
             "found": True,
             "source": {
                 "location": {
-                    "address": "0xaddress",
+                    "address": TEST_ROOT_CALLFRAME.code_address,
                     "pc": 1234,
                 },
                 "instruction": {

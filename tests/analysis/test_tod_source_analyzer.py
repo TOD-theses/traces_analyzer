@@ -1,9 +1,12 @@
 from itertools import zip_longest
+from typing import Any
+from tests.conftest import make_instruction
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
-from traces_analyzer.preprocessing.instructions import POP, PUSH0, SLOAD
+from traces_analyzer.preprocessing.call_frame import CallFrame
+from traces_analyzer.preprocessing.instructions import JUMPDEST, POP, PUSH0, SLOAD, Instruction, parse_instruction
 from traces_analyzer.preprocessing.instructions_parser import parse_instructions
-from traces_analyzer.preprocessing.events_parser import TraceEvent, parse_events
+from traces_analyzer.preprocessing.events_parser import TraceEvent
 
 
 def test_tod_source_analyzer():
@@ -14,8 +17,16 @@ def test_tod_source_analyzer():
 
     trace_events_one = common_trace_events + [TraceEvent(0x3, POP.opcode, ["0x1234"], 1, [])]
     trace_events_two = common_trace_events + [TraceEvent(0x3, POP.opcode, ["0x5678"], 1, [])]
-    instructions_one = parse_instructions(trace_events_one)
-    instructions_two = parse_instructions(trace_events_two)
+    instructions_one = [
+        make_instruction(PUSH0),
+        make_instruction(SLOAD, pc=2, stack=["0x1"], stack_after=["0x1234"]),
+        make_instruction(POP, pc=3, stack=["0x1234"]),
+    ]
+    instructions_two = [
+        make_instruction(PUSH0),
+        make_instruction(SLOAD, pc=2, stack=["0x1"], stack_after=["0x5678"]),
+        make_instruction(POP, pc=3, stack=["0x5678"]),
+    ]
 
     analyzer = TODSourceAnalyzer()
 

@@ -39,7 +39,7 @@ class Instruction(ABC):
             self.stack_outputs = tuple(reversed(next_event.stack[-self.stack_output_count :]))
 
     @classmethod
-    def from_event(cls, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Self:
+    def from_events(cls, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Self:
         return cls(event, next_event, call_frame)
 
     def __str__(self) -> str:
@@ -157,12 +157,28 @@ class POP(Instruction):
     stack_input_count = 1
 
 
+class JUMPDEST(Instruction):
+    opcode = 0x5B
+
+
 class PUSH0(Instruction):
     opcode = 0x5F
     stack_output_count = 1
 
 
-DEFINED_INSTRUCTIONS = [STOP, SLOAD, CALL, RETURN, REVERT, SELFDESTRUCT, STATICCALL, CALLCODE, DELEGATECALL, POP]
+DEFINED_INSTRUCTIONS = [
+    STOP,
+    SLOAD,
+    CALL,
+    RETURN,
+    REVERT,
+    SELFDESTRUCT,
+    STATICCALL,
+    CALLCODE,
+    DELEGATECALL,
+    POP,
+    JUMPDEST,
+]
 OPCODE_TO_INSTRUCTION_TYPE: dict[int, type[Instruction]] = dict((i.opcode, i) for i in DEFINED_INSTRUCTIONS)
 
 # sanity check that we always specified the opcode
@@ -174,7 +190,7 @@ for opcode, instruction_type in OPCODE_TO_INSTRUCTION_TYPE.items():
 def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
     instruction_type = instruction_type_from_opcode(event.op)
 
-    return instruction_type.from_event(event, next_event, call_frame)
+    return instruction_type.from_events(event, next_event, call_frame)
 
 
 def instruction_type_from_opcode(opcode: int) -> type[Instruction]:
