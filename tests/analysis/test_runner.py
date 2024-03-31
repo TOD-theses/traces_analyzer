@@ -34,12 +34,22 @@ def test_runner(sample_traces_path: Path):
         runner = AnalysisRunner(run_info)
         runner.run()
 
-        # assert that analysis tools found something
+        # Instruction usage has found 4 contracts
         assert len(instruction_usage_analyzer.one.get_used_opcodes_per_contract()) == 4
         assert len(instruction_usage_analyzer.two.get_used_opcodes_per_contract()) == 4
 
-        assert tod_source_analyzer.get_tod_source().found
-        assert tod_source_analyzer.get_tod_source().instruction_one.opcode == SLOAD.opcode
+        # TOD source
+        tod_source = tod_source_analyzer.get_tod_source()
+        assert tod_source.found
+        assert tod_source.instruction_one.opcode == SLOAD.opcode
+        assert tod_source.instruction_one.program_counter == 2401
+        assert tod_source.instruction_one.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
-        _, only_second = instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
-        assert only_second
+        only_first_executions, only_second_executions = (
+            instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
+        )
+        assert len(only_first_executions) == 0
+        assert len(only_second_executions) == 178  # the trace files differ exactly by 178 lines
+
+        instruction_input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
+        assert len(instruction_input_changes) > 0

@@ -87,39 +87,3 @@ def test_instruction_input_analyzer_reports_stack_differences():
     assert change.memory_input_change is not None
     assert change.memory_input_change.first_value == "1111"
     assert change.memory_input_change.second_value == "2222"
-
-
-def test_instruction_input_analyzer_with_traces(sample_traces_path):
-    trace_actual_path = (
-        sample_traces_path
-        / "62a8b9ece30161692b68cbb5"
-        / "actual"
-        / "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0.jsonl"
-    )
-    trace_reverse_path = (
-        sample_traces_path
-        / "62a8b9ece30161692b68cbb5"
-        / "reverse"
-        / "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0.jsonl"
-    )
-
-    with open(trace_reverse_path) as trace_reverse_file, open(trace_actual_path) as trace_actual_file:
-        trace_actual_events = list(parse_events(trace_actual_file))
-        trace_reverse_events = list(parse_events(trace_reverse_file))
-
-        instructions_actual = list(parse_instructions(trace_actual_events))
-        instructions_reverse = list(parse_instructions(trace_reverse_events))
-
-        analyzer = InstructionInputAnalyzer()
-
-        for a, b in zip_longest(instructions_reverse, instructions_actual):
-            analyzer.on_instructions(a, b)
-
-        only_first_executions, only_second_executions = analyzer.get_instructions_only_executed_by_one_trace()
-        assert len(only_first_executions) == 0
-        assert len(only_second_executions) == 178  # the trace files differ exactly by 178 lines
-
-        instruction_input_changes = analyzer.get_instructions_with_different_inputs()
-        assert (
-            len(instruction_input_changes) > 0
-        )  # some instruction inputs have changed; exact number depends on implemented instructions
