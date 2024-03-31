@@ -7,7 +7,7 @@ from traces_analyzer.analysis.instruction_input_analyzer import InstructionInput
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.preprocessing.instructions import SLOAD
+from traces_analyzer.preprocessing.instructions import LOG3, SLOAD
 
 
 def test_sample_traces_analysis(sample_traces_path: Path):
@@ -40,6 +40,7 @@ def test_sample_traces_analysis(sample_traces_path: Path):
     assert tod_source.instruction_one.program_counter == 2401
     assert tod_source.instruction_one.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
+    # Instruction differences
     only_first_executions, only_second_executions = (
         instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
     )
@@ -48,3 +49,28 @@ def test_sample_traces_analysis(sample_traces_path: Path):
 
     instruction_input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
     assert len(instruction_input_changes) > 0
+
+    input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
+    assert len(input_changes) > 0
+
+    changed_logs_with_3_topics = [change for change in input_changes if change.opcode == LOG3.opcode]
+    assert len(changed_logs_with_3_topics) == 2
+    # event Transfer(address indexed _from, address indexed _to, uint256 _value)
+    transfer_log = changed_logs_with_3_topics[0]
+    assert transfer_log.stack_input_changes == []
+    assert transfer_log.first_stack_input == transfer_log.second_stack_input
+    assert transfer_log.first_stack_input[0] == "0x60"
+    assert transfer_log.first_stack_input[1] == "0x20"
+    assert transfer_log.first_stack_input[2:] == (
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x6da0fd433c1a5d7a4faa01111c044910a184553",
+        "0x822beb1cd1bd7148d07e4107b636fd15118913bc",
+    )
+    assert transfer_log.program_counter == 10748
+    assert transfer_log.address == '0xdac17f958d2ee523a2206206994597c13d831ec7'
+    # NOTE: The value does not match the etherscan logs
+    # the reason is likely, that the transaction is executed at the beginning of the block
+    # but there are many other transac 45th transaction also makes a transfer of Tether: USDT Stablecoin (influencing the price)
+    # eg https://etherscan.io/tx/0xa3c5c292cac5fe09ff3e3bd325c698fc6ad2be8558903453b330e38deb1cea03#eventlog
+    assert transfer_log.first_memory_input == '000000000000000000000000000000000000000000000000000000069be06e4a'
+    assert transfer_log.second_memory_input == '000000000000000000000000000000000000000000000000000000069f7ec680'

@@ -2,7 +2,7 @@ from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.instructions import CALL, POP, STOP
+from traces_analyzer.preprocessing.instructions import CALL, LOG1, POP, STOP
 
 
 def test_instruction_input_analyzer():
@@ -69,6 +69,31 @@ def test_instruction_input_analyzer_reports_stack_differences():
     change = instruction_input_changes[0]
 
     assert change.opcode == CALL.opcode
+    assert change.memory_input_change is not None
+    assert change.memory_input_change.first_value == "1111"
+    assert change.memory_input_change.second_value == "2222"
+
+
+def test_instruction_input_analyzer_reports_log_changes():
+    topic = "0x1234"
+    memory_one = "0000000011110000"
+    memory_two = "0000000022220000"
+    mem_offset = "0x4"
+    mem_size = "0x2"
+    common_stack = list(reversed([mem_offset, mem_size, topic]))
+
+    analyzer = InstructionInputAnalyzer()
+    analyzer.on_instructions(
+        make_instruction(LOG1, stack=common_stack, memory=memory_one),
+        make_instruction(LOG1, stack=common_stack, memory=memory_two),
+    )
+
+    # check if it detected the different CALL inputs
+    instruction_input_changes = analyzer.get_instructions_with_different_inputs()
+    assert len(instruction_input_changes) == 1
+    change = instruction_input_changes[0]
+
+    assert change.opcode == LOG1.opcode
     assert change.memory_input_change is not None
     assert change.memory_input_change.first_value == "1111"
     assert change.memory_input_change.second_value == "2222"
