@@ -6,7 +6,7 @@ from traces_analyzer.preprocessing.instructions import CALL, POP, STOP
 
 
 def test_instruction_input_analyzer():
-    child_frame = CallFrame(TEST_ROOT_CALLFRAME, 2, "0xroot", "0xchild", "0xchild")
+    child_frame = CallFrame(TEST_ROOT_CALLFRAME, 2, "0xroot", "0xchild", "0xchild", False, None)
 
     first_call_value = "0x1000"
     second_call_value = "0x100000"

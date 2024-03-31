@@ -5,7 +5,7 @@ from traces_analyzer.preprocessing.instructions import PUSH0, REVERT, STOP, POP,
 
 
 def test_instruction_usage_analyzer():
-    child_frame = CallFrame(TEST_ROOT_CALLFRAME, 2, "0xroot", code_address="0xchild", storage_address="0xroot")
+    child_frame = CallFrame(TEST_ROOT_CALLFRAME, 2, "0xroot", "0xchild", "0xroot", False, None)
     root_code_address = TEST_ROOT_CALLFRAME.code_address
     child_code_address = child_frame.code_address
 

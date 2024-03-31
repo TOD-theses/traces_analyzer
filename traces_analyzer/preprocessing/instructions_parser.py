@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from typing import TypeGuard
 
-from traces_analyzer.preprocessing.call_frame import CallFrame
+from traces_analyzer.preprocessing.call_frame import CallFrame, HaltType
 from traces_analyzer.preprocessing.events_parser import TraceEvent
 from traces_analyzer.preprocessing.instructions import (
     CALL,
@@ -24,6 +24,8 @@ def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
         msg_sender="0x1111111111111111111111111111111111111111",
         code_address="0x1234123412341234123412341234123412341234",
         storage_address="0x1234123412341234123412341234123412341234",
+        reverted=False,
+        halt_type=None,
     )
 
     events_iterator = events.__iter__()
@@ -65,6 +67,8 @@ def update_call_frame(
             msg_sender=current_call_frame.code_address,
             code_address=instruction.address,
             storage_address=instruction.address,
+            reverted=False,
+            halt_type=None,
         )
     elif enters_call_frame_without_storage(instruction):
         next_call_frame = CallFrame(
@@ -73,6 +77,8 @@ def update_call_frame(
             msg_sender=current_call_frame.code_address,
             code_address=instruction.address,
             storage_address=current_call_frame.storage_address,
+            reverted=False,
+            halt_type=None,
         )
     elif makes_normal_halt(instruction) or makes_exceptional_halt(current_call_frame.depth, expected_depth):
         if not current_call_frame.parent:
@@ -80,6 +86,8 @@ def update_call_frame(
                 "Tried to return to parent call frame, while already being at the root."
                 f" {current_call_frame}. {instruction}"
             )
+        current_call_frame.reverted = True
+        current_call_frame.halt_type = HaltType.NORMAL if makes_normal_halt(instruction) else HaltType.EXCEPTIONAL
         next_call_frame = current_call_frame.parent
     else:
         raise UnexpectedDepthChange(

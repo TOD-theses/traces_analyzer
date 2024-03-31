@@ -10,10 +10,6 @@ Based on the four transaction traces (2 normal, 2 reverse order), we automatical
 
     This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?
 
-!!! danger
-
-    We currently ignore, that the effects of a transaction can be reverted, either due an exceptional halt (out of gas, invalid instruction, etc.) or a normal halt (`RETURN`, `REVERT`, `STOP`, `SELFDESTRUCT`). For instance, even if a LOG statement is part of a trace, it can still be reverted. How should we handle this? Maybe as a `CallFrame.reverted` flag?
-
 ## Traces preprocessing
 
 ### Traces input
@@ -59,7 +55,7 @@ We start the process with an initial `CallFrame`, which stores who created the t
 
 Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current `CallFrame` to the instruction. For instance, an `SLOAD` instruction loads the data from the current contracts storage.
 
-If we encounter a call instruction (`CALL`, `STATICCALL`, `CALLCODE` or `DELEGATECALL`) we create a new `CallFrame`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we go back to the previous `CallFrame`. To be sure, we also verify if the `depth` from the trace event matches our calculation. If not, we raise an Exception.
+If we encounter a call instruction (`CALL`, `STATICCALL`, `CALLCODE` or `DELEGATECALL`) we create a new `CallFrame`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we mark the current one as reverted and go back to the previous `CallFrame`. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an `UnexpectedDepthChange` Exception.
 
 The `Instruction` includes:
 

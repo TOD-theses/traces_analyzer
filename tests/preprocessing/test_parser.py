@@ -1,4 +1,5 @@
 import pytest
+from traces_analyzer.preprocessing.call_frame import HaltType
 from traces_analyzer.preprocessing.instructions import (
     CALL,
     CALLCODE,
@@ -130,6 +131,24 @@ def test_call_frame_does_not_update_with_same_depth():
     assert instructions[1].call_frame.code_address == initial_code_addr
 
 
+def test_call_frame_makes_normal_halt():
+    initial_code_addr = "0x1234123412341234123412341234123412341234"
+    call_target = "0x1111111111111111111111111111111111111111"
+
+    test_events = [
+        TraceEvent(1234, CALL.opcode, ["0x0", "0x0", "0x0", "0x0", "0x0", call_target, "0x0"], depth=1),
+        TraceEvent(1234, RETURN.opcode, [], depth=2),
+        TraceEvent(1235, POP.opcode, [], depth=1),
+    ]
+
+    instructions = list(parse_instructions(test_events))
+
+    assert instructions[2].call_frame.code_address == initial_code_addr
+    assert not instructions[0].call_frame.reverted
+    assert instructions[1].call_frame.reverted
+    assert instructions[1].call_frame.halt_type == HaltType.NORMAL
+
+
 def test_call_frame_makes_exceptional_halt():
     # we assume an exceptional halt if the depth decreases by one
     initial_code_addr = "0x1234123412341234123412341234123412341234"
@@ -144,6 +163,9 @@ def test_call_frame_makes_exceptional_halt():
     instructions = list(parse_instructions(test_events))
 
     assert instructions[2].call_frame.code_address == initial_code_addr
+    assert not instructions[0].call_frame.reverted
+    assert instructions[1].call_frame.reverted
+    assert instructions[1].call_frame.halt_type == HaltType.EXCEPTIONAL
 
 
 def test_call_frame_parsing_throws_on_unexpected_depth_change():
