@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 from typing_extensions import override
 
 from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instructions import Instruction
+from traces_analyzer.preprocessing.instruction import Instruction
 
 
 @dataclass

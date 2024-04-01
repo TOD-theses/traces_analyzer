@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class InstructionIO:
     inputs_stack: tuple[str, ...] = ()
     outputs_stack: tuple[str, ...] = ()
@@ -9,7 +9,7 @@ class InstructionIO:
     output_memory: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class InstructionIOSpec:
     stack_input_count: int = 0
     stack_output_count: int = 0

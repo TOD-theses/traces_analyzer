@@ -5,7 +5,7 @@ from traces_analyzer.analysis.instruction_input_analyzer import (
     InstructionInputChange,
 )
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
-from traces_analyzer.preprocessing.instructions import CALL, SLOAD
+from traces_analyzer.preprocessing.instructions import CALL, SLOAD, op_from_class
 
 
 def test_instruction_differences_evaluation():
@@ -13,7 +13,7 @@ def test_instruction_differences_evaluation():
         InstructionInputChange(
             address="0xtest",
             program_counter=5,
-            opcode=CALL.opcode,
+            opcode=op_from_class(CALL),
             first_stack_input=("val_1", "val_2", "val_3"),
             second_stack_input=("val_1", "val_2_x", "val_3_x"),
             first_memory_input="1111",
@@ -29,7 +29,7 @@ def test_instruction_differences_evaluation():
         InstructionExecution(
             address="0xtest",
             program_counter=10,
-            opcode=SLOAD.opcode,
+            opcode=op_from_class(SLOAD),
             stack_inputs=("0xkey",),
         )
     ]
@@ -51,7 +51,7 @@ def test_instruction_differences_evaluation():
                         "pc": 5,
                     },
                     "instruction": {
-                        "opcode": CALL.opcode,
+                        "opcode": op_from_class(CALL),
                     },
                     "inputs": [
                         {
@@ -88,7 +88,7 @@ def test_instruction_differences_evaluation():
                             "address": "0xtest",
                             "pc": 10,
                         },
-                        "instruction": {"opcode": SLOAD.opcode, "stack_inputs": ("0xkey",)},
+                        "instruction": {"opcode": op_from_class(SLOAD), "stack_inputs": ("0xkey",)},
                     }
                 ],
                 "only_in_second_trace": [],

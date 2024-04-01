@@ -18,7 +18,7 @@ from traces_analyzer.evaluation.instruction_differences_evaluation import Instru
 from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.preprocessing.instructions import CALL, STATICCALL
+from traces_analyzer.preprocessing.instructions import CALL, STATICCALL, op_from_class
 
 
 def main():  # pragma: no cover
@@ -83,7 +83,7 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]) ->
         InstructionUsageEvaluation(
             instruction_usage_analyzers.one.get_used_opcodes_per_contract(),
             instruction_usage_analyzers.two.get_used_opcodes_per_contract(),
-            filter_opcodes=[CALL.opcode, STATICCALL.opcode],
+            filter_opcodes=[op_from_class(CALL), op_from_class(STATICCALL)],
         ),
     ]
 

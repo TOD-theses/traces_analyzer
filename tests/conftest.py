@@ -5,7 +5,9 @@ import sys
 
 from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instructions import JUMPDEST, Instruction, parse_instruction
+from traces_analyzer.preprocessing.instruction import Instruction
+from traces_analyzer.preprocessing.instructions import JUMPDEST, op_from_class
+from traces_analyzer.preprocessing.instruction_parser import parse_instruction
 
 
 @fixture
@@ -49,6 +51,7 @@ def make_instruction(
     depth_after=1,
     call_frame=TEST_ROOT_CALLFRAME,
 ):
-    event = TraceEvent(pc, type.opcode, stack, depth, memory)
-    next_event = TraceEvent(pc + 1, JUMPDEST.opcode, stack_after, depth_after, memory_after)
+    # TODO: consider to directly create Instruction
+    event = TraceEvent(pc, op_from_class(type), stack, depth, memory)
+    next_event = TraceEvent(pc + 1, op_from_class(JUMPDEST), stack_after, depth_after, memory_after)
     return parse_instruction(event, next_event, call_frame)

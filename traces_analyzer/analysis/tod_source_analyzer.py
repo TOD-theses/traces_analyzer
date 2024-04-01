@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
-from traces_analyzer.preprocessing.instructions import Instruction
+from traces_analyzer.preprocessing.instruction import Instruction
 
 
 @dataclass

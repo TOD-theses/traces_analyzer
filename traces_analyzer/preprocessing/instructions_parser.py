@@ -3,6 +3,8 @@ from typing import TypeGuard
 
 from traces_analyzer.preprocessing.call_frame import CallFrame, HaltType
 from traces_analyzer.preprocessing.events_parser import TraceEvent
+from traces_analyzer.preprocessing.instruction import Instruction
+from traces_analyzer.preprocessing.instruction_parser import parse_instruction
 from traces_analyzer.preprocessing.instructions import (
     CALL,
     CALLCODE,
@@ -12,8 +14,6 @@ from traces_analyzer.preprocessing.instructions import (
     SELFDESTRUCT,
     STATICCALL,
     STOP,
-    Instruction,
-    parse_instruction,
 )
 
 

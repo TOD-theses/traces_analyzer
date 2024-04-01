@@ -1,7 +1,7 @@
 from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.instructions import PUSH0, REVERT, STOP, POP, RETURN
+from traces_analyzer.preprocessing.instructions import POP, PUSH0, RETURN, REVERT, STOP, op_from_class
 
 
 def test_instruction_usage_analyzer():
@@ -24,5 +24,13 @@ def test_instruction_usage_analyzer():
 
     used_opcodes_per_contract = analyzer.get_used_opcodes_per_contract()
 
-    assert used_opcodes_per_contract[root_code_address] == {PUSH0.opcode, STOP.opcode, REVERT.opcode}
-    assert used_opcodes_per_contract[child_code_address] == {PUSH0.opcode, POP.opcode, RETURN.opcode}
+    assert used_opcodes_per_contract[root_code_address] == {
+        op_from_class(PUSH0),
+        op_from_class(STOP),
+        op_from_class(REVERT),
+    }
+    assert used_opcodes_per_contract[child_code_address] == {
+        op_from_class(PUSH0),
+        op_from_class(POP),
+        op_from_class(RETURN),
+    }

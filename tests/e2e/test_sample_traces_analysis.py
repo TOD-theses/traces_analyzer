@@ -7,7 +7,7 @@ from traces_analyzer.analysis.instruction_input_analyzer import InstructionInput
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.preprocessing.instructions import LOG3, SLOAD
+from traces_analyzer.preprocessing.instructions import LOG3, SLOAD, op_from_class
 
 
 def test_sample_traces_analysis(sample_traces_path: Path):
@@ -36,7 +36,7 @@ def test_sample_traces_analysis(sample_traces_path: Path):
     # TOD source
     tod_source = tod_source_analyzer.get_tod_source()
     assert tod_source.found
-    assert tod_source.instruction_one.opcode == SLOAD.opcode
+    assert tod_source.instruction_one.opcode == op_from_class(SLOAD)
     assert tod_source.instruction_one.program_counter == 2401
     assert tod_source.instruction_one.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
@@ -53,7 +53,7 @@ def test_sample_traces_analysis(sample_traces_path: Path):
     input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
     assert len(input_changes) > 0
 
-    changed_logs_with_3_topics = [change for change in input_changes if change.opcode == LOG3.opcode]
+    changed_logs_with_3_topics = [change for change in input_changes if change.opcode == op_from_class(LOG3)]
     assert len(changed_logs_with_3_topics) == 2
     # event Transfer(address indexed _from, address indexed _to, uint256 _value)
     transfer_log = changed_logs_with_3_topics[0]

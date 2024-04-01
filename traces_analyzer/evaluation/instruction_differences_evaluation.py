@@ -4,20 +4,20 @@ from typing_extensions import override
 
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionExecution, InstructionInputChange
 from traces_analyzer.evaluation.evaluation import Evaluation
-from traces_analyzer.preprocessing.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL
+from traces_analyzer.preprocessing.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL, op_from_class
 
 
 class InstructionDifferencesEvaluation(Evaluation):
     _type_key = "instruction_differences"
     _type_name = "Instruction differences"
     _CLI_REPORTED_OPCODES = [
-        CALL.opcode,
-        STATICCALL.opcode,
-        LOG0.opcode,
-        LOG1.opcode,
-        LOG2.opcode,
-        LOG3.opcode,
-        LOG4.opcode,
+        op_from_class(CALL),
+        op_from_class(STATICCALL),
+        op_from_class(LOG0),
+        op_from_class(LOG1),
+        op_from_class(LOG2),
+        op_from_class(LOG3),
+        op_from_class(LOG4),
     ]
 
     def __init__(
