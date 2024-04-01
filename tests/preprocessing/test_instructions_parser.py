@@ -44,9 +44,9 @@ def test_call_frame_parsing():
         dummy_event_at_depth(4),
         TraceEvent(1234, op_from_class(CALLCODE), ["0x0", "0x0", "0x0", "0x0", "0x0", addr["callcode"], "0x0"], 4),
         TraceEvent(1234, op_from_class(STOP), [], 5),
-        TraceEvent(1234, op_from_class(RETURN), [], 4),
-        TraceEvent(1234, op_from_class(REVERT), [], 3),
-        TraceEvent(1234, op_from_class(SELFDESTRUCT), [], 2),
+        TraceEvent(1234, op_from_class(RETURN), ["0x0", "0x0"], 4),
+        TraceEvent(1234, op_from_class(REVERT), ["0x0", "0x0"], 3),
+        TraceEvent(1234, op_from_class(SELFDESTRUCT), ["0x0"], 2),
         dummy_event_at_depth(1),
     ]
 
@@ -138,7 +138,7 @@ def test_call_frame_makes_normal_halt():
 
     test_events = [
         TraceEvent(1234, op_from_class(CALL), ["0x0", "0x0", "0x0", "0x0", "0x0", call_target, "0x0"], depth=1),
-        TraceEvent(1234, op_from_class(RETURN), [], depth=2),
+        TraceEvent(1234, op_from_class(RETURN), ["0x0", "0x0"], depth=2),
         TraceEvent(1235, op_from_class(POP), [], depth=1),
     ]
 

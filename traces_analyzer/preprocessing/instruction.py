@@ -23,3 +23,5 @@ class Instruction:
     def _init_data(self, data: Mapping[str, object]):
         # set data despite being frozen
         object.__setattr__(self, "data", data)
+
+    # TODO: __str__

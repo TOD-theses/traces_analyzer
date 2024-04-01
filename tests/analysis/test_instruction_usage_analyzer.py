@@ -12,10 +12,10 @@ def test_instruction_usage_analyzer():
     trace = [
         make_instruction(PUSH0),
         make_instruction(STOP),
-        make_instruction(REVERT),
+        make_instruction(REVERT, stack=["0x0", "0x0"]),
         make_instruction(PUSH0, call_frame=child_frame),
         make_instruction(POP, call_frame=child_frame),
-        make_instruction(RETURN, call_frame=child_frame),
+        make_instruction(RETURN, stack=["0x0", "0x0"], call_frame=child_frame),
     ]
 
     analyzer = InstructionUsageAnalyzer()
