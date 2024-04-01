@@ -66,7 +66,7 @@ The `Instruction` includes:
 - stack_outputs
 - memory_input
 - memory_output
-- [additional fields based on the instruction type, eg `key` for `SLOAD`]
+- data (additional fields based on the instruction type, eg `key` for `SLOAD`)
 
 !!! warning
 

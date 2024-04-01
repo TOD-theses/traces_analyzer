@@ -1,6 +1,7 @@
 from abc import ABC
+from typing import cast
 
-from typing_extensions import Self
+from typing_extensions import Self, TypedDict
 
 from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.events_parser import TraceEvent
@@ -8,6 +9,8 @@ from traces_analyzer.preprocessing.instruction_io import InstructionIOSpec, pars
 from traces_analyzer.preprocessing.mnemonics import opcode_to_name
 
 INSTRUCTION_UNKNOWN_NAME = "UNKNOWN"
+
+EmptyDict = TypedDict("EmptyDict", {})
 
 
 class Instruction(ABC):
@@ -25,6 +28,7 @@ class Instruction(ABC):
         self.name = opcode_to_name(self.opcode, INSTRUCTION_UNKNOWN_NAME)
         self.program_counter = event.pc
         self.call_frame = call_frame
+        self.data: EmptyDict = {}
 
         self._parse_inputs(event, next_event)
 
@@ -51,6 +55,7 @@ class Instruction(ABC):
             f" name={self.name}"
             f" op={hex(self.opcode)}"
             f" location={self.program_counter}@{self.call_frame.code_address}"
+            f" data={self.data}"
             ">"
         )
 
@@ -59,20 +64,29 @@ class Unknown(Instruction):
     pass
 
 
+CallWithValueData = TypedDict(
+    "CallWithValueData",
+    {
+        "address": str,
+        "value": int,
+        "input": str,
+    },
+)
+CallData = TypedDict(
+    "CallData",
+    {
+        "address": str,
+        "input": str,
+    },
+)
+
+
 class CALL(Instruction):
     opcode = 0xF1
     stack_input_count = 7
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
-        self.gas = self.stack_inputs[0]
-        self.address = self.stack_inputs[1]
-        self.value = self.stack_inputs[2]
-        self.args_offset = self.stack_inputs[3]
-        self.args_size = self.stack_inputs[4]
-        self.ret_offset = self.stack_inputs[5]
-        self.ret_size = self.stack_inputs[6]
-
         io = parse_instruction_io(
             InstructionIOSpec(
                 stack_input_count=self.stack_input_count,
@@ -84,7 +98,8 @@ class CALL(Instruction):
             next_event.stack if next_event else [],
             next_event.memory if next_event else None,
         )
-        self.memory_input = io.input_memory
+        self.memory_input = cast(str, io.input_memory)
+        self.data: CallWithValueData = {"address": self.stack_inputs[1], "value": int(self.stack_inputs[2], 16), "input": self.memory_input}
 
 
 class STATICCALL(Instruction):
@@ -93,13 +108,6 @@ class STATICCALL(Instruction):
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
-        self.gas = self.stack_inputs[0]
-        self.address = self.stack_inputs[1]
-        self.args_offset = self.stack_inputs[2]
-        self.args_size = self.stack_inputs[3]
-        self.ret_offset = self.stack_inputs[4]
-        self.ret_size = self.stack_inputs[5]
-
         io = parse_instruction_io(
             InstructionIOSpec(
                 stack_input_count=self.stack_input_count,
@@ -111,7 +119,8 @@ class STATICCALL(Instruction):
             next_event.stack if next_event else [],
             next_event.memory if next_event else None,
         )
-        self.memory_input = io.input_memory
+        self.memory_input = cast(str, io.input_memory)
+        self.data: CallData = {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 class DELEGATECALL(Instruction):
@@ -120,13 +129,6 @@ class DELEGATECALL(Instruction):
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
-        self.gas = self.stack_inputs[0]
-        self.address = self.stack_inputs[1]
-        self.args_offset = self.stack_inputs[2]
-        self.args_size = self.stack_inputs[3]
-        self.ret_offset = self.stack_inputs[4]
-        self.ret_size = self.stack_inputs[5]
-
         io = parse_instruction_io(
             InstructionIOSpec(
                 stack_input_count=self.stack_input_count,
@@ -138,8 +140,8 @@ class DELEGATECALL(Instruction):
             next_event.stack if next_event else [],
             next_event.memory if next_event else None,
         )
-        self.memory_input = io.input_memory
-
+        self.memory_input = cast(str, io.input_memory)
+        self.data: CallData = {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 class CALLCODE(Instruction):
@@ -148,14 +150,6 @@ class CALLCODE(Instruction):
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
-        self.gas = self.stack_inputs[0]
-        self.address = self.stack_inputs[1]
-        self.value = self.stack_inputs[2]
-        self.args_offset = self.stack_inputs[3]
-        self.args_size = self.stack_inputs[4]
-        self.ret_offset = self.stack_inputs[5]
-        self.ret_size = self.stack_inputs[6]
-
         io = parse_instruction_io(
             InstructionIOSpec(
                 stack_input_count=self.stack_input_count,
@@ -167,8 +161,8 @@ class CALLCODE(Instruction):
             next_event.stack if next_event else [],
             next_event.memory if next_event else None,
         )
-        self.memory_input = io.input_memory
-
+        self.memory_input = cast(str, io.input_memory)
+        self.data: CallData = {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 class STOP(Instruction):
@@ -189,6 +183,7 @@ class SELFDESTRUCT(Instruction):
     opcode = 0xFF
     stack_input_count = 1
 
+SLoadData = TypedDict('SLoadData', { 'key': str, 'result': str })
 
 class SLOAD(Instruction):
     opcode = 0x54
@@ -197,8 +192,7 @@ class SLOAD(Instruction):
 
     def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
         super().__init__(event, next_event, call_frame)
-        self.key = self.stack_inputs[0]
-        self.result = self.stack_outputs[0]
+        self.data: SLoadData = { 'key': self.stack_inputs[0], 'result': self.stack_outputs[0] }
 
 
 class POP(Instruction):
@@ -214,6 +208,7 @@ class PUSH0(Instruction):
     opcode = 0x5F
     stack_output_count = 1
 
+LogData = TypedDict('LogData', { 'topics': tuple[str, ...], 'value': str })
 
 def _make_log_n_instruction(op: int, topics: int):
     class LOG_N(Instruction):
@@ -222,10 +217,6 @@ def _make_log_n_instruction(op: int, topics: int):
 
         def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
             super().__init__(event, next_event, call_frame)
-            self.offset = self.stack_inputs[0]
-            self.size = self.stack_inputs[1]
-            self.topics = [self.stack_inputs[2:]]
-
             io = parse_instruction_io(
                 InstructionIOSpec(
                     stack_input_count=self.stack_input_count,
@@ -237,7 +228,9 @@ def _make_log_n_instruction(op: int, topics: int):
                 next_event.stack if next_event else [],
                 next_event.memory if next_event else None,
             )
-            self.memory_input = io.input_memory
+            self.memory_input = cast(str, io.input_memory)
+            self.data: LogData = { 'topics': tuple(self.stack_inputs[2:]), 'value': self.memory_input }
+
 
     return LOG_N
 
