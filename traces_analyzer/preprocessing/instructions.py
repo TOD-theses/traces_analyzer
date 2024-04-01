@@ -4,6 +4,7 @@ from typing_extensions import Self
 
 from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.events_parser import TraceEvent
+from traces_analyzer.preprocessing.instruction_io import InstructionIOSpec, parse_instruction_io
 from traces_analyzer.preprocessing.mnemonics import opcode_to_name
 
 INSTRUCTION_UNKNOWN_NAME = "UNKNOWN"
@@ -28,15 +29,17 @@ class Instruction(ABC):
         self._parse_inputs(event, next_event)
 
     def _parse_inputs(self, event: TraceEvent, next_event: TraceEvent):
-        self.stack_inputs: tuple[str, ...] = ()
-        self.stack_outputs: tuple[str, ...] = ()
+        io = parse_instruction_io(
+            InstructionIOSpec(self.stack_input_count, self.stack_output_count),
+            event.stack,
+            event.memory,
+            next_event.stack if next_event else [],
+            next_event.memory if next_event else None,
+        )
+        self.stack_inputs: tuple[str, ...] = io.inputs_stack
+        self.stack_outputs: tuple[str, ...] = io.outputs_stack
         self.memory_input: str | None = None
         self.memory_output: str | None = None
-
-        if self.stack_input_count:
-            self.stack_inputs = tuple(reversed(event.stack[-self.stack_input_count :]))
-        if self.stack_output_count:
-            self.stack_outputs = tuple(reversed(next_event.stack[-self.stack_output_count :]))
 
     @classmethod
     def from_events(cls, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Self:
@@ -70,7 +73,18 @@ class CALL(Instruction):
         self.ret_offset = self.stack_inputs[5]
         self.ret_size = self.stack_inputs[6]
 
-        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+        io = parse_instruction_io(
+            InstructionIOSpec(
+                stack_input_count=self.stack_input_count,
+                memory_input_offset_arg=3,
+                memory_input_size_arg=4,
+            ),
+            event.stack,
+            event.memory,
+            next_event.stack if next_event else [],
+            next_event.memory if next_event else None,
+        )
+        self.memory_input = io.input_memory
 
 
 class STATICCALL(Instruction):
@@ -86,7 +100,18 @@ class STATICCALL(Instruction):
         self.ret_offset = self.stack_inputs[4]
         self.ret_size = self.stack_inputs[5]
 
-        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+        io = parse_instruction_io(
+            InstructionIOSpec(
+                stack_input_count=self.stack_input_count,
+                memory_input_offset_arg=2,
+                memory_input_size_arg=3,
+            ),
+            event.stack,
+            event.memory,
+            next_event.stack if next_event else [],
+            next_event.memory if next_event else None,
+        )
+        self.memory_input = io.input_memory
 
 
 class DELEGATECALL(Instruction):
@@ -102,7 +127,19 @@ class DELEGATECALL(Instruction):
         self.ret_offset = self.stack_inputs[4]
         self.ret_size = self.stack_inputs[5]
 
-        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+        io = parse_instruction_io(
+            InstructionIOSpec(
+                stack_input_count=self.stack_input_count,
+                memory_input_offset_arg=2,
+                memory_input_size_arg=3,
+            ),
+            event.stack,
+            event.memory,
+            next_event.stack if next_event else [],
+            next_event.memory if next_event else None,
+        )
+        self.memory_input = io.input_memory
+
 
 
 class CALLCODE(Instruction):
@@ -119,7 +156,19 @@ class CALLCODE(Instruction):
         self.ret_offset = self.stack_inputs[5]
         self.ret_size = self.stack_inputs[6]
 
-        self.memory_input = event.mem_at(int(self.args_offset, 16), int(self.args_size, 16))
+        io = parse_instruction_io(
+            InstructionIOSpec(
+                stack_input_count=self.stack_input_count,
+                memory_input_offset_arg=3,
+                memory_input_size_arg=4,
+            ),
+            event.stack,
+            event.memory,
+            next_event.stack if next_event else [],
+            next_event.memory if next_event else None,
+        )
+        self.memory_input = io.input_memory
+
 
 
 class STOP(Instruction):
@@ -177,7 +226,18 @@ def _make_log_n_instruction(op: int, topics: int):
             self.size = self.stack_inputs[1]
             self.topics = [self.stack_inputs[2:]]
 
-            self.memory_input = event.mem_at(int(self.offset, 16), int(self.size, 16))
+            io = parse_instruction_io(
+                InstructionIOSpec(
+                    stack_input_count=self.stack_input_count,
+                    memory_input_offset_arg=0,
+                    memory_input_size_arg=1,
+                ),
+                event.stack,
+                event.memory,
+                next_event.stack if next_event else [],
+                next_event.memory if next_event else None,
+            )
+            self.memory_input = io.input_memory
 
     return LOG_N
 
