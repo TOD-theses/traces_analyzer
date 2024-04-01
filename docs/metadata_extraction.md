@@ -150,3 +150,4 @@ We record all executed unique instructions, eg to understand if hashing was used
 - attacker-preconditions (eg. if the address from the attacker was returned from a SLOAD or a SLOAD with the attackers address as index returned != 0? Hard to understand without information flow analysis)
 - control flow differences (where and through what? implement eg with changes or by comparing instructions)
 - attack symmetry (if the order was different, would the "victim" be an "attacker"?)
+- output differences (particularly useful, if we group by instruction+inputs => sampe input that yields different output is probably TOD affected)
