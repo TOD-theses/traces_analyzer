@@ -177,8 +177,6 @@ def _make_log_n_instruction(op: int, topics: int):
             self.size = self.stack_inputs[1]
             self.topics = [self.stack_inputs[2:]]
 
-            if self.opcode == LOG3.opcode and self.program_counter == 10748:
-                print("LOG3", event.memory, self)
             self.memory_input = event.mem_at(int(self.offset, 16), int(self.size, 16))
 
     return LOG_N
@@ -189,20 +187,6 @@ LOG1 = _make_log_n_instruction(0xA1, 1)
 LOG2 = _make_log_n_instruction(0xA2, 2)
 LOG3 = _make_log_n_instruction(0xA3, 3)
 LOG4 = _make_log_n_instruction(0xA4, 4)
-
-"""
-class LOG1(Instruction):
-    opcode = 0xA1
-    stack_input_count = 3
-
-    def __init__(self, event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame):
-        super().__init__(event, next_event, call_frame)
-        self.offset = self.stack_inputs[0]
-        self.size = self.stack_inputs[1]
-        self.topics = [self.stack_inputs[2]]
-
-        self.memory_input = event.mem_at(int(self.offset, 16), int(self.size, 16))
-"""
 
 
 DEFINED_INSTRUCTIONS = [
