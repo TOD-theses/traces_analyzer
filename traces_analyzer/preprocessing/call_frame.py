@@ -16,5 +16,5 @@ class CallFrame:
     msg_sender: str
     code_address: str
     storage_address: str
-    reverted: bool
-    halt_type: HaltType | None
+    reverted: bool = False
+    halt_type: HaltType | None = None
