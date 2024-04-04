@@ -24,6 +24,8 @@ def test_sample_traces_analysis(sample_traces_path: Path):
         analyzers=[instruction_usage_analyzer, tod_source_analyzer, instruction_input_analyzer],
         # TODO: why is the reverse one first? check this and document it
         traces_jsons=(bundle.tx_attack.trace_reverse, bundle.tx_attack.trace_actual),
+        sender=bundle.tx_attack.caller,
+        to=bundle.tx_attack.to,
     )
 
     runner = AnalysisRunner(run_info)

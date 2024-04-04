@@ -1,24 +1,12 @@
 from collections.abc import Iterable
 
-from traces_analyzer.preprocessing.call_frame import CallFrame
 from traces_analyzer.preprocessing.call_frame_manager import CallFrameManager
 from traces_analyzer.preprocessing.events_parser import TraceEvent
 from traces_analyzer.preprocessing.instruction import Instruction
 from traces_analyzer.preprocessing.instruction_parser import parse_instruction
 
 
-def parse_instructions(events: Iterable[TraceEvent]) -> Iterable[Instruction]:
-    root = CallFrame(
-        parent=None,
-        depth=1,
-        msg_sender="0x1111111111111111111111111111111111111111",
-        code_address="0x1234123412341234123412341234123412341234",
-        storage_address="0x1234123412341234123412341234123412341234",
-        reverted=False,
-        halt_type=None,
-    )
-    call_frame_manager = CallFrameManager(root)
-
+def parse_instructions(events: Iterable[TraceEvent], call_frame_manager: CallFrameManager) -> Iterable[Instruction]:
     events_iterator = events.__iter__()
     try:
         current_event = next(events_iterator)

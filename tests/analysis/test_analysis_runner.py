@@ -13,6 +13,8 @@ def test_analysis_runner_empty_does_not_call_analyzer():
         RunInfo(
             analyzers=[analyzer_mock],
             traces_jsons=([], []),
+            sender="0xsender",
+            to="0xrootcontract",
         )
     )
     runner.run()
@@ -29,6 +31,8 @@ def test_analysis_runner_calls_analyzer():
         RunInfo(
             analyzers=[analyzer_mock],
             traces_jsons=(json_dumps_all(trace_one), json_dumps_all(trace_two)),
+            sender="0xsender",
+            to="0xrootcontract",
         )
     )
     runner.run()

@@ -40,10 +40,16 @@ def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: boo
     bundle = DirectoryLoader(dir).load()
 
     evaluations_victim = compare_traces(
-        bundle.tx_victim.hash, (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse)
+        bundle.tx_victim.hash,
+        bundle.tx_victim.caller,
+        bundle.tx_victim.to,
+        (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
     )
     evaluations_attacker = compare_traces(
-        bundle.tx_attack.hash, (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse)
+        bundle.tx_attack.hash,
+        bundle.tx_attack.caller,
+        bundle.tx_attack.to,
+        (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse),
     )
 
     save_evaluations(evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json")
@@ -56,7 +62,7 @@ def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: boo
             print(evaluation.cli_report())
 
 
-def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]) -> list[Evaluation]:
+def compare_traces(tx_hash: str, sender: str, to: str, traces: tuple[Iterable[str], Iterable[str]]) -> list[Evaluation]:
     print(f"Comparing traces for {tx_hash}")
 
     tod_source_analyzer = TODSourceAnalyzer()
@@ -68,6 +74,8 @@ def compare_traces(tx_hash: str, traces: tuple[Iterable[str], Iterable[str]]) ->
         RunInfo(
             analyzers=[tod_source_analyzer, instruction_changes_analyzer, instruction_usage_analyzers],
             traces_jsons=traces,
+            sender=sender,
+            to=to,
         )
     )
     runner.run()
