@@ -1,4 +1,5 @@
-from typing import Any, Callable, TypeGuard
+from dataclasses import dataclass, field
+from typing import Iterable, TypeGuard
 
 from traces_analyzer.preprocessing.call_frame import CallFrame, HaltType
 from traces_analyzer.preprocessing.instruction import Instruction
@@ -13,46 +14,54 @@ from traces_analyzer.preprocessing.instructions import (
     STOP,
 )
 
-CallTree = tuple[CallFrame, list["CallTree"]]
+
+@dataclass
+class CallTree:
+    """A call tree, representing the current call frame and all child call frames"""
+
+    call_frame: CallFrame
+    children: list["CallTree"] = field(default_factory=list)
+
+    def recurse(self) -> Iterable["CallTree"]:
+        """Returns the tree nodes in a depth first order"""
+        yield self
+
+        for child in self.children:
+            yield from child.recurse()
+
+    def add(self, call_frame: CallFrame):
+        """Add the call_frame based on its parent"""
+        parent_node: CallTree | None = None
+
+        for tree in self.recurse():
+            if tree.call_frame == call_frame.parent:
+                parent_node = tree
+
+        if not parent_node:
+            raise Exception(f"Could not find parent tree node to add callframe. {self} - {call_frame}")
+        parent_node.children.append(CallTree(call_frame))
 
 
 class CallFrameManager:
     def __init__(self, root_call_frame: CallFrame) -> None:
-        self._call_tree: CallTree = (root_call_frame, [])
+        self._call_tree = CallTree(root_call_frame)
         self._current_call_frame = root_call_frame
 
     def get_current_call_frame(self) -> CallFrame:
         return self._current_call_frame
 
-    # TODO: test and use this method
-    # def get_call_tree(self) -> CallTree:
-    # return self._call_tree
+    def get_call_tree(self) -> CallTree:
+        return self._call_tree
 
     def on_step(self, instruction: Instruction, next_depth: int):
         new_call_frame = update_call_frame(self._current_call_frame, instruction, next_depth)
-        if new_call_frame is not self._current_call_frame:
+        if new_call_frame != self._current_call_frame:
             self._update_call_frame(new_call_frame)
 
     def _update_call_frame(self, new_call_frame: CallFrame):
         if new_call_frame is not self._current_call_frame.parent:
-            self._insert_call_frame(new_call_frame)
+            self._call_tree.add(new_call_frame)
         self._current_call_frame = new_call_frame
-
-    def _insert_call_frame(self, new_call_frame: CallFrame):
-        def insert_if_parent(tree: CallTree):
-            call_frame, children = tree
-            if call_frame is new_call_frame.parent:
-                children.append((new_call_frame, []))
-
-        _recurse_tree(self._call_tree, insert_if_parent)
-
-
-def _recurse_tree(tree: CallTree, callback: Callable[[CallTree], Any]):
-    callback(tree)
-
-    _, children = tree
-    for child in children:
-        _recurse_tree(child, callback)
 
 
 class ExpectedDepthChange(Exception):

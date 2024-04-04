@@ -21,8 +21,11 @@ from traces_analyzer.preprocessing.instructions import (
 )
 
 get_root = lambda: CallFrame(None, 1, "0xsender", "0xcode", "0xstorage")
-get_child = lambda: CallFrame(get_root(), 2, get_root().code_address, "0xchildcode", "0xchildstorage")
-get_grandchild = lambda: CallFrame(get_child(), 3, get_child().code_address, "0xgrandchildcode", "0xgrandchildstorage")
+get_child_of: Callable[[CallFrame, str], CallFrame] = lambda parent, address: CallFrame(
+    parent, parent.depth + 1, parent.code_address, address, address
+)
+get_child = lambda: get_child_of(get_root(), "0xchild")
+get_grandchild = lambda: get_child_of(get_child(), "0xgrandchild")
 get_manager: Callable[[CallFrame], CallFrameManager] = lambda call_frame: CallFrameManager(call_frame)
 
 get_add: Callable[[CallFrame], Instruction] = lambda call_frame: ADD(
@@ -196,3 +199,51 @@ def test_call_frame_manager_makes_exceptional_halt():
     assert manager.get_current_call_frame() == root
     assert child.reverted
     assert child.halt_type == HaltType.EXCEPTIONAL
+
+
+def test_call_frame_manager_tree_base():
+    root = get_root()
+    manager = get_manager(root)
+
+    tree = manager.get_call_tree()
+
+    assert tree.call_frame == root
+    assert tree.children == []
+
+
+def test_call_frame_manager_tree_order():
+    """
+    root
+    - first
+    - - first_nested
+    - second
+    - third
+    """
+    root = get_root()
+    manager = get_manager(root)
+
+    def stop():
+        return get_stop(manager.get_current_call_frame())
+
+    manager.on_step(get_call(root, "0xfirst"), 2)
+    manager.on_step(get_call(manager.get_current_call_frame(), "0xfirst_nested"), 3)
+    manager.on_step(stop(), 2)
+    manager.on_step(stop(), 1)
+    manager.on_step(get_call(root, "0xsecond"), 2)
+    manager.on_step(stop(), 1)
+    manager.on_step(get_call(root, "0xthird"), 2)
+    manager.on_step(stop(), 1)
+    tree = manager.get_call_tree()
+
+    # correct structure
+    assert tree.call_frame == root
+    assert len(tree.children) == 3
+    first, second, third = tree.children
+    assert len(first.children) == 1
+    first_nested = first.children[0]
+
+    # correct addresses
+    assert first.call_frame.code_address == "0xfirst"
+    assert first_nested.call_frame.code_address == "0xfirst_nested"
+    assert second.call_frame.code_address == "0xsecond"
+    assert third.call_frame.code_address == "0xthird"
