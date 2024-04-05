@@ -155,12 +155,12 @@
 <h2 id="analysis">Analysis</h2>
 <p>The analyzers are built in a way, that they don't need access to the whole trace at once. This way, we do not need to load the whole trace into memory at the same time, but instead iterate through the events and analyze them on the go. This is mainly a memory improvement.</p>
 <h3 id="instruction-effect-changes">Instruction effect changes</h3>
-<p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>TraceEvent</code>s, including the program counter, the call depth and the stack. The first time they differ, is the point at which the previous instruction had a different effect.</p>
-<p>For instance, if the storage is different for both executions, the <code>SLOAD</code> will output a different result to the stack. We report the instruction that was executed before (and caused) the traces diverge, in this case before the stacks diverge.</p>
+<p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>Instruction</code>s and stop as soon as we find the TOD source.</p>
+<p>If two instructions have a different output (eg an <code>SLOAD</code> that loads a different value from storage), we consider them to be the TOD source.</p>
+<p>If this did not happen yet, but two instructions differ otherwise (inputs, program counter, etc), we take the previous instructions as TOD source. For example, this can happen if a <code>CALL</code> occurs and in one trace there is enough balance to do this, while the other trace has insufficient balance to do so.</p>
 <p><strong>Requires</strong>:</p>
 <ul>
 <li>comparison of two traces</li>
-<li>access to next <code>TraceEvent</code>s</li>
 <li>access to <code>Instruction</code>s</li>
 </ul>
 <p><strong>Labels</strong>:</p>
