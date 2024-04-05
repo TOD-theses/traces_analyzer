@@ -12,6 +12,7 @@ class HaltType(Enum):
 @dataclass
 class CallFrame:
     parent: Self | None
+    calldata: str
     depth: int
     msg_sender: str
     code_address: str

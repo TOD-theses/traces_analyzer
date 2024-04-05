@@ -20,9 +20,9 @@ from traces_analyzer.preprocessing.instructions import (
     op_from_class,
 )
 
-get_root = lambda: CallFrame(None, 1, "0xsender", "0xcode", "0xstorage")
+get_root = lambda: CallFrame(None, "", 1, "0xsender", "0xcode", "0xstorage")
 get_child_of: Callable[[CallFrame, str], CallFrame] = lambda parent, address: CallFrame(
-    parent, parent.depth + 1, parent.code_address, address, address
+    parent, "", parent.depth + 1, parent.code_address, address, address
 )
 get_child = lambda: get_child_of(get_root(), "0xchild")
 get_grandchild = lambda: get_child_of(get_child(), "0xgrandchild")
@@ -118,6 +118,7 @@ def test_call_frame_managers_does_not_enter_without_depth_change():
     assert manager.get_current_call_frame() == root
 
 
+# TODO: are there other instructions that create a new call context? eg CREATE?
 @pytest.mark.parametrize("call", [get_call(get_root(), "0xtarget"), get_staticcall(get_root(), "0xtarget")])
 def test_call_frame_manager_enters_with_code_and_storage(call):
     root = get_root()
@@ -130,6 +131,7 @@ def test_call_frame_manager_enters_with_code_and_storage(call):
     assert current_call_frame.msg_sender == root.code_address
     assert current_call_frame.code_address == "0xtarget"
     assert current_call_frame.storage_address == "0xtarget"
+    assert current_call_frame.calldata == "11111111"
 
 
 @pytest.mark.parametrize("call", [get_delegate_call(get_root(), "0xtarget"), get_callcode(get_root(), "0xtarget")])
@@ -144,6 +146,7 @@ def test_call_frame_manager_enters_only_with_code_address(call):
     assert current_call_frame.msg_sender == root.code_address
     assert current_call_frame.code_address == "0xtarget"
     assert current_call_frame.storage_address == root.storage_address
+    assert current_call_frame.calldata == "11111111"
 
 
 def test_call_frame_manager_throws_on_stop_without_depth_change():

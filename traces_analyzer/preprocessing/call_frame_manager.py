@@ -41,6 +41,12 @@ class CallTree:
             raise Exception(f"Could not find parent tree node to add callframe. {self} - {call_frame}")
         parent_node.children.append(CallTree(call_frame))
 
+    def __str__(self) -> str:
+        s = f"> {self.call_frame.code_address}.{self.call_frame.calldata[:8]}({self.call_frame.calldata[8:]})\n"
+        for child in self.children:
+            s += "  " + str(child)
+        return s
+
 
 class CallFrameManager:
     def __init__(self, root_call_frame: CallFrame) -> None:
@@ -83,6 +89,7 @@ def update_call_frame(
     if enters_call_frame_normal(instruction, current_call_frame.depth, next_depth):
         next_call_frame = CallFrame(
             parent=current_call_frame,
+            calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
             depth=current_call_frame.depth + 1,
             msg_sender=current_call_frame.code_address,
             code_address=instruction.data["address"],
@@ -93,6 +100,7 @@ def update_call_frame(
     elif enters_call_frame_without_storage(instruction, current_call_frame.depth, next_depth):
         next_call_frame = CallFrame(
             parent=current_call_frame,
+            calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
             depth=current_call_frame.depth + 1,
             msg_sender=current_call_frame.code_address,
             code_address=instruction.data["address"],

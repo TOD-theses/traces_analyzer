@@ -37,7 +37,7 @@ def go_to_tmpdir(request):
         yield
 
 
-TEST_ROOT_CALLFRAME = CallFrame(None, 1, "0x0", "0x0", "0x0", False, None)
+TEST_ROOT_CALLFRAME = CallFrame(None, "", 1, "0x0", "0x0", "0x0", False, None)
 
 
 def make_instruction(

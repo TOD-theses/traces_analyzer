@@ -10,6 +10,7 @@ class TransactionBundle:
     caller: str
     to: str
     hash: str
+    calldata: str
     trace_actual: Iterable[str]
     trace_reverse: Iterable[str]
 

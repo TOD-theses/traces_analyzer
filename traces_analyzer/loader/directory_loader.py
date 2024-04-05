@@ -38,6 +38,8 @@ class DirectoryLoader(TraceLoader):
             hash=hash,
             caller=tx_actual["from"],
             to=tx_actual["to"],
+            # TODO: remove get when it is implemented in the metadata
+            calldata=tx_actual.get("calldata", ""),
             trace_actual=lazy_load_file(self._dir / "actual" / (hash + ".jsonl")),
             trace_reverse=lazy_load_file(self._dir / "reverse" / (hash + ".jsonl")),
         )

@@ -43,12 +43,14 @@ def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: boo
         bundle.tx_victim.hash,
         bundle.tx_victim.caller,
         bundle.tx_victim.to,
+        bundle.tx_victim.calldata,
         (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
     )
     evaluations_attacker = compare_traces(
         bundle.tx_attack.hash,
         bundle.tx_attack.caller,
         bundle.tx_attack.to,
+        bundle.tx_attack.calldata,
         (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse),
     )
 
@@ -62,7 +64,9 @@ def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: boo
             print(evaluation.cli_report())
 
 
-def compare_traces(tx_hash: str, sender: str, to: str, traces: tuple[Iterable[str], Iterable[str]]) -> list[Evaluation]:
+def compare_traces(
+    tx_hash: str, sender: str, to: str, calldata: str, traces: tuple[Iterable[str], Iterable[str]]
+) -> list[Evaluation]:
     print(f"Comparing traces for {tx_hash}")
 
     tod_source_analyzer = TODSourceAnalyzer()
@@ -76,11 +80,18 @@ def compare_traces(tx_hash: str, sender: str, to: str, traces: tuple[Iterable[st
             traces_jsons=traces,
             sender=sender,
             to=to,
+            calldata=calldata,
         )
     )
     runner.run()
 
     print(f"Finished analysis in {int((time.time() - start) * 1000)}ms")
+    call_tree_normal, call_tree_reverse = runner.get_call_trees()
+
+    print("Call tree actual")
+    print(call_tree_normal)
+    print("Call tree reverse")
+    print(call_tree_reverse)
 
     evaluations: list[Evaluation] = [
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
