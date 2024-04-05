@@ -176,15 +176,25 @@ def test_call_frame_manager_throws_on_stop_at_root():
         manager.on_step(stop, root.depth - 1)
 
 
-@pytest.mark.parametrize(
-    "ret", [get_stop(get_child()), get_return(get_child()), get_revert(get_child()), get_selfdestruct(get_child())]
-)
+@pytest.mark.parametrize("ret", [get_stop(get_child()), get_return(get_child()), get_selfdestruct(get_child())])
 def test_call_frame_manager_returns_normal(ret):
     root = get_root()
     child = get_child()
     manager = get_manager(child)
 
     manager.on_step(ret, child.depth - 1)
+
+    assert manager.get_current_call_frame() == root
+    assert not child.reverted
+    assert child.halt_type == HaltType.NORMAL
+
+
+def test_call_frame_manager_reverts():
+    root = get_root()
+    child = get_child()
+    manager = get_manager(child)
+
+    manager.on_step(get_revert(get_child()), child.depth - 1)
 
     assert manager.get_current_call_frame() == root
     assert child.reverted

@@ -84,6 +84,7 @@ def test_sample_traces_analysis(sample_traces_path: Path):
     # see https://etherscan.io/tx-decoder?tx=0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0
     # and https://etherscan.io/vmtrace?txhash=0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0&type=parity
     call_tree_normal = runner.get_call_trees()[0]
+    assert not any(c.call_frame.reverted for c in call_tree_normal.recurse())
     assert len(call_tree_normal.children) == 4
     weth9_call, weth9_transfer, uniswap_staticcall, uniswap_swap = call_tree_normal.children
     assert len(weth9_call.children) == len(weth9_transfer.children) == len(uniswap_staticcall.children) == 0

@@ -116,13 +116,17 @@ def update_call_frame(
                 "Tried to return to parent call frame, while already being at the root."
                 f" {current_call_frame}. {instruction}"
             )
-        current_call_frame.reverted = True
-        current_call_frame.halt_type = (
-            HaltType.NORMAL
-            if makes_normal_halt(instruction, current_call_frame.depth, next_depth)
-            else HaltType.EXCEPTIONAL
-        )
         next_call_frame = current_call_frame.parent
+
+        if isinstance(instruction, REVERT):
+            current_call_frame.reverted = True
+            current_call_frame.halt_type = HaltType.NORMAL
+        elif not makes_normal_halt(instruction, current_call_frame.depth, next_depth):
+            current_call_frame.reverted = True
+            current_call_frame.halt_type = HaltType.EXCEPTIONAL
+        else:
+            current_call_frame.halt_type = HaltType.NORMAL
+
     elif makes_normal_halt(instruction, 1, 0):
         # if we get here, this means that we have a STOP/... without a proper depth change
         msg = (
