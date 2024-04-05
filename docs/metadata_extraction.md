@@ -79,14 +79,15 @@ The analyzers are built in a way, that they don't need access to the whole trace
 
 ### Instruction effect changes
 
-To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the `TraceEvent`s, including the program counter, the call depth and the stack. The first time they differ, is the point at which the previous instruction had a different effect.
+To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the `Instruction`s and stop as soon as we find the TOD source.
 
-For instance, if the storage is different for both executions, the `SLOAD` will output a different result to the stack. We report the instruction that was executed before (and caused) the traces diverge, in this case before the stacks diverge.
+If two instructions have a different output (eg an `SLOAD` that loads a different value from storage), we consider them to be the TOD source.
+
+If this did not happen yet, but two instructions differ otherwise (inputs, program counter, etc), we take the previous instructions as TOD source. For example, this can happen if a `CALL` occurs and in one trace there is enough balance to do this, while the other trace has insufficient balance to do so.
 
 **Requires**:
 
 - comparison of two traces
-- access to next `TraceEvent`s
 - access to `Instruction`s
 
 **Labels**:
