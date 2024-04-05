@@ -1,8 +1,7 @@
 """CLI interface for traces_analyzer project."""
 
 import json
-import sys
-import time
+from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 from typing import Iterable
 
@@ -18,40 +17,50 @@ from traces_analyzer.evaluation.instruction_differences_evaluation import Instru
 from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.loader.directory_loader import DirectoryLoader
+from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.preprocessing.instructions import CALL, STATICCALL, op_from_class
 
 
 def main():  # pragma: no cover
-    if not len(sys.argv) > 1:
-        print("Please provide at least one directory path")
-        quit()
+    parser = ArgumentParser(description="Analyze bundles of transaction traces")
+    parser.add_argument("--out", type=Path, default=Path("out"), help="The directory where the reports should be saved")
+    parser.add_argument(
+        "--bundles",
+        type=Path,
+        nargs="+",
+        required=True,
+        help="The directory path(s) that contain a metadata.json that describes what should be analyzed",
+    )
+    parser.add_argument("--verbose", action=BooleanOptionalAction, required=False)
 
-    directories = sys.argv[1:]
-    directory_paths = [Path(dir) for dir in directories]
+    args = parser.parse_args()
 
-    out_dir = Path("out")
-    out_dir.mkdir(exist_ok=True)
+    out = args.out
+    bundles = args.bundles
+    verbose = bool(args.verbose)
 
-    for path in tqdm(directory_paths):
-        analyze_transactions_in_dir(path, out_dir, False)
+    out.mkdir(exist_ok=True)
+
+    for path in (bar := tqdm(bundles, dynamic_ncols=True)):
+        bundle = DirectoryLoader(path).load()
+        bar.set_postfix_str(bundle.id)
+        analyze_transactions_in_dir(bundle, out, verbose)
 
 
-def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: bool):
-    bundle = DirectoryLoader(dir).load()
-
+def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, print_evaluations: bool):
     evaluations_victim = compare_traces(
-        bundle.tx_victim.hash,
         bundle.tx_victim.caller,
         bundle.tx_victim.to,
         bundle.tx_victim.calldata,
         (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
+        print_evaluations,
     )
     evaluations_attacker = compare_traces(
-        bundle.tx_attack.hash,
         bundle.tx_attack.caller,
         bundle.tx_attack.to,
         bundle.tx_attack.calldata,
         (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse),
+        print_evaluations,
     )
 
     save_evaluations(evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json")
@@ -65,15 +74,16 @@ def analyze_transactions_in_dir(dir: Path, out_dir: Path, print_evaluations: boo
 
 
 def compare_traces(
-    tx_hash: str, sender: str, to: str, calldata: str, traces: tuple[Iterable[str], Iterable[str]]
+    sender: str,
+    to: str,
+    calldata: str,
+    traces: tuple[Iterable[str], Iterable[str]],
+    print_call_trees: bool,
 ) -> list[Evaluation]:
-    print(f"Comparing traces for {tx_hash}")
-
     tod_source_analyzer = TODSourceAnalyzer()
     instruction_changes_analyzer = InstructionInputAnalyzer()
     instruction_usage_analyzers = SingleToDoubleTraceAnalyzer(InstructionUsageAnalyzer(), InstructionUsageAnalyzer())
 
-    start = time.time()
     runner = AnalysisRunner(
         RunInfo(
             analyzers=[tod_source_analyzer, instruction_changes_analyzer, instruction_usage_analyzers],
@@ -85,13 +95,12 @@ def compare_traces(
     )
     runner.run()
 
-    print(f"Finished analysis in {int((time.time() - start) * 1000)}ms")
-    call_tree_normal, call_tree_reverse = runner.get_call_trees()
-
-    print("Call tree actual")
-    print(call_tree_normal)
-    print("Call tree reverse")
-    print(call_tree_reverse)
+    if print_call_trees:
+        call_tree_normal, call_tree_reverse = runner.get_call_trees()
+        print("Call tree actual")
+        print(call_tree_normal)
+        print("Call tree reverse")
+        print(call_tree_reverse)
 
     evaluations: list[Evaluation] = [
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
@@ -117,4 +126,3 @@ def save_evaluations(evaluations: list[Evaluation], path: Path):
         reports[dict_report["evaluation_type"]] = dict_report["report"]
 
     path.write_text(json.dumps(reports, indent=2))
-    print(f"Saved report to {path}")

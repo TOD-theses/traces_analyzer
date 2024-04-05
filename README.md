@@ -14,10 +14,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for installation instructions.
 After installing it, you can run it as following:
 
 ```bash
-$ python -m traces_analyzer directory_path
+$ python -m traces_analyzer --help
 #or
-$ traces_analyzer directory_path
+$ traces_analyzer --help
 
 # for instance
-$ traces_analyzer sample_traces/62a8b9ece30161692b68cbb5/
+$ traces_analyzer traces_analyzer --bundles traces/benchmark_traces/*
 ```
