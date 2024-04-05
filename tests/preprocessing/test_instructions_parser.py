@@ -17,8 +17,6 @@ def get_root_call_frame():
         msg_sender="0x1111111111111111111111111111111111111111",
         code_address="0x1234123412341234123412341234123412341234",
         storage_address="0x1234123412341234123412341234123412341234",
-        reverted=False,
-        halt_type=None,
     )
 
 

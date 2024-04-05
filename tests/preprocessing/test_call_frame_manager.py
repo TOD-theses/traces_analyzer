@@ -11,6 +11,8 @@ from traces_analyzer.preprocessing.instructions import (
     ADD,
     CALL,
     CALLCODE,
+    CREATE,
+    CREATE2,
     DELEGATECALL,
     RETURN,
     REVERT,
@@ -75,6 +77,12 @@ get_callcode: Callable[[CallFrame, str], Instruction] = lambda call_frame, addre
     None,
     {},  # type: ignore
 )
+get_create: Callable[[CallFrame], Instruction] = lambda call_frame: CREATE(
+    op_from_class(CREATE), "CREATE", 1, call_frame, ("0x0", "0x0", "0x4"), (), "11111111", None, {}
+)
+get_create2: Callable[[CallFrame], Instruction] = lambda call_frame: CREATE(
+    op_from_class(CREATE2), "CREATE2", 1, call_frame, ("0x0", "0x0", "0x4", "0x0"), (), "11111111", None, {}
+)
 get_stop: Callable[[CallFrame], Instruction] = lambda call_frame: STOP(
     op_from_class(STOP), "STOP", 1, call_frame, (), (), None, None, {}
 )
@@ -132,6 +140,7 @@ def test_call_frame_manager_enters_with_code_and_storage(call):
     assert current_call_frame.code_address == "0xtarget"
     assert current_call_frame.storage_address == "0xtarget"
     assert current_call_frame.calldata == "11111111"
+    assert not current_call_frame.is_contract_initialization
 
 
 @pytest.mark.parametrize("call", [get_delegate_call(get_root(), "0xtarget"), get_callcode(get_root(), "0xtarget")])
@@ -147,6 +156,25 @@ def test_call_frame_manager_enters_only_with_code_address(call):
     assert current_call_frame.code_address == "0xtarget"
     assert current_call_frame.storage_address == root.storage_address
     assert current_call_frame.calldata == "11111111"
+    assert not current_call_frame.is_contract_initialization
+
+
+@pytest.mark.parametrize("create", [get_create(get_root()), get_create2(get_root())])
+def test_call_frame_manager_enters_on_contract_creation(create):
+    root = get_root()
+    manager = get_manager(root)
+
+    manager.on_step(create, root.depth + 1)
+
+    current_call_frame = manager.get_current_call_frame()
+    assert current_call_frame.depth == 2
+    assert current_call_frame.msg_sender == root.code_address
+    # NOTE: the manager DOES NOT compute the correct addresses for the created contracts
+    # TODO: should we bother to compute the correct addresses (also depending on CREATE/CREATE2)?
+    assert current_call_frame.code_address == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
+    assert current_call_frame.storage_address == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
+    assert current_call_frame.calldata == "11111111"
+    assert current_call_frame.is_contract_initialization
 
 
 def test_call_frame_manager_throws_on_stop_without_depth_change():

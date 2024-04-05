@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from hashlib import sha256
 from typing import Iterable, TypeGuard
 
 from traces_analyzer.preprocessing.call_frame import CallFrame, HaltType
@@ -6,6 +7,8 @@ from traces_analyzer.preprocessing.instruction import Instruction
 from traces_analyzer.preprocessing.instructions import (
     CALL,
     CALLCODE,
+    CREATE,
+    CREATE2,
     DELEGATECALL,
     RETURN,
     REVERT,
@@ -94,8 +97,6 @@ def update_call_frame(
             msg_sender=current_call_frame.code_address,
             code_address=instruction.data["address"],
             storage_address=instruction.data["address"],
-            reverted=False,
-            halt_type=None,
         )
     elif enters_call_frame_without_storage(instruction, current_call_frame.depth, next_depth):
         next_call_frame = CallFrame(
@@ -105,8 +106,18 @@ def update_call_frame(
             msg_sender=current_call_frame.code_address,
             code_address=instruction.data["address"],
             storage_address=current_call_frame.storage_address,
-            reverted=False,
-            halt_type=None,
+        )
+    elif creates_contract(instruction, current_call_frame.depth, next_depth):
+        # NOTE: we currently do not compute the correct addresses
+        created_contract_addr = "0x" + sha256(current_call_frame.code_address.encode()).hexdigest()[12:]
+        next_call_frame = CallFrame(
+            parent=current_call_frame,
+            calldata=instruction.memory_input or "",
+            depth=current_call_frame.depth + 1,
+            msg_sender=current_call_frame.code_address,
+            code_address=created_contract_addr,
+            storage_address=created_contract_addr,
+            is_contract_initialization=True,
         )
     elif makes_normal_halt(instruction, current_call_frame.depth, next_depth) or makes_exceptional_halt(
         current_call_frame.depth, next_depth
@@ -163,6 +174,10 @@ def enters_call_frame_without_storage(
     instruction: Instruction, current_depth: int, next_depth: int
 ) -> TypeGuard[DELEGATECALL | CALLCODE]:
     return current_depth + 1 == next_depth and isinstance(instruction, (DELEGATECALL, CALLCODE))
+
+
+def creates_contract(instruction: Instruction, current_depth: int, next_depth: int):
+    return current_depth + 1 == next_depth and isinstance(instruction, (CREATE, CREATE2))
 
 
 def makes_normal_halt(instruction: Instruction, current_depth: int, next_depth: int):

@@ -19,3 +19,4 @@ class CallFrame:
     storage_address: str
     reverted: bool = False
     halt_type: HaltType | None = None
+    is_contract_initialization: bool = False
