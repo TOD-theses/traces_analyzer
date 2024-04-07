@@ -70,6 +70,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#not-yet-covered">Not yet covered</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#taint-flow-analysis">Taint Flow analysis</a>
+    </li>
     </ul>
                 </li>
               </ul>
@@ -220,6 +222,11 @@
 <li>attack symmetry (if the order was different, would the "victim" be an "attacker"?)</li>
 <li>output differences (particularly useful, if we group by instruction+inputs =&gt; sampe input that yields different output is probably TOD affected)</li>
 </ul>
+<h2 id="taint-flow-analysis">Taint Flow analysis</h2>
+<p>We could also do taint flow analysis with a few modifications. If we replace the string values on the stack, memory and calldata with objects that store <code>(value, written_by: Instruction and read_by: list[Instruction])</code>, then we would know which write did affect which reads and thus which instructions influenced which following instructions.</p>
+<p>This could be used for:
+- checking if the attackers address was used for some check (if conditions) or influenced the sink (both, directly or through sstore-&gt;sload/tstore-&gt;tload/...)
+- to reduce the number of vulnerable accounts in one source-&gt;sink flow (if we know the flow we know exactly which contracts are involved, instead of relying on heuristics that potentially include too many)</p>
               
             </div>
           </div><footer>
