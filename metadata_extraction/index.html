@@ -40,23 +40,17 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="..">Traces analyzer</a>
+                <li class="toctree-l1"><a class="reference internal" href="..">Introduction</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../parsing/">Parsing</a>
                 </li>
               </ul>
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="./">Metadata extraction</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#goal">Goal</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#traces-preprocessing">Traces preprocessing</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#traces-input">Traces input</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#parse-instructions">Parse Instructions</a>
-    </li>
-        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#analysis">Analysis</a>
         <ul>
@@ -105,54 +99,6 @@
 <div class="admonition danger">
 <p class="admonition-title">Danger</p>
 <p>This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?</p>
-</div>
-<h2 id="traces-preprocessing">Traces preprocessing</h2>
-<h3 id="traces-input">Traces input</h3>
-<p>As inputs we take the execution traces from the transactions. These are based on the non-finalized <a href="https://eips.ethereum.org/EIPS/eip-3155">EIP-3155</a> EVM trace specification.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>We require the "pc", "op", "stack" and "depth" fields. For deeper analysis, the "memory" field should also be present, eg to identify the CALL input.</p>
-</div>
-<p>Here is an example trace for an SLOAD instruction:</p>
-<pre><code class="language-json">{
-  &quot;pc&quot;: 1157,
-  &quot;op&quot;: 84,
-  &quot;gas&quot;: &quot;0x1f7b1&quot;,
-  &quot;gasCost&quot;: &quot;0x834&quot;,
-  &quot;stack&quot;: [
-    &quot;0xd0e30db0&quot;,
-    &quot;...&quot;,
-    &quot;0xd7a8b5b72b22ea76954784721def9efafa7df99d65b759e7d1b78f9ee0094fbc&quot;
-  ],
-  &quot;depth&quot;: 2,
-  &quot;returnData&quot;: &quot;0x&quot;,
-  &quot;refund&quot;: &quot;0x0&quot;,
-  &quot;memSize&quot;: &quot;96&quot;,
-  &quot;opName&quot;: &quot;SLOAD&quot;
-}
-</code></pre>
-<h3 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h3>
-<p>This step simply maps a trace event from JSON to a python class (<code>TraceEvent</code>).</p>
-<p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
-<h3 id="parse-instructions">Parse <code>Instruction</code>s</h3>
-<p>Here, we parse the instructions and keep track in which contract they were executed.</p>
-<p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
-<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
-<p>If we encounter a call instruction (<code>CALL</code>, <code>STATICCALL</code>, <code>CALLCODE</code> or <code>DELEGATECALL</code>) we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we mark the current one as reverted and go back to the previous <code>CallFrame</code>. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an <code>UnexpectedDepthChange</code> Exception.</p>
-<p>The <code>Instruction</code> includes:</p>
-<ul>
-<li>opcode</li>
-<li>program_counter</li>
-<li>call_frame</li>
-<li>stack_inputs</li>
-<li>stack_outputs</li>
-<li>memory_input</li>
-<li>memory_output</li>
-<li>data (additional fields based on the instruction type, eg <code>key</code> for <code>SLOAD</code>)</li>
-</ul>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>How should we treat inputs/outputs from/to non-stack? in particular, the memory for eg calls?</p>
 </div>
 <h2 id="analysis">Analysis</h2>
 <p>The analyzers are built in a way, that they don't need access to the whole trace at once. This way, we do not need to load the whole trace into memory at the same time, but instead iterate through the events and analyze them on the go. This is mainly a memory improvement.</p>
@@ -231,7 +177,7 @@
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href=".." class="btn btn-neutral float-left" title="Traces analyzer"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../parsing/" class="btn btn-neutral float-left" title="Parsing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -254,7 +200,7 @@
   <span class="rst-current-version" data-toggle="rst-current-version">
     
     
-      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../parsing/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
   </span>

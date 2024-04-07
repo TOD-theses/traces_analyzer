@@ -12,7 +12,7 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Traces analyzer";
+        var mkdocs_page_name = "Introduction";
         var mkdocs_page_input_path = "index.md";
         var mkdocs_page_url = null;
       </script>
@@ -40,9 +40,13 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href=".">Traces analyzer</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Introduction</a>
     <ul class="current">
     </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="parsing/">Parsing</a>
                 </li>
               </ul>
               <ul>
@@ -63,7 +67,7 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Traces analyzer</li>
+      <li class="breadcrumb-item active">Introduction</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -73,12 +77,17 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="traces-analyzer">Traces analyzer</h1>
-<p>See <a href="metadata_extraction/">Metadata Extraction</a>.</p>
+<p>The analysis is currently done in two steps:</p>
+<ol>
+<li>Parse instructions from traces (see <a href="parsing/">Parsing</a>)</li>
+<li>Run analyzers on instructions (see <a href="metadata_extraction/">Metadata Extraction</a>)</li>
+</ol>
+<p>In the future, the second step will likely be renamed to "feature extraction" and a third step will process these "features" to assign labels and other metadata to contracts.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="metadata_extraction/" class="btn btn-neutral float-right" title="Metadata extraction">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="parsing/" class="btn btn-neutral float-right" title="Parsing">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -102,7 +111,7 @@
     
     
     
-      <span><a href="metadata_extraction/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="parsing/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
@@ -122,5 +131,5 @@
 
 <!--
 MkDocs version : 1.5.3
-Build Date UTC : 2024-04-07 05:10:50.620694+00:00
+Build Date UTC : 2024-04-07 06:54:31.465551+00:00
 -->
