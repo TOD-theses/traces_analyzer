@@ -1,5 +1,10 @@
 site_name: Traces Analyzer
 theme: readthedocs
 
+nav:
+- Introduction: 'index.md'
+- 'parsing.md'
+- 'metadata_extraction.md'
+
 markdown_extensions:
 - admonition
