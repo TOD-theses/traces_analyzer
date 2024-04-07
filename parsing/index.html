@@ -46,15 +46,11 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="./">Parsing</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#traces-preprocessing">Traces preprocessing</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#traces-input">Traces input</a>
+    <li class="toctree-l2"><a class="reference internal" href="#traces-input">Traces input</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
+    <li class="toctree-l2"><a class="reference internal" href="#map-each-json-to-a-traceevent">Map each JSON to a TraceEvent</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#parse-instructions-and-the-calltree">Parse Instructions and the CallTree</a>
-    </li>
-        </ul>
+    <li class="toctree-l2"><a class="reference internal" href="#parse-instructions-and-the-calltree">Parse Instructions and the CallTree</a>
     </li>
     </ul>
                 </li>
@@ -87,8 +83,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="parsing">Parsing</h1>
-<h2 id="traces-preprocessing">Traces preprocessing</h2>
-<h3 id="traces-input">Traces input</h3>
+<h2 id="traces-input">Traces input</h2>
 <p>As inputs we take the execution traces from the transactions. These are based on the non-finalized <a href="https://eips.ethereum.org/EIPS/eip-3155">EIP-3155</a> EVM trace specification.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -113,10 +108,10 @@
   &quot;opName&quot;: &quot;SLOAD&quot;
 }
 </code></pre>
-<h3 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h3>
+<h2 id="map-each-json-to-a-traceevent">Map each JSON to a <code>TraceEvent</code></h2>
 <p>This step simply maps a trace event from JSON to a python class (<code>TraceEvent</code>).</p>
 <p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
-<h3 id="parse-instructions-and-the-calltree">Parse <code>Instruction</code>s and the <code>CallTree</code></h3>
+<h2 id="parse-instructions-and-the-calltree">Parse <code>Instruction</code>s and the <code>CallTree</code></h2>
 <p>Here, we parse the instructions and keep track in which contract they were executed.</p>
 <p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
 <p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
@@ -124,6 +119,7 @@
 <p>The <code>Instruction</code> includes:</p>
 <ul>
 <li>opcode</li>
+<li>name (mnemonic for opcode)</li>
 <li>program_counter</li>
 <li>call_frame</li>
 <li>stack_inputs</li>
