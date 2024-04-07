@@ -3,8 +3,8 @@ from typing import ClassVar
 
 from typing_extensions import Mapping
 
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.instruction_io import InstructionIOSpec
+from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.instruction_io import InstructionIOSpec
 
 
 @dataclass(frozen=True)

@@ -1,13 +1,13 @@
 from typing import Callable
 import pytest
-from traces_analyzer.preprocessing.call_frame import CallFrame, HaltType
-from traces_analyzer.preprocessing.call_frame_manager import (
+from traces_analyzer.parser.call_frame import CallFrame, HaltType
+from traces_analyzer.parser.call_frame_manager import (
     CallFrameManager,
     ExpectedDepthChange,
     UnexpectedDepthChange,
 )
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instructions import (
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instructions import (
     ADD,
     CALL,
     CALLCODE,

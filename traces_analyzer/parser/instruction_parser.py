@@ -1,9 +1,9 @@
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instruction_io import parse_instruction_io
-from traces_analyzer.preprocessing.instructions import get_instruction_class
-from traces_analyzer.preprocessing.mnemonics import opcode_to_name
+from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.events_parser import TraceEvent
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instruction_io import parse_instruction_io
+from traces_analyzer.parser.instructions import get_instruction_class
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Instruction:

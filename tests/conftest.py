@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 import sys
 
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instructions import JUMPDEST, op_from_class
-from traces_analyzer.preprocessing.instruction_parser import parse_instruction
+from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.events_parser import TraceEvent
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instructions import JUMPDEST, op_from_class
+from traces_analyzer.parser.instruction_parser import parse_instruction
 
 
 @fixture

@@ -1,12 +1,12 @@
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.call_frame_manager import CallFrameManager
-from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instructions import (
+from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.call_frame_manager import CallFrameManager
+from traces_analyzer.parser.events_parser import TraceEvent
+from traces_analyzer.parser.instructions import (
     CALL,
     POP,
     op_from_class,
 )
-from traces_analyzer.preprocessing.instructions_parser import parse_instructions
+from traces_analyzer.parser.instructions_parser import parse_instructions
 
 
 def get_root_call_frame():

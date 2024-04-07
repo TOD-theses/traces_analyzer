@@ -18,7 +18,7 @@ from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionU
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
-from traces_analyzer.preprocessing.instructions import CALL, STATICCALL, op_from_class
+from traces_analyzer.parser.instructions import CALL, STATICCALL, op_from_class
 
 
 def main():  # pragma: no cover

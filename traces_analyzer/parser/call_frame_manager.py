@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import Iterable, TypeGuard
 
-from traces_analyzer.preprocessing.call_frame import CallFrame, HaltType
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instructions import (
+from traces_analyzer.parser.call_frame import CallFrame, HaltType
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instructions import (
     CALL,
     CALLCODE,
     CREATE,

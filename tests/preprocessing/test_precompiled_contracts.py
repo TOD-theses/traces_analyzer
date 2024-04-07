@@ -1,4 +1,4 @@
-from traces_analyzer.preprocessing.precompiled_contracts import (
+from traces_analyzer.utils.precompiled_contracts import (
     addr_to_precompiled_contract_name,
     is_precompiled_contract,
 )

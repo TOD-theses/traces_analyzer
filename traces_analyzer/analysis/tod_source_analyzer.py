@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing_extensions import override
 
 from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
-from traces_analyzer.preprocessing.instruction import Instruction
+from traces_analyzer.parser.instruction import Instruction
 
 
 @dataclass

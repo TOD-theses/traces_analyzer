@@ -5,7 +5,7 @@ from traces_analyzer.analysis.instruction_input_analyzer import (
     InstructionInputChange,
 )
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
-from traces_analyzer.preprocessing.instructions import CALL, SLOAD, op_from_class
+from traces_analyzer.parser.instructions import CALL, SLOAD, op_from_class
 
 
 def test_instruction_differences_evaluation():

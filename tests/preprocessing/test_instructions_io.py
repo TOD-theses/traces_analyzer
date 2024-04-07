@@ -1,4 +1,4 @@
-from traces_analyzer.preprocessing.instruction_io import InstructionIOSpec, parse_instruction_io
+from traces_analyzer.parser.instruction_io import InstructionIOSpec, parse_instruction_io
 
 
 def test_parse_instructions_io_empty():

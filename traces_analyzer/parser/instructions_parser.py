@@ -1,9 +1,9 @@
 from collections.abc import Iterable
 
-from traces_analyzer.preprocessing.call_frame_manager import CallFrameManager
-from traces_analyzer.preprocessing.events_parser import TraceEvent
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instruction_parser import parse_instruction
+from traces_analyzer.parser.call_frame_manager import CallFrameManager
+from traces_analyzer.parser.events_parser import TraceEvent
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instruction_parser import parse_instruction
 
 
 def parse_instructions(events: Iterable[TraceEvent], call_frame_manager: CallFrameManager) -> Iterable[Instruction]:

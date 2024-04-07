@@ -7,7 +7,7 @@ from traces_analyzer.analysis.instruction_input_analyzer import InstructionInput
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.preprocessing.instructions import LOG3, SLOAD, op_from_class
+from traces_analyzer.parser.instructions import LOG3, SLOAD, op_from_class
 
 
 def test_sample_traces_analysis(sample_traces_path: Path):

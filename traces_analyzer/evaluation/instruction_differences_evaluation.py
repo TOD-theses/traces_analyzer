@@ -4,7 +4,7 @@ from typing_extensions import override
 
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionExecution, InstructionInputChange
 from traces_analyzer.evaluation.evaluation import Evaluation
-from traces_analyzer.preprocessing.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL, op_from_class
+from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL, op_from_class
 
 
 class InstructionDifferencesEvaluation(Evaluation):

@@ -1,4 +1,4 @@
-from traces_analyzer.preprocessing.mnemonics import _OPCODE_TO_NAME, _NAME_TO_OPCODE, name_to_opcode, opcode_to_name
+from traces_analyzer.utils.mnemonics import _OPCODE_TO_NAME, _NAME_TO_OPCODE, name_to_opcode, opcode_to_name
 
 NUMBER_OF_OPCODES = 149
 

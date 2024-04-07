@@ -1,8 +1,8 @@
 from itertools import zip_longest
 from tests.conftest import make_instruction
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
-from traces_analyzer.preprocessing.instructions import POP, PUSH0, SLOAD, op_from_class
-from traces_analyzer.preprocessing.events_parser import TraceEvent
+from traces_analyzer.parser.instructions import POP, PUSH0, SLOAD, op_from_class
+from traces_analyzer.parser.events_parser import TraceEvent
 
 
 def test_tod_source_analyzer():

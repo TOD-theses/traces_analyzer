@@ -3,11 +3,11 @@ from itertools import zip_longest
 from typing import Iterable
 
 from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.call_frame_manager import CallFrameManager, CallTree
-from traces_analyzer.preprocessing.events_parser import parse_events
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instructions_parser import parse_instructions
+from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.call_frame_manager import CallFrameManager, CallTree
+from traces_analyzer.parser.events_parser import parse_events
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instructions_parser import parse_instructions
 
 
 @dataclass

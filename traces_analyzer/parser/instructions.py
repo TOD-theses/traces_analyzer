@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Mapping, TypedDict
 
-from traces_analyzer.preprocessing.instruction import Instruction
-from traces_analyzer.preprocessing.instruction_io import InstructionIOSpec
+from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instruction_io import InstructionIOSpec
 
 CallDataNew = TypedDict(
     "CallDataNew",

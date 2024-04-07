@@ -1,7 +1,7 @@
 from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
-from traces_analyzer.preprocessing.call_frame import CallFrame
-from traces_analyzer.preprocessing.instructions import POP, PUSH0, RETURN, REVERT, STOP, op_from_class
+from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.instructions import POP, PUSH0, RETURN, REVERT, STOP, op_from_class
 
 
 def test_instruction_usage_analyzer():

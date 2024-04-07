@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
 from traces_analyzer.analysis.analysis_runner import RunInfo, AnalysisRunner
-from traces_analyzer.preprocessing.instructions import POP, op_from_class
+from traces_analyzer.parser.instructions import POP, op_from_class
 
 
 def test_analysis_runner_empty_does_not_call_analyzer():
