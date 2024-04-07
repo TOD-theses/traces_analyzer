@@ -5,6 +5,8 @@ nav:
 - Introduction: 'index.md'
 - 'parsing.md'
 - 'metadata_extraction.md'
+- 'definitions.md'
+- 'contract_attribution.md'
 
 markdown_extensions:
 - admonition
