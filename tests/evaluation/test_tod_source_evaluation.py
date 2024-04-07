@@ -33,7 +33,7 @@ def test_tod_source_evaluation_found():
     evaluation_str = evaluation.cli_report()
 
     assert "TOD source" in evaluation_str
-    assert hex(op_from_class(SLOAD)) in evaluation_str
+    assert "SLOAD" in evaluation_str
 
 
 def test_tod_source_not_found():

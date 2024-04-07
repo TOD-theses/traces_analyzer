@@ -36,11 +36,10 @@ class TODSourceEvaluation(Evaluation):
     def _cli_report(self) -> str:
         if not self._tod_source.found:
             return "TOD source not found."
+        instr_one, instr_two = self._tod_source.instruction_one, self._tod_source.instruction_two
+ 
         return (
-            "Instruction\n"
-            f"> opcode: {hex(self._tod_source.instruction_one.opcode)}\n"
-            "\n"
-            "Location: \n"
-            f"> address: {self._tod_source.instruction_one.call_frame.code_address}\n"
-            f"> pc: {self._tod_source.instruction_one.program_counter}\n"
+            f"{instr_one.name} at {instr_one.call_frame.code_address}:{instr_one.program_counter}\n"
+            f"> output first trace:   {instr_one.stack_outputs} | {instr_one.memory_output}\n"
+            f"> output second trace:  {instr_two.stack_outputs} | {instr_two.memory_output}"
         )

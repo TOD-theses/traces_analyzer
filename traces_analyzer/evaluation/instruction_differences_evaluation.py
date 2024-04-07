@@ -5,6 +5,7 @@ from typing_extensions import override
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionExecution, InstructionInputChange
 from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL, op_from_class
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 class InstructionDifferencesEvaluation(Evaluation):
@@ -46,8 +47,8 @@ class InstructionDifferencesEvaluation(Evaluation):
         relevant_only_first = [c for c in self._only_first if c.opcode in self._CLI_REPORTED_OPCODES]
         relevant_only_second = [c for c in self._only_second if c.opcode in self._CLI_REPORTED_OPCODES]
 
-        relevant_opcodes_note = "NOTE: for clarity the CLI only reports following opcodes:" + ",".join(
-            [hex(op).upper() for op in self._CLI_REPORTED_OPCODES]
+        relevant_opcodes_note = "NOTE: for clarity the CLI only reports following instructions: " + ", ".join(
+            [opcode_to_name(op, str(op)) for op in self._CLI_REPORTED_OPCODES] # type: ignore
         )
 
         input_changes_report = self._cli_report_input_changes(relevant_input_changes)
@@ -68,17 +69,16 @@ class InstructionDifferencesEvaluation(Evaluation):
         result = ""
         for change in changes:
             result += (
-                "Instruction:\n"
-                f"> opcode: {hex(change.opcode)}\n"
-                "Location:\n"
-                f"> address: {change.address}\n"
-                f"> pc: {change.program_counter}\n"
-                "Change:\n"
+                f"{opcode_to_name(change.opcode)} at {change.address}:{change.program_counter}\n"
             )
-            if change.memory_input_change:
-                result += f'> memory: "{change.first_memory_input}" vs "{change.second_memory_input}"\n'
             if change.stack_input_changes:
                 result += "> stack: " + str(change.stack_input_changes) + "\n"
+            else:
+                result += "> common stack input: " + str(change.first_stack_input) + "\n"
+            if change.memory_input_change:
+                result += f'> memory first trace:   "{change.first_memory_input}"\n'
+                result += f'> memory second trace:  "{change.second_memory_input}"\n'
+            result += "\n"
         return result
 
     def _cli_report_occurrence_changes(self, changes: list[InstructionExecution]) -> str:

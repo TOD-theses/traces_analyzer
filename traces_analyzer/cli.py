@@ -48,38 +48,43 @@ def main():  # pragma: no cover
         analyze_transactions_in_dir(bundle, out, verbose)
 
 
-def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, print_evaluations: bool):
+def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, verbose: bool):
     evaluations_victim = compare_traces(
+        bundle.tx_victim.hash,
         bundle.tx_victim.caller,
         bundle.tx_victim.to,
         bundle.tx_victim.calldata,
         (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
-        print_evaluations,
+        verbose,
     )
     evaluations_attacker = compare_traces(
+        bundle.tx_attack.hash,
         bundle.tx_attack.caller,
         bundle.tx_attack.to,
         bundle.tx_attack.calldata,
         (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse),
-        print_evaluations,
+        verbose,
     )
 
     save_evaluations(evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json")
     save_evaluations(evaluations_attacker, out_dir / f"{bundle.id}_{bundle.tx_attack.hash}.json")
 
-    if print_evaluations:
+    if verbose:
+        print(f"Transaction: {bundle.tx_victim.hash}")
         for evaluation in evaluations_victim:
             print(evaluation.cli_report())
+        print(f"Transaction: {bundle.tx_attack.hash}")
         for evaluation in evaluations_attacker:
             print(evaluation.cli_report())
 
 
 def compare_traces(
+    hash: str,
     sender: str,
     to: str,
     calldata: str,
     traces: tuple[Iterable[str], Iterable[str]],
-    print_call_trees: bool,
+    verbose: bool,
 ) -> list[Evaluation]:
     tod_source_analyzer = TODSourceAnalyzer()
     instruction_changes_analyzer = InstructionInputAnalyzer()
@@ -98,8 +103,9 @@ def compare_traces(
     )
     runner.run()
 
-    if print_call_trees:
+    if verbose:
         call_tree_normal, call_tree_reverse = runner.get_call_trees()
+        print(f"Transaction: {hash}")
         print("Call tree actual")
         print(call_tree_normal)
         print("Call tree reverse")

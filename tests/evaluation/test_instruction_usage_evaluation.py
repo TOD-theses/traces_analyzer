@@ -1,4 +1,5 @@
 from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 def test_instruction_usage_evaluation():
@@ -39,5 +40,5 @@ def test_instruction_usage_evaluation():
     assert "Instruction usage" in evaluation_str
     assert "0xroot" in evaluation_str
     assert "0xchild" in evaluation_str
-    assert "0x5" in evaluation_str
-    assert "0x20" not in evaluation_str
+    assert opcode_to_name(0x5) in evaluation_str
+    assert opcode_to_name(0x6) not in evaluation_str

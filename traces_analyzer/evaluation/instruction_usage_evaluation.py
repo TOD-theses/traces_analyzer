@@ -3,6 +3,7 @@ from typing import Iterable, Mapping
 from typing_extensions import override
 
 from traces_analyzer.evaluation.evaluation import Evaluation
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 class InstructionUsageEvaluation(Evaluation):
@@ -32,9 +33,9 @@ class InstructionUsageEvaluation(Evaluation):
     def _cli_report(self) -> str:
         opcodes = self._relevant_opcodes(self._merged_opcodes())
 
-        result = "Relevant opcodes by code address:\n"
+        result = "Relevant instructions by code address:\n"
         for addr, ops in opcodes.items():
-            result += f"{addr}: {ops}\n"
+            result += f"{addr}: {[opcode_to_name(int(op, 16)) for op in ops]}\n"
 
         return result
 

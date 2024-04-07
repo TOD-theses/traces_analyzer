@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class TraceEvent:
     pc: int
     op: int

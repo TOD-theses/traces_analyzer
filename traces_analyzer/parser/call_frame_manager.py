@@ -45,9 +45,9 @@ class CallTree:
         parent_node.children.append(CallTree(call_frame))
 
     def __str__(self) -> str:
-        s = f"> {self.call_frame.code_address}.{self.call_frame.calldata[:8]}({self.call_frame.calldata[8:]})\n"
+        s = f"> {self.call_frame.code_address}.{self.call_frame.calldata[:8]}(...)\n"
         for child in self.children:
-            s += "  " + str(child)
+            s += "  " + "  ".join(str(child).splitlines(True))
         return s
 
 
