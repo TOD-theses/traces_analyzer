@@ -6,7 +6,7 @@ from traces_analyzer.parser.instructions import (
     POP,
     op_from_class,
 )
-from traces_analyzer.parser.instructions_parser import parse_instructions
+from traces_analyzer.parser.instructions_parser import _parse_instructions
 
 
 def get_root_call_frame():
@@ -25,7 +25,7 @@ def get_sample_call_frame_manager():
 
 
 def test_parser_empty_events():
-    assert list(parse_instructions([], get_sample_call_frame_manager())) == []
+    assert list(_parse_instructions([], get_sample_call_frame_manager())) == []
 
 
 def test_call_inputs_memory_parsing():
@@ -34,7 +34,7 @@ def test_call_inputs_memory_parsing():
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
 
     call_event = TraceEvent(pc=1234, op=op_from_class(CALL), stack=stack, memory=memory, depth=1)
-    instructions = list(parse_instructions([call_event], call_frame_manager))
+    instructions = list(_parse_instructions([call_event], call_frame_manager))
     call_instruction = instructions[0]
 
     assert isinstance(call_instruction, CALL)
@@ -53,7 +53,7 @@ def test_parser_updates_call_frame_manager():
         TraceEvent(pc=2, op=op_from_class(POP), stack=["0x0"], memory="", depth=2),
     ]
 
-    list(parse_instructions(events, manager))
+    list(_parse_instructions(events, manager))
 
     assert manager.get_current_call_frame() != root
     assert manager.get_current_call_frame().code_address == call_target

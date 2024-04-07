@@ -1,6 +1,6 @@
 from tests.conftest import TEST_ROOT_CALLFRAME
 from traces_analyzer.parser.events_parser import TraceEvent
-from traces_analyzer.parser.instruction_parser import parse_instruction
+from traces_analyzer.parser.instructions_parser import parse_instruction
 
 unknown_opcode = 0xF
 dummy_event = TraceEvent(0x1, unknown_opcode, [], 1, None)

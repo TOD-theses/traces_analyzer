@@ -8,13 +8,25 @@ from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsage
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.parser.instructions import LOG3, SLOAD, op_from_class
+from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 
 
-def test_sample_traces_analysis(sample_traces_path: Path):
+def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     attack_id = "62a8b9ece30161692b68cbb5"
 
     directory_loader = DirectoryLoader(sample_traces_path / attack_id)
     bundle = directory_loader.load()
+
+    transactions_actual = parse_instructions(
+        TransactionParsingInfo(
+            bundle.tx_attack.trace_actual, bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata
+        )
+    )
+    transactions_reverse = parse_instructions(
+        TransactionParsingInfo(
+            bundle.tx_attack.trace_reverse, bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata
+        )
+    )
 
     instruction_usage_analyzer = SingleToDoubleInstructionAnalyzer(
         InstructionUsageAnalyzer(), InstructionUsageAnalyzer()
@@ -25,10 +37,7 @@ def test_sample_traces_analysis(sample_traces_path: Path):
     run_info = RunInfo(
         analyzers=[instruction_usage_analyzer, tod_source_analyzer, instruction_input_analyzer],
         # TODO: why is the reverse one first? check this and document it
-        traces_jsons=(bundle.tx_attack.trace_reverse, bundle.tx_attack.trace_actual),
-        sender=bundle.tx_attack.caller,
-        to=bundle.tx_attack.to,
-        calldata=bundle.tx_attack.calldata,
+        transactions=(transactions_reverse, transactions_actual),
     )
 
     runner = AnalysisRunner(run_info)

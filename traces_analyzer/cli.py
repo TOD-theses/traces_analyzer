@@ -19,6 +19,7 @@ from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.parser.instructions import CALL, STATICCALL, op_from_class
+from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 
 
 def main():  # pragma: no cover
@@ -86,13 +87,13 @@ def compare_traces(
         InstructionUsageAnalyzer(), InstructionUsageAnalyzer()
     )
 
+    transaction_one = parse_instructions(TransactionParsingInfo(traces[0], sender, to, calldata))
+    transaction_two = parse_instructions(TransactionParsingInfo(traces[1], sender, to, calldata))
+
     runner = AnalysisRunner(
         RunInfo(
             analyzers=[tod_source_analyzer, instruction_changes_analyzer, instruction_usage_analyzers],
-            traces_jsons=traces,
-            sender=sender,
-            to=to,
-            calldata=calldata,
+            transactions=(transaction_one, transaction_two),
         )
     )
     runner.run()
