@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>TOD definitions - Traces Analyzer</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "TOD definitions";
+        var mkdocs_page_input_path = "definitions.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Traces Analyzer
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Introduction</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../parsing/">Parsing</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../metadata_extraction/">Metadata extraction</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">TOD definitions</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#world-state">World State</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#write-write-conflict">Write-Write conflict</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#write-read">Write-Read</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#call-changes">Call changes</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#log-changes">Log changes</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contract_attribution/">Contract attribution</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Traces Analyzer</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">TOD definitions</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="tod-definitions">TOD definitions</h1>
+<p>Here we will show several definitions of TOD. Sub-headers are used to indicate, that the definition is a specialization of the upper definition.</p>
+<div class="toc">
+<ul>
+<li><a href="#tod-definitions">TOD definitions</a><ul>
+<li><a href="#world-state">World State</a><ul>
+<li><a href="#write-write-conflict">Write-Write conflict</a></li>
+<li><a href="#write-read">Write-Read</a><ul>
+<li><a href="#call-changes">Call changes</a><ul>
+<li><a href="#ether-flow-changes">Ether flow changes</a></li>
+</ul>
+</li>
+<li><a href="#log-changes">Log changes</a><ul>
+<li><a href="#token-flow-changes">Token flow changes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h2 id="world-state">World State</h2>
+<p>A TOD occurs, when executing transactions in a different order yields different world states.</p>
+<p>The world state is a mapping from addresses to account states, and the account state includes:</p>
+<ul>
+<li>nonce</li>
+<li>balance</li>
+<li>storageRoot</li>
+<li>codeHash</li>
+</ul>
+<p>Thus, two transactions are TOD, iff the balance, the storage or the code of an account, or the nonce of a smart contract is dependent on the transaction order (the nonce of an EOA cannot be influenced by the transactions).</p>
+<h3 id="write-write-conflict">Write-Write conflict</h3>
+<p>A TOD occurs, when both transactions overwrite different values to the same storage location.</p>
+<p>An example of this is ERC-20 approve, where both transactions write to <code>approved[victim][attacker]</code>. The remaining amount of approved tokens is the write-value of the second transaction.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only for storage there is a relevant overwrite functionality. For balances, there is only a set-to-0 functionality with <code>selfdestruct</code>. For <code>CREATE2</code> it is theoretically possible if there is also a Write-Read conflict (so the initialisation_code can fetch different data, depending on which transaction got executed first). For <code>CREATE</code>, the two creations will use different nonces and thus have different destinations.</p>
+</div>
+<h3 id="write-read">Write-Read</h3>
+<p>A TOD occurs, when the first transactions modifies a value and the second transaction reads this value. The value could be stored in the storage or be an accounts balance. to the storage and the second transaction reads this value from the storage.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This definition also includes the case, where <code>selfdestruct(recipient)</code> writes and reads the balance. This would need special care in the implementation.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This definition does not necessarily imply a world state change. For instance, assume a <code>counter</code> currently has a value <code>0</code>. The first transaction increments it to <code>1</code>. The second transaction makes an <code>if (counter &gt; 2)</code>. There is a write-read conflict, however this does not affect the world state (neither in storage, logs, code, gas, etc.).</p>
+</div>
+<h4 id="call-changes">Call changes</h4>
+<p>A TOD occurs, if the existence of a call instruction, or its stack and memory inputs, depend on the transaction order.</p>
+<p>Type of calls: CALL, STATICCALL, </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Should we include selfdestruct here?</p>
+</div>
+<h5 id="ether-flow-changes">Ether flow changes</h5>
+<p>A TOD occurs, if the sending of ether (source, recipient or amount) depends on the transaction order.</p>
+<h4 id="log-changes">Log changes</h4>
+<p>A TOD occurs, if the existence of a log instruction, or its stack and memory inputs, depend on the transaction order.</p>
+<h5 id="token-flow-changes">Token flow changes</h5>
+<p>A TOD occurs, if the sending of tokens (source, recipient or amount) depends on the transaction order.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../metadata_extraction/" class="btn btn-neutral float-left" title="Metadata extraction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../contract_attribution/" class="btn btn-neutral float-right" title="Contract attribution">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../metadata_extraction/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../contract_attribution/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
