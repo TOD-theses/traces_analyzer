@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from traces_analyzer.analysis.analysis_runner import AnalysisRunner, RunInfo
-from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
+from traces_analyzer.analysis.analyzer import SingleToDoubleInstructionAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
@@ -16,7 +16,9 @@ def test_sample_traces_analysis(sample_traces_path: Path):
     directory_loader = DirectoryLoader(sample_traces_path / attack_id)
     bundle = directory_loader.load()
 
-    instruction_usage_analyzer = SingleToDoubleTraceAnalyzer(InstructionUsageAnalyzer(), InstructionUsageAnalyzer())
+    instruction_usage_analyzer = SingleToDoubleInstructionAnalyzer(
+        InstructionUsageAnalyzer(), InstructionUsageAnalyzer()
+    )
     tod_source_analyzer = TODSourceAnalyzer()
     instruction_input_analyzer = InstructionInputAnalyzer()
 

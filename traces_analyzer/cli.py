@@ -8,7 +8,7 @@ from typing import Iterable
 from tqdm import tqdm
 
 from traces_analyzer.analysis.analysis_runner import AnalysisRunner, RunInfo
-from traces_analyzer.analysis.analyzer import SingleToDoubleTraceAnalyzer
+from traces_analyzer.analysis.analyzer import SingleToDoubleInstructionAnalyzer
 from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
 from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
 from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
@@ -82,7 +82,9 @@ def compare_traces(
 ) -> list[Evaluation]:
     tod_source_analyzer = TODSourceAnalyzer()
     instruction_changes_analyzer = InstructionInputAnalyzer()
-    instruction_usage_analyzers = SingleToDoubleTraceAnalyzer(InstructionUsageAnalyzer(), InstructionUsageAnalyzer())
+    instruction_usage_analyzers = SingleToDoubleInstructionAnalyzer(
+        InstructionUsageAnalyzer(), InstructionUsageAnalyzer()
+    )
 
     runner = AnalysisRunner(
         RunInfo(

@@ -1,13 +1,13 @@
 import json
 from unittest.mock import Mock
 
-from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
+from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
 from traces_analyzer.analysis.analysis_runner import RunInfo, AnalysisRunner
 from traces_analyzer.preprocessing.instructions import POP, op_from_class
 
 
 def test_analysis_runner_empty_does_not_call_analyzer():
-    analyzer_mock = Mock(spec_set=DoubleTraceAnalyzer)
+    analyzer_mock = Mock(spec_set=DoubleInstructionAnalyzer)
 
     runner = AnalysisRunner(
         RunInfo(
@@ -20,11 +20,11 @@ def test_analysis_runner_empty_does_not_call_analyzer():
     )
     runner.run()
 
-    analyzer_mock.on_analysis_step.assert_not_called()
+    analyzer_mock.on_instructions.assert_not_called()
 
 
 def test_analysis_runner_calls_analyzer():
-    analyzer_mock = Mock(spec_set=DoubleTraceAnalyzer)
+    analyzer_mock = Mock(spec_set=DoubleInstructionAnalyzer)
     trace_one = [{"pc": 1, "op": op_from_class(POP), "stack": ["0x1234"], "depth": 1}]
     trace_two = trace_one + [{"pc": 2, "op": op_from_class(POP), "stack": ["0x1111"], "depth": 1}]
 
@@ -39,26 +39,18 @@ def test_analysis_runner_calls_analyzer():
     )
     runner.run()
 
-    calls = analyzer_mock.on_analysis_step.call_args_list
+    calls = analyzer_mock.on_instructions.call_args_list
     assert len(calls) == 2
     call_1, call_2 = calls
-    step_1 = call_1.args[0]
-    step_2 = call_2.args[0]
-    assert isinstance(step_1, AnalysisStepDoubleTrace)
-    assert isinstance(step_2, AnalysisStepDoubleTrace)
+    instructions_first_call = call_1.args
+    instructions_second_call = call_2.args
 
-    # first step both are available
-    assert step_1.trace_event_one.op == op_from_class(POP)
-    assert step_1.trace_event_two.op == op_from_class(POP)
-    assert step_1.instruction_one.opcode == op_from_class(POP)
-    assert step_1.instruction_two.opcode == op_from_class(POP)
-    assert step_1.instruction_one.call_frame.depth == 1
+    assert instructions_first_call[0].opcode == op_from_class(POP)
+    assert instructions_first_call[1].opcode == op_from_class(POP)
+    assert instructions_first_call[0].call_frame.depth == 1
 
-    # second step only the 2nd trace had an event
-    assert step_2.trace_event_one is None
-    assert step_2.trace_event_two.op == op_from_class(POP)
-    assert step_2.instruction_one is None
-    assert step_2.instruction_two.opcode == op_from_class(POP)
+    assert instructions_second_call[0] is None
+    assert instructions_second_call[1].opcode == op_from_class(POP)
 
 
 def json_dumps_all(items: list[dict]) -> list[str]:

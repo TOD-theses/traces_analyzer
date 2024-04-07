@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
-from traces_analyzer.analysis.analyzer import AnalysisStepDoubleTrace, DoubleTraceAnalyzer
+from typing_extensions import override
+
+from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
 from traces_analyzer.preprocessing.instruction import Instruction
 
 
@@ -11,7 +13,7 @@ class TODSource:
     instruction_two: Instruction
 
 
-class TODSourceAnalyzer(DoubleTraceAnalyzer):
+class TODSourceAnalyzer(DoubleInstructionAnalyzer):
     """Analyze at which instruction the TOD first had an effect"""
 
     def __init__(self) -> None:
@@ -19,19 +21,21 @@ class TODSourceAnalyzer(DoubleTraceAnalyzer):
         self._tod_source_instructions: tuple[Instruction, Instruction] | None = None
         self._previous_instructions: tuple[Instruction, Instruction] | None = None
 
-    def on_analysis_step(self, step: AnalysisStepDoubleTrace):
+    @override
+    def on_instructions(self, instruction_one: Instruction | None, instruction_two: Instruction | None):
         if self._tod_source_instructions:
             return
 
-        if not equal_outputs(step.instruction_one, step.instruction_two):
-            self._tod_source_instructions = step.instruction_one, step.instruction_two
-        elif step.instruction_one != step.instruction_two:
-            self._tod_source_instructions = self._previous_instructions
-            raise Exception(f"Missed the TOD source, unexpected unequal instructions: {step}")
-        elif step.trace_event_one != step.trace_event_two:
-            raise Exception(f"Missed the TOD source, unexpected unequal events: {step}")
+        if not instruction_one or not instruction_two:
+            # TODO: simply take previous instruction?
+            raise Exception("Instructions from one trace stopped before the TOD source was found")
 
-        self._previous_instructions = (step.instruction_one, step.instruction_two)
+        if not equal_outputs(instruction_one, instruction_two):
+            self._tod_source_instructions = instruction_one, instruction_two
+        elif instruction_one != instruction_two:
+            self._tod_source_instructions = self._previous_instructions
+
+        self._previous_instructions = (instruction_one, instruction_two)
 
     def get_tod_source(self) -> TODSource:
         if not self._tod_source_instructions:
