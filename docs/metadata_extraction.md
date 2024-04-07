@@ -152,3 +152,11 @@ We record all executed unique instructions, eg to understand if hashing was used
 - control flow differences (where and through what? implement eg with changes or by comparing instructions)
 - attack symmetry (if the order was different, would the "victim" be an "attacker"?)
 - output differences (particularly useful, if we group by instruction+inputs => sampe input that yields different output is probably TOD affected)
+
+## Taint Flow analysis
+
+We could also do taint flow analysis with a few modifications. If we replace the string values on the stack, memory and calldata with objects that store `(value, written_by: Instruction and read_by: list[Instruction])`, then we would know which write did affect which reads and thus which instructions influenced which following instructions.
+
+This could be used for:
+- checking if the attackers address was used for some check (if conditions) or influenced the sink (both, directly or through sstore->sload/tstore->tload/...)
+- to reduce the number of vulnerable accounts in one source->sink flow (if we know the flow we know exactly which contracts are involved, instead of relying on heuristics that potentially include too many)
