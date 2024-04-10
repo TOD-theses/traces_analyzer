@@ -2,6 +2,10 @@
 
 Here we will show several definitions of TOD. Sub-headers are used to indicate, that the definition is a specialization of the upper definition.
 
+!!! note
+
+    We could differ between definitions that are focused on the outcome (taking the execution as a black-box) and definitions that are focused on the execution (ignoring the resulting state). eg "differences in the resulting balances" vs "differences in the execution's ether flows".
+
 [TOC]
 
 ## World State
