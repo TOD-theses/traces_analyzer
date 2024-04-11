@@ -1,4 +1,4 @@
-from traces_analyzer.analysis.instruction_input_analyzer import (
+from traces_analyzer.features.extractors.instruction_differences import (
     MemoryInputChange,
     StackInputChange,
     InstructionExecution,

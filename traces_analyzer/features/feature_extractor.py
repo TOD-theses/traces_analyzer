@@ -6,29 +6,29 @@ from typing_extensions import override
 from traces_analyzer.parser.instruction import Instruction
 
 
-class SingleInstructionAnalyzer(ABC):
+class SingleInstructionFeatureExtractor(ABC):
     @abstractmethod
     def on_instruction(self, instruction: Instruction):
         """Hook each instruction of a single trace"""
         pass
 
 
-class DoubleInstructionAnalyzer(ABC):
+class DoulbeInstructionFeatureExtractor(ABC):
     @abstractmethod
     def on_instructions(self, first_instruction: Instruction | None, second_instruction: Instruction | None):
         """Hook each instruction of two traces"""
         pass
 
 
-A = TypeVar("A", bound=SingleInstructionAnalyzer)
+A = TypeVar("A", bound=SingleInstructionFeatureExtractor)
 
 
-class SingleToDoubleInstructionAnalyzer(DoubleInstructionAnalyzer, Generic[A]):
-    def __init__(self, analyzer_one: A, analyzer_two: A) -> None:
+class SingleToDoubleInstructionFeatureExtractor(DoulbeInstructionFeatureExtractor, Generic[A]):
+    def __init__(self, feature_extractor_one: A, feature_extractor_two: A) -> None:
         super().__init__()
 
-        self.one = analyzer_one
-        self.two = analyzer_two
+        self.one = feature_extractor_one
+        self.two = feature_extractor_two
 
     @override
     def on_instructions(self, instruction_one: Instruction | None, instruction_two: Instruction | None):

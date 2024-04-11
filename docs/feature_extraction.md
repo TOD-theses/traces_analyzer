@@ -1,21 +1,8 @@
-# Metadata extraction
+# Feature extraction
 
-This page describes how metadata will be extracted from the traces.
+This page describes how features will be extracted from trace pairs.
 
-## Goal
-
-Based on the four transaction traces (2 normal, 2 reverse order), we automatically determine several labels and metadata related to TOD.
-
-!!! danger
-
-    This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?
-
-
-## Analysis
-
-The analyzers are built in a way, that they don't need access to the whole trace at once. This way, we do not need to load the whole trace into memory at the same time, but instead iterate through the events and analyze them on the go. This is mainly a memory improvement.
-
-### Instruction effect changes
+## Instruction effect changes
 
 To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the `Instruction`s and stop as soon as we find the TOD source.
 
@@ -40,7 +27,7 @@ If this did not happen yet, but two instructions differ otherwise (inputs, progr
 
     There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.
 
-### Instruction input changes
+## Instruction changes
 
 To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.
 
@@ -65,7 +52,7 @@ If this includes inputs from the memory, further:
 - log changes
 - token profits (through log changes)
 
-### Instruction usage
+## Instruction usages
 
 We record all executed unique instructions, eg to understand if hashing was used. We group this by the contract address that executed them.
 

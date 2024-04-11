@@ -7,15 +7,15 @@ from typing import Iterable
 
 from tqdm import tqdm
 
-from traces_analyzer.analysis.analysis_runner import AnalysisRunner, RunInfo
-from traces_analyzer.analysis.analyzer import SingleToDoubleInstructionAnalyzer
-from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
-from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
-from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
 from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
 from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
+from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
+from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
+from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
+from traces_analyzer.features.feature_extraction_runner import FeatureExtractionRunner, RunInfo
+from traces_analyzer.features.feature_extractor import SingleToDoubleInstructionFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.parser.instructions import CALL, STATICCALL, op_from_class
@@ -86,18 +86,18 @@ def compare_traces(
     traces: tuple[Iterable[str], Iterable[str]],
     verbose: bool,
 ) -> list[Evaluation]:
-    tod_source_analyzer = TODSourceAnalyzer()
-    instruction_changes_analyzer = InstructionInputAnalyzer()
-    instruction_usage_analyzers = SingleToDoubleInstructionAnalyzer(
-        InstructionUsageAnalyzer(), InstructionUsageAnalyzer()
+    tod_source_analyzer = TODSourceFeatureExtractor()
+    instruction_changes_analyzer = InstructionDifferencesFeatureExtractor()
+    instruction_usage_analyzers = SingleToDoubleInstructionFeatureExtractor(
+        InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
 
     transaction_one = parse_instructions(TransactionParsingInfo(traces[0], sender, to, calldata))
     transaction_two = parse_instructions(TransactionParsingInfo(traces[1], sender, to, calldata))
 
-    runner = AnalysisRunner(
+    runner = FeatureExtractionRunner(
         RunInfo(
-            analyzers=[tod_source_analyzer, instruction_changes_analyzer, instruction_usage_analyzers],
+            feature_extractors=[tod_source_analyzer, instruction_changes_analyzer, instruction_usage_analyzers],
             transactions=(transaction_one, transaction_two),
         )
     )

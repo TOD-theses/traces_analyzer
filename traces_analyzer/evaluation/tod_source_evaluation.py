@@ -1,7 +1,7 @@
 from typing_extensions import override
 
-from traces_analyzer.analysis.tod_source_analyzer import TODSource
 from traces_analyzer.evaluation.evaluation import Evaluation
+from traces_analyzer.features.extractors.tod_source import TODSource
 
 
 class TODSourceEvaluation(Evaluation):
@@ -37,7 +37,7 @@ class TODSourceEvaluation(Evaluation):
         if not self._tod_source.found:
             return "TOD source not found."
         instr_one, instr_two = self._tod_source.instruction_one, self._tod_source.instruction_two
- 
+
         return (
             f"{instr_one.name} at {instr_one.call_frame.code_address}:{instr_one.program_counter}\n"
             f"> output first trace:   {instr_one.stack_outputs} | {instr_one.memory_output}\n"

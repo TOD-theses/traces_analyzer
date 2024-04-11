@@ -6,7 +6,7 @@ from typing import Iterable
 
 from typing_extensions import override
 
-from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
+from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
 from traces_analyzer.parser.instruction import Instruction
 
 
@@ -76,7 +76,7 @@ def to_instruction_execution(key: InstructionKeyWithInputs):
     )
 
 
-class InstructionInputAnalyzer(DoubleInstructionAnalyzer):
+class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
     """Analyze how the instruction inputs of two traces differ"""
 
     def __init__(self) -> None:

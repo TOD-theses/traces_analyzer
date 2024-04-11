@@ -2,8 +2,8 @@ from dataclasses import asdict
 
 from typing_extensions import override
 
-from traces_analyzer.analysis.instruction_input_analyzer import InstructionExecution, InstructionInputChange
 from traces_analyzer.evaluation.evaluation import Evaluation
+from traces_analyzer.features.extractors.instruction_differences import InstructionExecution, InstructionInputChange
 from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL, op_from_class
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -48,7 +48,7 @@ class InstructionDifferencesEvaluation(Evaluation):
         relevant_only_second = [c for c in self._only_second if c.opcode in self._CLI_REPORTED_OPCODES]
 
         relevant_opcodes_note = "NOTE: for clarity the CLI only reports following instructions: " + ", ".join(
-            [opcode_to_name(op, str(op)) for op in self._CLI_REPORTED_OPCODES] # type: ignore
+            [opcode_to_name(op, str(op)) for op in self._CLI_REPORTED_OPCODES]  # type: ignore
         )
 
         input_changes_report = self._cli_report_input_changes(relevant_input_changes)
@@ -68,9 +68,7 @@ class InstructionDifferencesEvaluation(Evaluation):
     def _cli_report_input_changes(self, changes: list[InstructionInputChange]) -> str:
         result = ""
         for change in changes:
-            result += (
-                f"{opcode_to_name(change.opcode)} at {change.address}:{change.program_counter}\n"
-            )
+            result += f"{opcode_to_name(change.opcode)} at {change.address}:{change.program_counter}\n"
             if change.stack_input_changes:
                 result += "> stack: " + str(change.stack_input_changes) + "\n"
             else:

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from typing_extensions import override
 
-from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
+from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
 from traces_analyzer.parser.instruction import Instruction
 
 
@@ -13,7 +13,7 @@ class TODSource:
     instruction_two: Instruction
 
 
-class TODSourceAnalyzer(DoubleInstructionAnalyzer):
+class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
     """Analyze at which instruction the TOD first had an effect"""
 
     def __init__(self) -> None:

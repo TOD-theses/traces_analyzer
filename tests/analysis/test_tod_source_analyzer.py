@@ -1,6 +1,6 @@
 from itertools import zip_longest
 from tests.conftest import make_instruction
-from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
+from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.parser.instructions import POP, PUSH0, SLOAD, op_from_class
 from traces_analyzer.parser.events_parser import TraceEvent
 
@@ -24,14 +24,14 @@ def test_tod_source_analyzer():
         make_instruction(POP, pc=3, stack=["0x5678"]),
     ]
 
-    analyzer = TODSourceAnalyzer()
+    feature_extractor = TODSourceFeatureExtractor()
 
     for instruction_one, instruction_two, event_one, event_two in zip_longest(
         instructions_one, instructions_two, trace_events_one, trace_events_two
     ):
-        analyzer.on_instructions(instruction_one, instruction_two)
+        feature_extractor.on_instructions(instruction_one, instruction_two)
 
-    tod_source = analyzer.get_tod_source()
+    tod_source = feature_extractor.get_tod_source()
 
     assert tod_source.found
 

@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from traces_analyzer.analysis.analysis_runner import AnalysisRunner, RunInfo
-from traces_analyzer.analysis.analyzer import SingleToDoubleInstructionAnalyzer
-from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
+from traces_analyzer.features.feature_extraction_runner import FeatureExtractionRunner, RunInfo
+from traces_analyzer.features.feature_extractor import SingleToDoubleInstructionFeatureExtractor
+from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 
-from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
-from traces_analyzer.analysis.tod_source_analyzer import TODSourceAnalyzer
+from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
+from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.parser.instructions import LOG3, SLOAD, op_from_class
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
@@ -28,19 +28,19 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
         )
     )
 
-    instruction_usage_analyzer = SingleToDoubleInstructionAnalyzer(
-        InstructionUsageAnalyzer(), InstructionUsageAnalyzer()
+    instruction_usage_analyzer = SingleToDoubleInstructionFeatureExtractor(
+        InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
-    tod_source_analyzer = TODSourceAnalyzer()
-    instruction_input_analyzer = InstructionInputAnalyzer()
+    tod_source_analyzer = TODSourceFeatureExtractor()
+    instruction_input_analyzer = InstructionDifferencesFeatureExtractor()
 
     run_info = RunInfo(
-        analyzers=[instruction_usage_analyzer, tod_source_analyzer, instruction_input_analyzer],
+        feature_extractors=[instruction_usage_analyzer, tod_source_analyzer, instruction_input_analyzer],
         # TODO: why is the reverse one first? check this and document it
         transactions=(transactions_reverse, transactions_actual),
     )
 
-    runner = AnalysisRunner(run_info)
+    runner = FeatureExtractionRunner(run_info)
     runner.run()
 
     assert bundle.tx_attack.hash == "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0"

@@ -3,11 +3,11 @@ from typing import Mapping
 
 from typing_extensions import override
 
-from traces_analyzer.analysis.analyzer import SingleInstructionAnalyzer
+from traces_analyzer.features.feature_extractor import SingleInstructionFeatureExtractor
 from traces_analyzer.parser.instruction import Instruction
 
 
-class InstructionUsageAnalyzer(SingleInstructionAnalyzer):
+class InstructionUsagesFeatureExtractor(SingleInstructionFeatureExtractor):
     """Analyze which instructions are used in a trace"""
 
     def __init__(self) -> None:

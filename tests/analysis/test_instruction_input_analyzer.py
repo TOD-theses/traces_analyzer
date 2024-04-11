@@ -1,6 +1,6 @@
 from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
-from traces_analyzer.analysis.instruction_input_analyzer import InstructionInputAnalyzer
+from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 from traces_analyzer.parser.call_frame import CallFrame
 from traces_analyzer.parser.instructions import CALL, LOG1, POP, STOP, op_from_class
 
@@ -27,13 +27,13 @@ def test_instruction_input_analyzer():
         make_instruction(STOP, call_frame=child_frame, depth=2),
     ]
 
-    # run analysis
-    analyzer = InstructionInputAnalyzer()
+    # run feature extraction
+    feature_extractor = InstructionDifferencesFeatureExtractor()
     for a, b in zip_longest(first_trace, second_trace):
-        analyzer.on_instructions(a, b)
+        feature_extractor.on_instructions(a, b)
 
     # check if it detected the different CALL values
-    instruction_input_changes = analyzer.get_instructions_with_different_inputs()
+    instruction_input_changes = feature_extractor.get_instructions_with_different_inputs()
     assert len(instruction_input_changes) == 1
     assert len(instruction_input_changes[0].stack_input_changes) == 1
 
@@ -44,7 +44,7 @@ def test_instruction_input_analyzer():
     assert instruction_input_changes[0].stack_input_changes[0].second_value == second_call_value
 
     # check if it detected the additional POP instruction in the 2nd trace
-    only_first_executions, only_second_executions = analyzer.get_instructions_only_executed_by_one_trace()
+    only_first_executions, only_second_executions = feature_extractor.get_instructions_only_executed_by_one_trace()
     assert only_first_executions == []
     assert len(only_second_executions) == 1
     assert only_second_executions[0].opcode == op_from_class(POP)
@@ -57,14 +57,14 @@ def test_instruction_input_analyzer_reports_stack_differences():
     mem_size = "0x2"
     common_stack = list(reversed(["0x0", "0xchild", "0x0", mem_offset, mem_size, "0x0", "0x0"]))
 
-    analyzer = InstructionInputAnalyzer()
-    analyzer.on_instructions(
+    feature_extractor = InstructionDifferencesFeatureExtractor()
+    feature_extractor.on_instructions(
         make_instruction(CALL, stack=common_stack, memory=memory_one),
         make_instruction(CALL, stack=common_stack, memory=memory_two),
     )
 
     # check if it detected the different CALL inputs
-    instruction_input_changes = analyzer.get_instructions_with_different_inputs()
+    instruction_input_changes = feature_extractor.get_instructions_with_different_inputs()
     assert len(instruction_input_changes) == 1
     change = instruction_input_changes[0]
 
@@ -82,14 +82,14 @@ def test_instruction_input_analyzer_reports_log_changes():
     mem_size = "0x2"
     common_stack = list(reversed([mem_offset, mem_size, topic]))
 
-    analyzer = InstructionInputAnalyzer()
-    analyzer.on_instructions(
+    feature_extractor = InstructionDifferencesFeatureExtractor()
+    feature_extractor.on_instructions(
         make_instruction(LOG1, stack=common_stack, memory=memory_one),
         make_instruction(LOG1, stack=common_stack, memory=memory_two),
     )
 
     # check if it detected the different CALL inputs
-    instruction_input_changes = analyzer.get_instructions_with_different_inputs()
+    instruction_input_changes = feature_extractor.get_instructions_with_different_inputs()
     assert len(instruction_input_changes) == 1
     change = instruction_input_changes[0]
 

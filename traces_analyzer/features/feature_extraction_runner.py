@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from itertools import zip_longest
 
-from traces_analyzer.analysis.analyzer import DoubleInstructionAnalyzer
+from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
 from traces_analyzer.parser.call_frame_manager import CallTree
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions_parser import ParsedTransaction
@@ -9,13 +9,13 @@ from traces_analyzer.parser.instructions_parser import ParsedTransaction
 
 @dataclass
 class RunInfo:
-    analyzers: list[DoubleInstructionAnalyzer]
+    feature_extractors: list[DoulbeInstructionFeatureExtractor]
     transactions: tuple[ParsedTransaction, ParsedTransaction]
 
 
-class AnalysisRunner:
+class FeatureExtractionRunner:
     def __init__(self, run_info: RunInfo) -> None:
-        self.analyzers = run_info.analyzers
+        self.feature_extractors = run_info.feature_extractors
         self.transaction_one = run_info.transactions[0]
         self.transaction_two = run_info.transactions[1]
 
@@ -35,5 +35,5 @@ class AnalysisRunner:
         return self.transaction_one.call_tree, self.transaction_two.call_tree
 
     def _process_step(self, instructions: tuple[Instruction, Instruction]):
-        for analyzer in self.analyzers:
-            analyzer.on_instructions(instructions[0], instructions[1])
+        for feature_extractor in self.feature_extractors:
+            feature_extractor.on_instructions(instructions[0], instructions[1])

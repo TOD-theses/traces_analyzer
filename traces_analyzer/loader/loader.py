@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Iterable
 
 
-# TODO: how do I analyze 4 traces? Currently I only compare two traces
 # TODO: better naming / structure
 @dataclass
 class TransactionBundle:

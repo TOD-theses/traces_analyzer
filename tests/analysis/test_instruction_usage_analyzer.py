@@ -1,5 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
-from traces_analyzer.analysis.instruction_usage_analyzer import InstructionUsageAnalyzer
+from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
 from traces_analyzer.parser.call_frame import CallFrame
 from traces_analyzer.parser.instructions import POP, PUSH0, RETURN, REVERT, STOP, op_from_class
 
@@ -18,11 +18,11 @@ def test_instruction_usage_analyzer():
         make_instruction(RETURN, stack=["0x0", "0x0"], call_frame=child_frame),
     ]
 
-    analyzer = InstructionUsageAnalyzer()
+    feature_extractor = InstructionUsagesFeatureExtractor()
     for instruction in trace:
-        analyzer.on_instruction(instruction)
+        feature_extractor.on_instruction(instruction)
 
-    used_opcodes_per_contract = analyzer.get_used_opcodes_per_contract()
+    used_opcodes_per_contract = feature_extractor.get_used_opcodes_per_contract()
 
     assert used_opcodes_per_contract[root_code_address] == {
         op_from_class(PUSH0),
