@@ -1,14 +1,14 @@
-from tests.conftest import TEST_ROOT_CALLFRAME
+from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions_parser import parse_instruction
 
 unknown_opcode = 0xF
 dummy_event = TraceEvent(0x1, unknown_opcode, [], 1, None)
-dummy_call_frame = TEST_ROOT_CALLFRAME
+dummy_call_context = TEST_ROOT_CALLCONTEXT
 
 
 def test_instruction_parser_unknown():
-    instruction = parse_instruction(TraceEvent(0x1, 0xF, [], 1, None), dummy_event, dummy_call_frame)
+    instruction = parse_instruction(TraceEvent(0x1, 0xF, [], 1, None), dummy_event, dummy_call_context)
 
     assert instruction.opcode == 0xF
     assert instruction.name == "UNKNOWN"
@@ -17,7 +17,7 @@ def test_instruction_parser_unknown():
     assert instruction.stack_outputs == ()
     assert instruction.memory_input == None
     assert instruction.memory_output == None
-    assert instruction.call_frame == dummy_call_frame
+    assert instruction.call_context == dummy_call_context
     assert instruction.data == {}
 
 
@@ -31,7 +31,7 @@ def test_instruction_parser_call():
     stack = list(reversed([gas, to, value, mem_offset, mem_size, "0x0", "0x0"]))
     call_event = TraceEvent(0x1, 0xF1, stack, 1, memory)
 
-    instruction = parse_instruction(call_event, dummy_event, dummy_call_frame)
+    instruction = parse_instruction(call_event, dummy_event, dummy_call_context)
 
     assert instruction.opcode == 0xF1
     assert instruction.name == "CALL"
@@ -40,5 +40,5 @@ def test_instruction_parser_call():
     assert instruction.stack_outputs == ()
     assert instruction.memory_input == "1111"
     assert instruction.memory_output == None
-    assert instruction.call_frame == dummy_call_frame
+    assert instruction.call_context == dummy_call_context
     assert instruction.data == {"address": to, "input": "1111"}

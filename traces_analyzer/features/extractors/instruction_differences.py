@@ -152,7 +152,7 @@ def flatten(matrix: list[list]) -> list:
 
 def to_key(instruction: Instruction) -> InstructionKeyWithInputs:
     return InstructionKeyWithInputs(
-        address=instruction.call_frame.code_address,
+        address=instruction.call_context.code_address,
         program_counter=instruction.program_counter,
         opcode=instruction.opcode,
         stack_inputs=instruction.stack_inputs,

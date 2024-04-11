@@ -54,7 +54,7 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     assert tod_source.found
     assert tod_source.instruction_one.opcode == op_from_class(SLOAD)
     assert tod_source.instruction_one.program_counter == 2401
-    assert tod_source.instruction_one.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    assert tod_source.instruction_one.call_context.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
     # Instruction differences
     only_first_executions, only_second_executions = (
@@ -95,7 +95,7 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     # see https://etherscan.io/tx-decoder?tx=0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0
     # and https://etherscan.io/vmtrace?txhash=0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0&type=parity
     call_tree_normal = runner.get_call_trees()[0]
-    assert not any(c.call_frame.reverted for c in call_tree_normal.recurse())
+    assert not any(c.call_context.reverted for c in call_tree_normal.recurse())
     assert len(call_tree_normal.children) == 4
     weth9_call, weth9_transfer, uniswap_staticcall, uniswap_swap = call_tree_normal.children
     assert len(weth9_call.children) == len(weth9_transfer.children) == len(uniswap_staticcall.children) == 0
@@ -103,36 +103,37 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     tether_transfer, weth_balance, tether_balance = uniswap_swap.children
     assert len(tether_transfer.children) == len(weth_balance.children) == len(tether_balance.children) == 0
 
-    assert call_tree_normal.call_frame.code_address == "0x11111112542d85b3ef69ae05771c2dccff4faa26"
-    assert weth9_call.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    assert weth9_transfer.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    assert call_tree_normal.call_context.code_address == "0x11111112542d85b3ef69ae05771c2dccff4faa26"
+    assert weth9_call.call_context.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    assert weth9_transfer.call_context.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
     # TODO: correct parsing of addresses with leading 0s
-    # assert uniswap_staticcall.call_frame.code_address == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
-    # assert uniswap_swap.call_frame.code_address == " 0x06da0fd433c1a5d7a4faa01111c044910a184553"
-    assert tether_transfer.call_frame.code_address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
-    assert weth_balance.call_frame.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    assert tether_balance.call_frame.code_address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    # assert uniswap_staticcall.call_context.code_address == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
+    # assert uniswap_swap.call_context.code_address == " 0x06da0fd433c1a5d7a4faa01111c044910a184553"
+    assert tether_transfer.call_context.code_address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    assert weth_balance.call_context.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    assert tether_balance.call_context.code_address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
 
     # TODO: calldata parsing from metadata file
-    # assert call_tree_normal.call_frame.calldata == "000000000000000000000000000000000000000000000000000000069c35828a"
-    assert weth9_call.call_frame.calldata == "d0e30db0"
+    # assert call_tree_normal.call_context.calldata == "000000000000000000000000000000000000000000000000000000069c35828a"
+    assert weth9_call.call_context.calldata == "d0e30db0"
     assert (
-        weth9_transfer.call_frame.calldata
+        weth9_transfer.call_context.calldata
         == "a9059cbb00000000000000000000000006da0fd433c1a5d7a4faa01111c044910a18455300000000000000000000000000000000000000000000000062884461f1460000"
     )
-    assert uniswap_staticcall.call_frame.calldata == "0902f1ac"
+    assert uniswap_staticcall.call_context.calldata == "0902f1ac"
     # NOTE: similar to the changed log, the swap call has a different amount1Out and the transfer call has a different _value compared to the etherscan trace
     assert (
-        uniswap_swap.call_frame.calldata
+        uniswap_swap.call_context.calldata
         == "022c0d9f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000069be06e4a000000000000000000000000822beb1cd1bd7148d07e4107b636fd15118913bc00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000"
     )
     assert (
-        tether_transfer.call_frame.calldata
+        tether_transfer.call_context.calldata
         == "a9059cbb000000000000000000000000822beb1cd1bd7148d07e4107b636fd15118913bc000000000000000000000000000000000000000000000000000000069be06e4a"
     )
     assert (
-        weth_balance.call_frame.calldata == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
+        weth_balance.call_context.calldata == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
     )
     assert (
-        tether_balance.call_frame.calldata == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
+        tether_balance.call_context.calldata
+        == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
     )

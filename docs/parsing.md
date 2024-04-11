@@ -40,18 +40,18 @@ Currently this is only implemented for traces generated with REVM (based on EIP-
 
 Here, we parse the instructions and keep track in which contract they were executed.
 
-We start the process with an initial `CallFrame`, which stores who created the transaction and which contract/EOA is called.
+We start the process with an initial `CallContext`, which stores who created the transaction and which contract/EOA is called.
 
-Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current `CallFrame` to the instruction. For instance, an `SLOAD` instruction loads the data from the current contracts storage.
+Then we iterate through the `TraceEvent`s, always looking at two successive `TraceEvent`s. Based on these events we create an `Instruction` object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current `CallContext` to the instruction. For instance, an `SLOAD` instruction loads the data from the current contracts storage.
 
-If we encounter a call instruction (`CALL`, `STATICCALL`, `CALLCODE`, `DELEGATECALL`, `CREATE` or `CREATE2`) we create a new `CallFrame`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we mark the current one as reverted and go back to the previous `CallFrame`. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an `UnexpectedDepthChange` Exception.
+If we encounter a call instruction (`CALL`, `STATICCALL`, `CALLCODE`, `DELEGATECALL`, `CREATE` or `CREATE2`) we create a new `CallContext`. On a `STOP`, `RETURN`, `REVERT` or `SELFDESTRUCT` we mark the current one as reverted and go back to the previous `CallContext`. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an `UnexpectedDepthChange` Exception.
 
 The `Instruction` includes:
 
 - opcode
 - name (mnemonic for opcode)
 - program_counter
-- call_frame
+- call_context
 - stack_inputs
 - stack_outputs
 - memory_input

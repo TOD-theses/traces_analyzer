@@ -1,4 +1,4 @@
-from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
+from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.parser.instructions import SLOAD, op_from_class
@@ -20,7 +20,7 @@ def test_tod_source_evaluation_found():
             "found": True,
             "source": {
                 "location": {
-                    "address": TEST_ROOT_CALLFRAME.code_address,
+                    "address": TEST_ROOT_CALLCONTEXT.code_address,
                     "pc": 1234,
                 },
                 "instruction": {

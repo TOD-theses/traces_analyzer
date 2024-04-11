@@ -106,10 +106,10 @@ BALANCE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count
 ORIGIN = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 CALLER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# TODO: should we model calldata in the call frame? if yes, we should add it here
+# TODO: should we model calldata in the call context? if yes, we should add it here
 CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# TODO: should we model calldata in the call frame? if yes, we should add it here
+# TODO: should we model calldata in the call context? if yes, we should add it here
 CALLDATACOPY = _make_simple(
     InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
 )

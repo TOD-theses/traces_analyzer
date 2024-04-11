@@ -59,7 +59,7 @@ We record all executed unique instructions, eg to understand if hashing was used
 **Requires**:
 
 - access to `Instruction`s
-- access to `CallFrame`s
+- access to `CallContext`s
 
 **Labels**:
 

@@ -1,12 +1,12 @@
 from itertools import zip_longest
-from tests.conftest import TEST_ROOT_CALLFRAME, make_instruction
+from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
-from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.instructions import CALL, LOG1, POP, STOP, op_from_class
 
 
 def test_instruction_input_analyzer():
-    child_frame = CallFrame(TEST_ROOT_CALLFRAME, "", 2, "0xroot", "0xchild", "0xchild", False, None)
+    child_context = CallContext(TEST_ROOT_CALLCONTEXT, "", 2, "0xroot", "0xchild", "0xchild", False, None)
 
     first_call_value = "0x1000"
     second_call_value = "0x100000"
@@ -16,15 +16,15 @@ def test_instruction_input_analyzer():
         make_instruction(
             CALL, stack=list(reversed(["0x1234", "0xchild", first_call_value, "0x0", "0x0", "0x0", "0x0"]))
         ),
-        make_instruction(STOP, call_frame=child_frame, depth=2),
+        make_instruction(STOP, call_context=child_context, depth=2),
     ]
     second_trace = [
         make_instruction(),
         make_instruction(
             CALL, stack=list(reversed(["0x1234", "0xchild", second_call_value, "0x0", "0x0", "0x0", "0x0"]))
         ),
-        make_instruction(POP, call_frame=child_frame, depth=2),
-        make_instruction(STOP, call_frame=child_frame, depth=2),
+        make_instruction(POP, call_context=child_context, depth=2),
+        make_instruction(STOP, call_context=child_context, depth=2),
     ]
 
     # run feature extraction
@@ -37,7 +37,7 @@ def test_instruction_input_analyzer():
     assert len(instruction_input_changes) == 1
     assert len(instruction_input_changes[0].stack_input_changes) == 1
 
-    assert instruction_input_changes[0].address == TEST_ROOT_CALLFRAME.code_address
+    assert instruction_input_changes[0].address == TEST_ROOT_CALLCONTEXT.code_address
     assert len(instruction_input_changes[0].stack_input_changes) == 1
     assert instruction_input_changes[0].stack_input_changes[0].index == 2
     assert instruction_input_changes[0].stack_input_changes[0].first_value == first_call_value

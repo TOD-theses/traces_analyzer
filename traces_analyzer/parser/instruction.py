@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from typing_extensions import Mapping
 
-from traces_analyzer.parser.call_frame import CallFrame
+from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.instruction_io import InstructionIOSpec
 
 
@@ -12,7 +12,7 @@ class Instruction:
     opcode: int
     name: str
     program_counter: int
-    call_frame: CallFrame
+    call_context: CallContext
     stack_inputs: tuple[str, ...]
     stack_outputs: tuple[str, ...]
     memory_input: str | None

@@ -19,7 +19,7 @@ class TODSourceEvaluation(Evaluation):
         if self._tod_source.found:
             source = {
                 "location": {
-                    "address": self._tod_source.instruction_one.call_frame.code_address,
+                    "address": self._tod_source.instruction_one.call_context.code_address,
                     "pc": self._tod_source.instruction_one.program_counter,
                 },
                 "instruction": {
@@ -39,7 +39,7 @@ class TODSourceEvaluation(Evaluation):
         instr_one, instr_two = self._tod_source.instruction_one, self._tod_source.instruction_two
 
         return (
-            f"{instr_one.name} at {instr_one.call_frame.code_address}:{instr_one.program_counter}\n"
+            f"{instr_one.name} at {instr_one.call_context.code_address}:{instr_one.program_counter}\n"
             f"> output first trace:   {instr_one.stack_outputs} | {instr_one.memory_output}\n"
             f"> output second trace:  {instr_two.stack_outputs} | {instr_two.memory_output}"
         )

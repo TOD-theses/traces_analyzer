@@ -10,7 +10,7 @@ class HaltType(Enum):
 
 
 @dataclass
-class CallFrame:
+class CallContext:
     parent: Self | None
     calldata: str
     depth: int

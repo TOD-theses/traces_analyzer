@@ -2,8 +2,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.call_frame import CallFrame
-from traces_analyzer.parser.call_frame_manager import CallFrameManager, CallTree
+from traces_analyzer.parser.call_context import CallContext
+from traces_analyzer.parser.call_context_manager import CallContextManager, CallTree
 from traces_analyzer.parser.events_parser import TraceEvent, parse_events
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instruction_io import parse_instruction_io
@@ -26,17 +26,17 @@ class ParsedTransaction:
 
 
 def parse_instructions(parsing_info: TransactionParsingInfo) -> ParsedTransaction:
-    call_frame_manager = _setup_call_frame_manager(parsing_info.sender, parsing_info.to, parsing_info.calldata)
+    call_context_manager = _setup_call_context_manager(parsing_info.sender, parsing_info.to, parsing_info.calldata)
 
     events = parse_events(parsing_info.trace_events_json)
-    instructions = list(_parse_instructions(events, call_frame_manager))
+    instructions = list(_parse_instructions(events, call_context_manager))
 
-    return ParsedTransaction(instructions, call_frame_manager.get_call_tree())
+    return ParsedTransaction(instructions, call_context_manager.get_call_tree())
 
 
-def _setup_call_frame_manager(sender: str, to: str, calldata: str) -> CallFrameManager:
-    return CallFrameManager(
-        CallFrame(
+def _setup_call_context_manager(sender: str, to: str, calldata: str) -> CallContextManager:
+    return CallContextManager(
+        CallContext(
             parent=None,
             calldata=calldata,
             depth=1,
@@ -47,7 +47,9 @@ def _setup_call_frame_manager(sender: str, to: str, calldata: str) -> CallFrameM
     )
 
 
-def _parse_instructions(events: Iterable[TraceEvent], call_frame_manager: CallFrameManager) -> Iterable[Instruction]:
+def _parse_instructions(
+    events: Iterable[TraceEvent], call_context_manager: CallContextManager
+) -> Iterable[Instruction]:
     events_iterator = events.__iter__()
     try:
         current_event = next(events_iterator)
@@ -56,8 +58,8 @@ def _parse_instructions(events: Iterable[TraceEvent], call_frame_manager: CallFr
         return []
 
     for next_event in events_iterator:
-        instruction = parse_instruction(current_event, next_event, call_frame_manager.get_current_call_frame())
-        call_frame_manager.on_step(instruction, next_event.depth)
+        instruction = parse_instruction(current_event, next_event, call_context_manager.get_current_call_context())
+        call_context_manager.on_step(instruction, next_event.depth)
         current_event = next_event
 
         yield instruction
@@ -65,10 +67,10 @@ def _parse_instructions(events: Iterable[TraceEvent], call_frame_manager: CallFr
     # NOTE: for the last event, we pass None instead of next_event
     # if this breaks something in the future (eg if the last TraceEvent is a SLOAD
     # that tries to read the stack for the result), I'll need to change this
-    yield parse_instruction(current_event, None, call_frame_manager.get_current_call_frame())  # type: ignore[arg-type]
+    yield parse_instruction(current_event, None, call_context_manager.get_current_call_context())  # type: ignore
 
 
-def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_frame: CallFrame) -> Instruction:
+def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_context: CallContext) -> Instruction:
     opcode = event.op
     name = opcode_to_name(opcode) or "UNKNOWN"
     program_counter = event.pc
@@ -87,7 +89,7 @@ def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_frame: Cal
         opcode,
         name,
         program_counter,
-        call_frame,
+        call_context,
         io.inputs_stack,
         io.outputs_stack,
         io.input_memory,
