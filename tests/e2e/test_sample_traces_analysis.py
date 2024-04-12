@@ -72,12 +72,17 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     changed_logs_with_3_topics = [change for change in input_changes if change.opcode == op_from_class(LOG3)]
     assert len(changed_logs_with_3_topics) == 2
     # event Transfer(address indexed _from, address indexed _to, uint256 _value)
-    transfer_log = changed_logs_with_3_topics[0]
+    # TODO: the order of the changed inputs is non-deterministc. Should we change it to be deterministic somehow?
+    transfer_log = (
+        changed_logs_with_3_topics[0]
+        if changed_logs_with_3_topics[0].program_counter == 10748
+        else changed_logs_with_3_topics[1]
+    )
     assert transfer_log.stack_input_changes == []
-    assert transfer_log.first_stack_input == transfer_log.second_stack_input
-    assert transfer_log.first_stack_input[0] == "0x60"
-    assert transfer_log.first_stack_input[1] == "0x20"
-    assert transfer_log.first_stack_input[2:] == (
+    assert transfer_log.instruction_one.stack_inputs == transfer_log.instruction_two.stack_inputs
+    assert transfer_log.instruction_one.stack_inputs[0] == "0x60"
+    assert transfer_log.instruction_one.stack_inputs[1] == "0x20"
+    assert transfer_log.instruction_one.stack_inputs[2:] == (
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         "0x6da0fd433c1a5d7a4faa01111c044910a184553",
         "0x822beb1cd1bd7148d07e4107b636fd15118913bc",
@@ -88,8 +93,12 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     # the reason is likely, that the transaction is executed at the beginning of the block
     # but there are many other transac 45th transaction also makes a transfer of Tether: USDT Stablecoin (influencing the price)
     # eg https://etherscan.io/tx/0xa3c5c292cac5fe09ff3e3bd325c698fc6ad2be8558903453b330e38deb1cea03#eventlog
-    assert transfer_log.first_memory_input == "000000000000000000000000000000000000000000000000000000069be06e4a"
-    assert transfer_log.second_memory_input == "000000000000000000000000000000000000000000000000000000069f7ec680"
+    assert (
+        transfer_log.instruction_one.memory_input == "000000000000000000000000000000000000000000000000000000069be06e4a"
+    )
+    assert (
+        transfer_log.instruction_two.memory_input == "000000000000000000000000000000000000000000000000000000069f7ec680"
+    )
 
     # Call Trees are as expected
     # see https://etherscan.io/tx-decoder?tx=0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0

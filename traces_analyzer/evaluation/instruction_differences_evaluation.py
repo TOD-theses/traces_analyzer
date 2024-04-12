@@ -3,7 +3,8 @@ from dataclasses import asdict
 from typing_extensions import override
 
 from traces_analyzer.evaluation.evaluation import Evaluation
-from traces_analyzer.features.extractors.instruction_differences import InstructionExecution, InstructionInputChange
+from traces_analyzer.features.extractors.instruction_differences import InstructionInputChange
+from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL, op_from_class
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -23,7 +24,7 @@ class InstructionDifferencesEvaluation(Evaluation):
 
     def __init__(
         self,
-        occurrence_changes: tuple[list[InstructionExecution], list[InstructionExecution]],
+        occurrence_changes: tuple[list[Instruction], list[Instruction]],
         input_changes: list[InstructionInputChange],
     ):
         super().__init__()
@@ -72,35 +73,35 @@ class InstructionDifferencesEvaluation(Evaluation):
             if change.stack_input_changes:
                 result += "> stack: " + str(change.stack_input_changes) + "\n"
             else:
-                result += "> common stack input: " + str(change.first_stack_input) + "\n"
+                result += "> common stack input: " + str(change.instruction_one.stack_inputs) + "\n"
             if change.memory_input_change:
-                result += f'> memory first trace:   "{change.first_memory_input}"\n'
-                result += f'> memory second trace:  "{change.second_memory_input}"\n'
+                result += f'> memory input first trace:   "{change.instruction_one.memory_input}"\n'
+                result += f'> memory input second trace:  "{change.instruction_two.memory_input}"\n'
             result += "\n"
         return result
 
-    def _cli_report_occurrence_changes(self, changes: list[InstructionExecution]) -> str:
+    def _cli_report_occurrence_changes(self, changes: list[Instruction]) -> str:
         result = ""
-        for change in changes:
+        for instruction in changes:
             result += (
                 "Instruction:\n"
-                f"> opcode: {hex(change.opcode)}\n"
+                f"> opcode: {hex(instruction.opcode)}\n"
                 "Location:\n"
-                f"> address: {change.address}\n"
-                f"> pc: {change.program_counter}\n"
+                f"> address: {instruction.call_context.code_address}\n"
+                f"> pc: {instruction.program_counter}\n"
             )
         return result
 
 
-def occurence_change_to_dict(occurrence_change: InstructionExecution) -> dict:
+def occurence_change_to_dict(changed_instruction: Instruction) -> dict:
     return {
         "location": {
-            "address": occurrence_change.address,
-            "pc": occurrence_change.program_counter,
+            "address": changed_instruction.call_context.code_address,
+            "pc": changed_instruction.program_counter,
         },
         "instruction": {
-            "opcode": occurrence_change.opcode,
-            "stack_inputs": occurrence_change.stack_inputs,
+            "opcode": changed_instruction.opcode,
+            "stack_inputs": changed_instruction.stack_inputs,
         },
     }
 
@@ -115,8 +116,8 @@ def instruction_input_change_to_dict(input_change: InstructionInputChange) -> di
             "opcode": input_change.opcode,
         },
         "inputs": [
-            {"stack": input_change.first_stack_input, "memory": input_change.first_memory_input},
-            {"stack": input_change.second_stack_input, "memory": input_change.second_memory_input},
+            {"stack": input_change.instruction_one.stack_inputs, "memory": input_change.instruction_one.memory_input},
+            {"stack": input_change.instruction_two.stack_inputs, "memory": input_change.instruction_two.memory_input},
         ],
         "stack_input_changes": [asdict(change) for change in input_change.stack_input_changes],
         "memory_input_change": asdict(input_change.memory_input_change) if input_change.memory_input_change else None,

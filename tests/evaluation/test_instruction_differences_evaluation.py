@@ -1,23 +1,28 @@
+from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.features.extractors.instruction_differences import (
     MemoryInputChange,
     StackInputChange,
-    InstructionExecution,
     InstructionInputChange,
 )
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
+from traces_analyzer.parser.call_context import CallContext
+from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import CALL, SLOAD, op_from_class
 
 
 def test_instruction_differences_evaluation():
+    call_context = TEST_ROOT_CALLCONTEXT
     input_changes = [
         InstructionInputChange(
             address="0xtest",
             program_counter=5,
             opcode=op_from_class(CALL),
-            first_stack_input=("val_1", "val_2", "val_3"),
-            second_stack_input=("val_1", "val_2_x", "val_3_x"),
-            first_memory_input="1111",
-            second_memory_input="2222",
+            instruction_one=CALL(
+                op_from_class(CALL), "CALL", 5, call_context, ("val_1", "val_2", "val_3"), (), "1111", None, {}
+            ),
+            instruction_two=CALL(
+                op_from_class(CALL), "CALL", 5, call_context, ("val_1", "val_2_x", "val_3_x"), (), "2222", None, {}
+            ),
             stack_input_changes=[
                 StackInputChange(index=1, first_value="val_2", second_value="val_2_x"),
                 StackInputChange(index=2, first_value="val_3", second_value="val_3_x"),
@@ -26,11 +31,16 @@ def test_instruction_differences_evaluation():
         )
     ]
     only_first = [
-        InstructionExecution(
-            address="0xtest",
-            program_counter=10,
+        Instruction(
             opcode=op_from_class(SLOAD),
+            name="SLOAD",
+            program_counter=10,
+            call_context=CallContext(None, "", 1, "0xsender", "0xtest", "0xtest", False, None, False),
             stack_inputs=("0xkey",),
+            stack_outputs=("0xval",),
+            memory_input=None,
+            memory_output=None,
+            data={},
         )
     ]
     only_second = []
