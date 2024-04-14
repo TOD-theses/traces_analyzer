@@ -7,7 +7,7 @@ from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.instruction_io import InstructionIOSpec
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class Instruction:
     opcode: int
     name: str
@@ -23,4 +23,8 @@ class Instruction:
         """Return formatted instruction data, depending on the instruction type"""
         return {}
 
-    # TODO: __str__
+    def __str__(self) -> str:
+        return f"<{self.name}@{self.call_context.code_address}:{self.program_counter} {self.get_data()}>"
+
+    def __repr__(self) -> str:
+        return self.__str__()

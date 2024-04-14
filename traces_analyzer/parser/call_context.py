@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from typing_extensions import Self
@@ -11,7 +11,7 @@ class HaltType(Enum):
 
 @dataclass
 class CallContext:
-    parent: Self | None
+    parent: Self | None = field(repr=False)
     calldata: str
     depth: int
     msg_sender: str

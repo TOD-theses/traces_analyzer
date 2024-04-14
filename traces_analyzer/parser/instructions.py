@@ -15,7 +15,7 @@ CallDataNew = TypedDict(
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class CALL(Instruction):
     io_specification = InstructionIOSpec(
         stack_input_count=7,
@@ -29,7 +29,7 @@ class CALL(Instruction):
         return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class STATICCALL(Instruction):
     io_specification = InstructionIOSpec(
         stack_input_count=6,
@@ -43,7 +43,7 @@ class STATICCALL(Instruction):
         return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class DELEGATECALL(Instruction):
     io_specification = InstructionIOSpec(
         stack_input_count=6,
@@ -57,7 +57,7 @@ class DELEGATECALL(Instruction):
         return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class CALLCODE(Instruction):
     io_specification = InstructionIOSpec(
         stack_input_count=7,
@@ -72,6 +72,7 @@ class CALLCODE(Instruction):
 
 
 def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
+    @dataclass(frozen=True, repr=False)
     class SimpleInstruction(Instruction):
         io_specification = io_spec
 
