@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import Iterable, TypeGuard
+
+from typing_extensions import Iterable, Self, TypeGuard
 
 from traces_analyzer.parser.call_context import CallContext, HaltType
 from traces_analyzer.parser.instruction import Instruction
@@ -16,6 +17,10 @@ from traces_analyzer.parser.instructions import (
     STATICCALL,
     STOP,
 )
+from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
+
+# TODO: do not use a global signature registry
+signature_lookup = SignatureRegistry("http://localhost:8000")
 
 
 @dataclass
@@ -23,7 +28,8 @@ class CallTree:
     """A call tree, representing the current call context and all child call contexts"""
 
     call_context: CallContext
-    children: list["CallTree"] = field(default_factory=list)
+    parent: Self | None = None
+    children: list[Self] = field(default_factory=list)
 
     def recurse(self) -> Iterable["CallTree"]:
         """Returns the tree nodes in a depth first order"""
@@ -42,10 +48,14 @@ class CallTree:
 
         if not parent_node:
             raise Exception(f"Could not find parent tree node to add callcontext. {self} - {call_context}")
-        parent_node.children.append(CallTree(call_context))
+        new_node = CallTree(call_context)
+        parent_node.children.append(new_node)
+        new_node.parent = parent_node
 
     def __str__(self) -> str:
-        s = f"> {self.call_context.code_address}.{self.call_context.calldata[:8]}(...)\n"
+        hex_signature = self.call_context.calldata[:8]
+        signature = signature_lookup.lookup_by_hex(hex_signature) or hex_signature
+        s = f"> {self.call_context.code_address}.{signature}(...)\n"
         for child in self.children:
             s += "  " + "  ".join(str(child).splitlines(True))
         return s
