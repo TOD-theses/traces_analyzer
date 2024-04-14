@@ -4,7 +4,7 @@ theme: readthedocs
 nav:
 - Introduction: 'index.md'
 - 'parsing.md'
-- 'metadata_extraction.md'
+- 'feature_extraction.md'
 - 'definitions.md'
 - 'contract_attribution.md'
 
