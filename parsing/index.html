@@ -56,7 +56,7 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../metadata_extraction/">Metadata extraction</a>
+                <li class="toctree-l1"><a class="" href="../metadata_extraction.md">None</a>
                 </li>
               </ul>
               <ul>
@@ -121,15 +121,15 @@
 <p>Currently this is only implemented for traces generated with REVM (based on EIP-3155). However, new implementations could map other traces formats to <code>TraceEvent</code>, as long as the necessary information is included in the trace.</p>
 <h2 id="parse-instructions-and-the-calltree">Parse <code>Instruction</code>s and the <code>CallTree</code></h2>
 <p>Here, we parse the instructions and keep track in which contract they were executed.</p>
-<p>We start the process with an initial <code>CallFrame</code>, which stores who created the transaction and which contract/EOA is called.</p>
-<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current <code>CallFrame</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
-<p>If we encounter a call instruction (<code>CALL</code>, <code>STATICCALL</code>, <code>CALLCODE</code>, <code>DELEGATECALL</code>, <code>CREATE</code> or <code>CREATE2</code>) we create a new <code>CallFrame</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we mark the current one as reverted and go back to the previous <code>CallFrame</code>. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an <code>UnexpectedDepthChange</code> Exception.</p>
+<p>We start the process with an initial <code>CallContext</code>, which stores who created the transaction and which contract/EOA is called.</p>
+<p>Then we iterate through the <code>TraceEvent</code>s, always looking at two successive <code>TraceEvent</code>s. Based on these events we create an <code>Instruction</code> object, which specifies the EVM instruction, its inputs and also its outputs. For some instructions the call context is important, so we link the current <code>CallContext</code> to the instruction. For instance, an <code>SLOAD</code> instruction loads the data from the current contracts storage.</p>
+<p>If we encounter a call instruction (<code>CALL</code>, <code>STATICCALL</code>, <code>CALLCODE</code>, <code>DELEGATECALL</code>, <code>CREATE</code> or <code>CREATE2</code>) we create a new <code>CallContext</code>. On a <code>STOP</code>, <code>RETURN</code>, <code>REVERT</code> or <code>SELFDESTRUCT</code> we mark the current one as reverted and go back to the previous <code>CallContext</code>. If the depth of the next event is one lower than the current one, we assume an exceptional halt and also revert the current transaction. If the depth of the next event is unexpected, we throw an <code>UnexpectedDepthChange</code> Exception.</p>
 <p>The <code>Instruction</code> includes:</p>
 <ul>
 <li>opcode</li>
 <li>name (mnemonic for opcode)</li>
 <li>program_counter</li>
-<li>call_frame</li>
+<li>call_context</li>
 <li>stack_inputs</li>
 <li>stack_outputs</li>
 <li>memory_input</li>
@@ -141,7 +141,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href=".." class="btn btn-neutral float-left" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../metadata_extraction/" class="btn btn-neutral float-right" title="Metadata extraction">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../definitions/" class="btn btn-neutral float-right" title="TOD definitions">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -167,7 +167,7 @@
       <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../metadata_extraction/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../definitions/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

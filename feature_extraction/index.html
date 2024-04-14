@@ -5,15 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Metadata extraction - Traces Analyzer</title>
+    <title>Feature extraction - Traces Analyzer</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Metadata extraction";
-        var mkdocs_page_input_path = "metadata_extraction.md";
+        var mkdocs_page_name = "Feature extraction";
+        var mkdocs_page_input_path = "feature_extraction.md";
         var mkdocs_page_url = null;
       </script>
     
@@ -47,26 +47,8 @@
                 <li class="toctree-l1"><a class="reference internal" href="../parsing/">Parsing</a>
                 </li>
               </ul>
-              <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">Metadata extraction</a>
-    <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#goal">Goal</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#analysis">Analysis</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#instruction-effect-changes">Instruction effect changes</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#instruction-input-changes">Instruction input changes</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#instruction-usage">Instruction usage</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#not-yet-covered">Not yet covered</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#taint-flow-analysis">Taint Flow analysis</a>
-    </li>
-    </ul>
+              <ul>
+                <li class="toctree-l1"><a class="" href="../metadata_extraction.md">None</a>
                 </li>
               </ul>
               <ul>
@@ -91,7 +73,7 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Metadata extraction</li>
+      <li class="breadcrumb-item active">Feature extraction</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -100,17 +82,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="metadata-extraction">Metadata extraction</h1>
-<p>This page describes how metadata will be extracted from the traces.</p>
-<h2 id="goal">Goal</h2>
-<p>Based on the four transaction traces (2 normal, 2 reverse order), we automatically determine several labels and metadata related to TOD.</p>
-<div class="admonition danger">
-<p class="admonition-title">Danger</p>
-<p>This does not detect if the amount of a Selfedestruct changed, as this is directly taken from the state and not stored in the stack or memory. Are there other TODs that are not visible in traces?</p>
-</div>
-<h2 id="analysis">Analysis</h2>
-<p>The analyzers are built in a way, that they don't need access to the whole trace at once. This way, we do not need to load the whole trace into memory at the same time, but instead iterate through the events and analyze them on the go. This is mainly a memory improvement.</p>
-<h3 id="instruction-effect-changes">Instruction effect changes</h3>
+                <h1 id="feature-extraction">Feature extraction</h1>
+<p>This page describes how features will be extracted from trace pairs.</p>
+<h2 id="instruction-effect-changes">Instruction effect changes</h2>
 <p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>Instruction</code>s and stop as soon as we find the TOD source.</p>
 <p>If two instructions have a different output (eg an <code>SLOAD</code> that loads a different value from storage), we consider them to be the TOD source.</p>
 <p>If this did not happen yet, but two instructions differ otherwise (inputs, program counter, etc), we take the previous instructions as TOD source. For example, this can happen if a <code>CALL</code> occurs and in one trace there is enough balance to do this, while the other trace has insufficient balance to do so.</p>
@@ -131,7 +105,7 @@
 <p class="admonition-title">Note</p>
 <p>There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.</p>
 </div>
-<h3 id="instruction-input-changes">Instruction input changes</h3>
+<h2 id="instruction-changes">Instruction changes</h2>
 <p>To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.</p>
 <p>For each instruction we count how often it has been exected in each trace. We identify the instruction by the code_address, pc, opcode and inputs. For instructions in trace A, we increment the counter. For instructions in the other trace, decrement it. Thus, if the instruction occurs in both traces, the count will balance to 0. If the inputs differ, we will have two different elements, one with a +1 count and one with -1.</p>
 <p>At the end, we group the instructions only by code_address, pc and opcode, so instructions with different inputs will be grouped together. These are matched between the traces to identify which parameters have changed and outputted as such. If no match exists, we output them as only being executed by one trace.</p>
@@ -152,12 +126,12 @@
 <li>log changes</li>
 <li>token profits (through log changes)</li>
 </ul>
-<h3 id="instruction-usage">Instruction usage</h3>
+<h2 id="instruction-usages">Instruction usages</h2>
 <p>We record all executed unique instructions, eg to understand if hashing was used. We group this by the contract address that executed them.</p>
 <p><strong>Requires</strong>:</p>
 <ul>
 <li>access to <code>Instruction</code>s</li>
-<li>access to <code>CallFrame</code>s</li>
+<li>access to <code>CallContext</code>s</li>
 </ul>
 <p><strong>Labels</strong>:</p>
 <ul>
@@ -184,10 +158,6 @@
               
             </div>
           </div><footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../parsing/" class="btn btn-neutral float-left" title="Parsing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../definitions/" class="btn btn-neutral float-right" title="TOD definitions">Next <span class="icon icon-circle-arrow-right"></span></a>
-    </div>
 
   <hr/>
 
@@ -209,10 +179,6 @@
   <span class="rst-current-version" data-toggle="rst-current-version">
     
     
-      <span><a href="../parsing/" style="color: #fcfcfc">&laquo; Previous</a></span>
-    
-    
-      <span><a href="../definitions/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
