@@ -94,5 +94,4 @@ def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_context: C
         io.outputs_stack,
         io.input_memory,
         io.output_memory,
-        {},
     )

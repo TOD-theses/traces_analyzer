@@ -18,7 +18,7 @@ def test_instruction_parser_unknown():
     assert instruction.memory_input == None
     assert instruction.memory_output == None
     assert instruction.call_context == dummy_call_context
-    assert instruction.data == {}
+    assert instruction.get_data() == {}
 
 
 def test_instruction_parser_call():
@@ -41,4 +41,4 @@ def test_instruction_parser_call():
     assert instruction.memory_input == "1111"
     assert instruction.memory_output == None
     assert instruction.call_context == dummy_call_context
-    assert instruction.data == {"address": to, "input": "1111"}
+    assert instruction.get_data() == {"address": to, "input": "1111"}

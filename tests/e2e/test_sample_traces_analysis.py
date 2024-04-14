@@ -7,7 +7,7 @@ from traces_analyzer.features.extractors.instruction_differences import Instruct
 from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.parser.instructions import LOG3, SLOAD, op_from_class
+from traces_analyzer.parser.instructions import LOG3, SLOAD
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 
 
@@ -52,7 +52,7 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     # TOD source
     tod_source = tod_source_analyzer.get_tod_source()
     assert tod_source.found
-    assert tod_source.instruction_one.opcode == op_from_class(SLOAD)
+    assert tod_source.instruction_one.opcode == SLOAD.opcode
     assert tod_source.instruction_one.program_counter == 2401
     assert tod_source.instruction_one.call_context.code_address == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
@@ -69,7 +69,7 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
     assert len(input_changes) > 0
 
-    changed_logs_with_3_topics = [change for change in input_changes if change.opcode == op_from_class(LOG3)]
+    changed_logs_with_3_topics = [change for change in input_changes if change.opcode == LOG3.opcode]
     assert len(changed_logs_with_3_topics) == 2
     # event Transfer(address indexed _from, address indexed _to, uint256 _value)
     # TODO: the order of the changed inputs is non-deterministc. Should we change it to be deterministic somehow?

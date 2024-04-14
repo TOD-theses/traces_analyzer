@@ -4,7 +4,6 @@ from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions import (
     CALL,
     POP,
-    op_from_class,
 )
 from traces_analyzer.parser.instructions_parser import _parse_instructions
 
@@ -33,7 +32,7 @@ def test_call_inputs_memory_parsing():
     stack = ["0x0", "0x4bb", "0x24", "0xb", "0x0", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "0x940f"]
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
 
-    call_event = TraceEvent(pc=1234, op=op_from_class(CALL), stack=stack, memory=memory, depth=1)
+    call_event = TraceEvent(pc=1234, op=CALL.opcode, stack=stack, memory=memory, depth=1)
     instructions = list(_parse_instructions([call_event], call_context_manager))
     call_instruction = instructions[0]
 
@@ -49,8 +48,8 @@ def test_parser_updates_call_context_manager():
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
 
     events = [
-        TraceEvent(pc=1, op=op_from_class(CALL), stack=stack, memory=memory, depth=1),
-        TraceEvent(pc=2, op=op_from_class(POP), stack=["0x0"], memory="", depth=2),
+        TraceEvent(pc=1, op=CALL.opcode, stack=stack, memory=memory, depth=1),
+        TraceEvent(pc=2, op=POP.opcode, stack=["0x0"], memory="", depth=2),
     ]
 
     list(_parse_instructions(events, manager))

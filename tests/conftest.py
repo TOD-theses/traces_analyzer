@@ -6,7 +6,7 @@ import sys
 from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import JUMPDEST, op_from_class
+from traces_analyzer.parser.instructions import JUMPDEST
 from traces_analyzer.parser.instructions_parser import parse_instruction
 
 
@@ -52,6 +52,6 @@ def make_instruction(
     call_context=TEST_ROOT_CALLCONTEXT,
 ):
     # TODO: consider to directly create Instruction
-    event = TraceEvent(pc, op_from_class(type), stack, depth, memory)
-    next_event = TraceEvent(pc + 1, op_from_class(JUMPDEST), stack_after, depth_after, memory_after)
+    event = TraceEvent(pc, type.opcode, stack, depth, memory)
+    next_event = TraceEvent(pc + 1, JUMPDEST.opcode, stack_after, depth_after, memory_after)
     return parse_instruction(event, next_event, call_context)

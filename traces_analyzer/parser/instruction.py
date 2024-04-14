@@ -17,11 +17,10 @@ class Instruction:
     stack_outputs: tuple[str, ...]
     memory_input: str | None
     memory_output: str | None
-    data: Mapping[str, object]
     io_specification: ClassVar[InstructionIOSpec] = InstructionIOSpec()
 
-    def _init_data(self, data: Mapping[str, object]):
-        # set data despite being frozen
-        object.__setattr__(self, "data", data)
+    def get_data(self) -> Mapping[str, object]:
+        """Return formatted instruction data, depending on the instruction type"""
+        return {}
 
     # TODO: __str__

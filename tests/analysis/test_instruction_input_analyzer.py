@@ -2,7 +2,7 @@ from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 from traces_analyzer.parser.call_context import CallContext
-from traces_analyzer.parser.instructions import CALL, LOG1, POP, STOP, op_from_class
+from traces_analyzer.parser.instructions import CALL, LOG1, POP, STOP
 
 
 def test_instruction_input_analyzer():
@@ -47,7 +47,7 @@ def test_instruction_input_analyzer():
     only_first_executions, only_second_executions = feature_extractor.get_instructions_only_executed_by_one_trace()
     assert only_first_executions == []
     assert len(only_second_executions) == 1
-    assert only_second_executions[0].opcode == op_from_class(POP)
+    assert only_second_executions[0].opcode == POP.opcode
 
 
 def test_instruction_input_analyzer_reports_stack_differences():
@@ -68,7 +68,7 @@ def test_instruction_input_analyzer_reports_stack_differences():
     assert len(instruction_input_changes) == 1
     change = instruction_input_changes[0]
 
-    assert change.opcode == op_from_class(CALL)
+    assert change.opcode == CALL.opcode
     assert change.memory_input_change is not None
     assert change.memory_input_change.first_value == "1111"
     assert change.memory_input_change.second_value == "2222"
@@ -93,7 +93,7 @@ def test_instruction_input_analyzer_reports_log_changes():
     assert len(instruction_input_changes) == 1
     change = instruction_input_changes[0]
 
-    assert change.opcode == op_from_class(LOG1)
+    assert change.opcode == LOG1.opcode
     assert change.memory_input_change is not None
     assert change.memory_input_change.first_value == "1111"
     assert change.memory_input_change.second_value == "2222"

@@ -95,8 +95,8 @@ def update_call_context(
             calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=instruction.data["address"],
-            storage_address=instruction.data["address"],
+            code_address=instruction.get_data()["address"],
+            storage_address=instruction.get_data()["address"],
         )
     elif enters_call_context_without_storage(instruction, current_call_context.depth, next_depth):
         next_call_context = CallContext(
@@ -104,7 +104,7 @@ def update_call_context(
             calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=instruction.data["address"],
+            code_address=instruction.get_data()["address"],
             storage_address=current_call_context.storage_address,
         )
     elif creates_contract(instruction, current_call_context.depth, next_depth):

@@ -19,7 +19,6 @@ from traces_analyzer.parser.instructions import (
     SELFDESTRUCT,
     STATICCALL,
     STOP,
-    op_from_class,
 )
 
 get_root = lambda: CallContext(None, "", 1, "0xsender", "0xcode", "0xstorage")
@@ -31,10 +30,10 @@ get_grandchild = lambda: get_child_of(get_child(), "0xgrandchild")
 get_manager: Callable[[CallContext], CallContextManager] = lambda call_context: CallContextManager(call_context)
 
 get_add: Callable[[CallContext], Instruction] = lambda call_context: ADD(
-    op_from_class(ADD), "ADD", 1, call_context, (1, 2), (3), None, None, {}
+    ADD.opcode, "ADD", 1, call_context, (1, 2), (3), None, None
 )
 get_call: Callable[[CallContext, str], Instruction] = lambda call_context, address: CALL(
-    op_from_class(CALL),
+    CALL.opcode,
     "CALL",
     1,
     call_context,
@@ -42,10 +41,9 @@ get_call: Callable[[CallContext, str], Instruction] = lambda call_context, addre
     (),
     "11111111",
     None,
-    {},  # type: ignore
 )
 get_staticcall: Callable[[CallContext, str], Instruction] = lambda call_context, address: STATICCALL(
-    op_from_class(STATICCALL),
+    STATICCALL.opcode,
     "STATICCALL",
     1,
     call_context,
@@ -53,10 +51,9 @@ get_staticcall: Callable[[CallContext, str], Instruction] = lambda call_context,
     (),
     "11111111",
     None,
-    {},  # type: ignore
 )
 get_delegate_call: Callable[[CallContext, str], Instruction] = lambda call_context, address: DELEGATECALL(
-    op_from_class(DELEGATECALL),
+    DELEGATECALL.opcode,
     "DELEGATECALL",
     1,
     call_context,
@@ -64,10 +61,9 @@ get_delegate_call: Callable[[CallContext, str], Instruction] = lambda call_conte
     (),
     "11111111",
     None,
-    {},  # type: ignore
 )
 get_callcode: Callable[[CallContext, str], Instruction] = lambda call_context, address: CALLCODE(
-    op_from_class(CALLCODE),
+    CALLCODE.opcode,
     "CALLCODE",
     1,
     call_context,
@@ -75,25 +71,24 @@ get_callcode: Callable[[CallContext, str], Instruction] = lambda call_context, a
     (),
     "11111111",
     None,
-    {},  # type: ignore
 )
 get_create: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
-    op_from_class(CREATE), "CREATE", 1, call_context, ("0x0", "0x0", "0x4"), (), "11111111", None, {}
+    CREATE.opcode, "CREATE", 1, call_context, ("0x0", "0x0", "0x4"), (), "11111111", None
 )
 get_create2: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
-    op_from_class(CREATE2), "CREATE2", 1, call_context, ("0x0", "0x0", "0x4", "0x0"), (), "11111111", None, {}
+    CREATE2.opcode, "CREATE2", 1, call_context, ("0x0", "0x0", "0x4", "0x0"), (), "11111111", None
 )
 get_stop: Callable[[CallContext], Instruction] = lambda call_context: STOP(
-    op_from_class(STOP), "STOP", 1, call_context, (), (), None, None, {}
+    STOP.opcode, "STOP", 1, call_context, (), (), None, None
 )
 get_return: Callable[[CallContext], Instruction] = lambda call_context: RETURN(
-    op_from_class(RETURN), "RETURN", 1, call_context, ("0x0", "0x0"), (), "", "", {}
+    RETURN.opcode, "RETURN", 1, call_context, ("0x0", "0x0"), (), "", ""
 )
 get_revert: Callable[[CallContext], Instruction] = lambda call_context: REVERT(
-    op_from_class(REVERT), "REVERT", 1, call_context, ("0x0", "0x0"), (), "", "", {}
+    REVERT.opcode, "REVERT", 1, call_context, ("0x0", "0x0"), (), "", ""
 )
 get_selfdestruct: Callable[[CallContext], Instruction] = lambda call_context: SELFDESTRUCT(
-    op_from_class(SELFDESTRUCT), "SELFDESTRUCT", 1, call_context, ("0x0"), (), "", "", {}
+    SELFDESTRUCT.opcode, "SELFDESTRUCT", 1, call_context, ("0x0"), (), "", ""
 )
 
 

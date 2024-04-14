@@ -7,7 +7,7 @@ from traces_analyzer.features.extractors.instruction_differences import (
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
 from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import CALL, SLOAD, op_from_class
+from traces_analyzer.parser.instructions import CALL, SLOAD
 
 
 def test_instruction_differences_evaluation():
@@ -16,12 +16,10 @@ def test_instruction_differences_evaluation():
         InstructionInputChange(
             address="0xtest",
             program_counter=5,
-            opcode=op_from_class(CALL),
-            instruction_one=CALL(
-                op_from_class(CALL), "CALL", 5, call_context, ("val_1", "val_2", "val_3"), (), "1111", None, {}
-            ),
+            opcode=CALL.opcode,
+            instruction_one=CALL(CALL.opcode, "CALL", 5, call_context, ("val_1", "val_2", "val_3"), (), "1111", None),
             instruction_two=CALL(
-                op_from_class(CALL), "CALL", 5, call_context, ("val_1", "val_2_x", "val_3_x"), (), "2222", None, {}
+                CALL.opcode, "CALL", 5, call_context, ("val_1", "val_2_x", "val_3_x"), (), "2222", None
             ),
             stack_input_changes=[
                 StackInputChange(index=1, first_value="val_2", second_value="val_2_x"),
@@ -32,7 +30,7 @@ def test_instruction_differences_evaluation():
     ]
     only_first = [
         Instruction(
-            opcode=op_from_class(SLOAD),
+            opcode=SLOAD.opcode,
             name="SLOAD",
             program_counter=10,
             call_context=CallContext(None, "", 1, "0xsender", "0xtest", "0xtest", False, None, False),
@@ -40,7 +38,6 @@ def test_instruction_differences_evaluation():
             stack_outputs=("0xval",),
             memory_input=None,
             memory_output=None,
-            data={},
         )
     ]
     only_second = []
@@ -61,7 +58,7 @@ def test_instruction_differences_evaluation():
                         "pc": 5,
                     },
                     "instruction": {
-                        "opcode": op_from_class(CALL),
+                        "opcode": CALL.opcode,
                     },
                     "inputs": [
                         {
@@ -98,7 +95,7 @@ def test_instruction_differences_evaluation():
                             "address": "0xtest",
                             "pc": 10,
                         },
-                        "instruction": {"opcode": op_from_class(SLOAD), "stack_inputs": ("0xkey",)},
+                        "instruction": {"opcode": SLOAD.opcode, "stack_inputs": ("0xkey",)},
                     }
                 ],
                 "only_in_second_trace": [],

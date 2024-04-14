@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Mapping, TypedDict
 
+from typing_extensions import override
+
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instruction_io import InstructionIOSpec
 
@@ -20,10 +22,11 @@ class CALL(Instruction):
         memory_input_offset_arg=3,
         memory_input_size_arg=4,
     )
-    data: CallDataNew
 
-    def __post_init__(self):
-        self._init_data({"address": self.stack_inputs[1], "input": self.memory_input})
+    @override
+    def get_data(self) -> CallDataNew:
+        assert self.memory_input is not None, f"Tried to get CALL data but contains no memory: {self}"
+        return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 @dataclass(frozen=True)
@@ -33,10 +36,11 @@ class STATICCALL(Instruction):
         memory_input_offset_arg=2,
         memory_input_size_arg=3,
     )
-    data: CallDataNew
 
-    def __post_init__(self):
-        self._init_data({"address": self.stack_inputs[1], "input": self.memory_input})
+    @override
+    def get_data(self) -> CallDataNew:
+        assert self.memory_input, f"Tried to get CALL data but contains no memory: {self}"
+        return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 @dataclass(frozen=True)
@@ -46,10 +50,11 @@ class DELEGATECALL(Instruction):
         memory_input_offset_arg=2,
         memory_input_size_arg=3,
     )
-    data: CallDataNew
 
-    def __post_init__(self):
-        self._init_data({"address": self.stack_inputs[1], "input": self.memory_input})
+    @override
+    def get_data(self) -> CallDataNew:
+        assert self.memory_input, f"Tried to get CALL data but contains no memory: {self}"
+        return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 @dataclass(frozen=True)
@@ -59,10 +64,11 @@ class CALLCODE(Instruction):
         memory_input_offset_arg=3,
         memory_input_size_arg=4,
     )
-    data: CallDataNew
 
-    def __post_init__(self):
-        self._init_data({"address": self.stack_inputs[1], "input": self.memory_input})
+    @override
+    def get_data(self) -> CallDataNew:
+        assert self.memory_input, f"Tried to get CALL data but contains no memory: {self}"
+        return {"address": self.stack_inputs[1], "input": self.memory_input}
 
 
 def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
@@ -398,12 +404,10 @@ _INSTRUCTIONS: Mapping[int, type[Instruction]] = {
     0xFF: SELFDESTRUCT,
 }
 
-_INSTRUCTION_CLS_TO_OPCODE = dict((cls, op) for op, cls in _INSTRUCTIONS.items())
+# set the opcodes so we can access eg CALL.opcode
+for opcode, instruction_class in _INSTRUCTIONS.items():
+    instruction_class.opcode = opcode
 
 
 def get_instruction_class(opcode: int) -> type[Instruction] | None:
     return _INSTRUCTIONS.get(opcode)
-
-
-def op_from_class(instruction_cls: type[Instruction]) -> int:
-    return _INSTRUCTION_CLS_TO_OPCODE[instruction_cls]

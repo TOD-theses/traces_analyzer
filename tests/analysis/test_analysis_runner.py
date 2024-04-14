@@ -6,7 +6,7 @@ from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureE
 from traces_analyzer.features.feature_extraction_runner import RunInfo, FeatureExtractionRunner
 from traces_analyzer.parser.call_context_manager import CallTree
 from traces_analyzer.parser.instructions_parser import ParsedTransaction
-from traces_analyzer.parser.instructions import POP, op_from_class
+from traces_analyzer.parser.instructions import POP
 
 
 def test_analysis_runner_empty_does_not_call_analyzer():
@@ -28,10 +28,8 @@ def test_analysis_runner_empty_does_not_call_analyzer():
 def test_analysis_runner_calls_analyzer():
     feature_extractor_mock = Mock(spec_set=DoulbeInstructionFeatureExtractor)
     empty_call_tree = CallTree(TEST_ROOT_CALLCONTEXT)
-    instructions_one = [POP(op_from_class(POP), "POP", 1, TEST_ROOT_CALLCONTEXT, "0x1234", (), None, None, {})]
-    instructions_two = instructions_one + [
-        POP(op_from_class(POP), "POP", 2, TEST_ROOT_CALLCONTEXT, "0x1111", (), None, None, {})
-    ]
+    instructions_one = [POP(POP.opcode, "POP", 1, TEST_ROOT_CALLCONTEXT, "0x1234", (), None, None)]
+    instructions_two = instructions_one + [POP(POP.opcode, "POP", 2, TEST_ROOT_CALLCONTEXT, "0x1111", (), None, None)]
 
     transaction_one = ParsedTransaction(instructions_one, empty_call_tree)
     transaction_two = ParsedTransaction(instructions_two, empty_call_tree)
@@ -50,9 +48,9 @@ def test_analysis_runner_calls_analyzer():
     instructions_first_call = call_1.args
     instructions_second_call = call_2.args
 
-    assert instructions_first_call[0].opcode == op_from_class(POP)
-    assert instructions_first_call[1].opcode == op_from_class(POP)
+    assert instructions_first_call[0].opcode == POP.opcode
+    assert instructions_first_call[1].opcode == POP.opcode
     assert instructions_first_call[0].call_context.depth == 1
 
     assert instructions_second_call[0] is None
-    assert instructions_second_call[1].opcode == op_from_class(POP)
+    assert instructions_second_call[1].opcode == POP.opcode

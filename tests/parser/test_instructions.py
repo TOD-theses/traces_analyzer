@@ -170,7 +170,7 @@ def test_instruction_opcode_matches_class():
     # not using parametrized test for performance
     for opcode, cls in _opcodes_to_instruction:
         assert get_instruction_class(opcode) == cls
-        assert op_from_class(cls) == opcode
+        assert cls.opcode == opcode
 
 
 _instruction_stack_io_counts = [
