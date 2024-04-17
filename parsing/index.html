@@ -97,6 +97,22 @@
 <p class="admonition-title">Note</p>
 <p>We require the "pc", "op", "stack" and "depth" fields. For better instruction input and output analysis, the "memory" field should also be present, eg to identify the CALL and LOG inputs.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We could keep track of all storages while parsing the instructions. This way, we could reduce the required trace fields (remove memory).
+The storages include:</p>
+<ul>
+<li>stack</li>
+<li>memory</li>
+<li>persistent storage</li>
+<li>transient storage</li>
+<li>account balances</li>
+<li>calldata</li>
+<li>call values</li>
+<li>return data</li>
+<li>contract codes</li>
+</ul>
+</div>
 <p>Here is an example trace for an SLOAD instruction:</p>
 <pre><code class="language-json">{
   &quot;pc&quot;: 1157,
