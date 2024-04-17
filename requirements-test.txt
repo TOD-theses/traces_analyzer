@@ -8,4 +8,5 @@ pytest-cov
 mypy
 gitchangelog
 mkdocs
+plantuml_markdown
 types-requests

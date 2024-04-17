@@ -10,3 +10,5 @@ nav:
 
 markdown_extensions:
 - admonition
+- plantuml_markdown:
+    server: http://www.plantuml.com/plantuml  # PlantUML server, for remote rendering

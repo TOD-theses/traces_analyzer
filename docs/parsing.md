@@ -1,5 +1,129 @@
 # Parsing
 
+## Planned results
+
+```plantuml
+@startuml
+!theme toy
+title Trace Parser Results
+hide empty members
+skinparam groupInheritance 4
+
+class CallContext {
+  depth: int
+  msg_sender: str
+  calldata: str
+  code_address: str
+  storage_address: str
+  reverted: bool
+  is_contract_initialization: bool
+}
+
+CallContext "1" <-- "*" Instruction: executed_in
+CallContext "[0..1]" <-- CallContext: parent
+CallContext --> "[0..1]" HaltType
+
+enum HaltType {
+  NORMAL
+  EXCEPTIONAL
+}
+
+class Instruction {
+  opcode: int
+  name: str
+  program_counter: int
+  {static} io_specification: InstructionIOSpec
+  get_data(): Mapping[str, object]
+}
+
+class Inputs {
+  stack: StorageAccessSet
+  memory: StorageAccessSet
+  persistent storage: StorageAccessSet
+  transient storage: StorageAccessSet
+  balance: StorageAccessSet
+  calldata: StorageAccessSet
+  call value: StorageAccessSet
+  return data: StorageAccessSet
+  contract code: StorageAccessSet
+}
+
+class Outputs {
+  stack: StorageWrite[]
+  memory: StorageWrite[]
+  persistent storage: StorageWrite[]
+  transient storage: StorageWrite[]
+}
+
+Inputs "1" -up-* "1" Instruction
+Outputs "1" -up-* "1" Instruction
+
+class StorageAccessSet {
+  get_value(): byte[]
+  is_empty(): bool
+}
+
+abstract class StorageValue
+
+StorageValue <|-- ConcreteStorageValue
+StorageValue <|-- UnknownStorageValue
+StorageValue <|-- RelativeStorageValue
+
+class ConcreteStorageValue {
+  value: byte
+}
+
+class RelativeStorageValue {
+  relative_change: int
+}
+
+StorageAccessSet *-- StorageAccess : part of
+
+
+Inputs *-- "*" StorageAccessSet
+Outputs *-- "*" StorageWrite
+
+StorageWrite "1" --> "1" StorageValue : writes
+StorageAccess "*" --> "1" StorageValue : accesses
+StorageAccess "1" --> "1" StorageAccessKey
+StorageValue --> "[0..1]" Instruction : touched_by
+StorageValue --> "[0..1]" Instruction : modified_by
+
+@enduml
+```
+
+!!! note
+
+    For the Outputs, we need at least the stack output, as we use this to detect TOD sources (eg for SLOAD and BALANCE). We don't include the call related data as these always reflect the inputs.
+
+At each instruction, we keep track which inputs it uses and which outputs it produces. The values it uses stores information, about which instruction lastly outputted it without modifying its value (eg a CALL passing memory data to calldata) and which instruction lastly modified its value (eg an ADD summing two inputs to a new output value).
+
+This helps us to track the information flow at a byte level, rather than grouping the values together per instruction. For instance, if a CALL takes multiple input parameters from the memory, the parameters will be composed of their own values with their own `touched_by` and `modified_by` fields. A `tokenAmount` would trace back to a different modifying instruction, than a `token` parameter in the same call.
+
+### Information Flow
+
+To understand which instruction influenced the inputs of another instruction, we keep track which instructions modified a storage value. We keep track of the last instruction that **modified** the value. For instance, an ADD instruction will output a StorageValue with `modified_by == ADD`. However, a swap afterwards will only update the `touched_by`, the `modified_by` will continue to be the ADD instruction.
+
+Information Flow backtracking: From the instruction inputs, find the instructions that have written these input values. Recursively continue from these instructions' inputs.
+
+```
+Start: instruction sink
+let instruction = instruction_sink
+let depends_on = set()
+let next_inputs = instruction.inputs
+while next_inputs {
+  let inputs = next_inputs
+  next_inputs = []
+  for input in inputs {
+    for storage_access in input.storage_access_set {
+      let instr = storage_access.modified_by
+      depends_on.append(instr)
+      next_inputs.append(instr)
+    }
+  }
+}
+```
+
 ## Traces input
 
 As inputs we take the execution traces from the transactions. These are based on the non-finalized [EIP-3155](https://eips.ethereum.org/EIPS/eip-3155) EVM trace specification.
