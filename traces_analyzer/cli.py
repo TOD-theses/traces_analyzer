@@ -18,8 +18,10 @@ from traces_analyzer.features.feature_extraction_runner import FeatureExtraction
 from traces_analyzer.features.feature_extractor import SingleToDoubleInstructionFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
-from traces_analyzer.parser.instructions import CALL, STATICCALL
+from traces_analyzer.parser.call_context import CallContext
+from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
+from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 
 def main():  # pragma: no cover
@@ -110,6 +112,50 @@ def compare_traces(
         print(call_tree_normal)
         print("Call tree reverse")
         print(call_tree_reverse)
+
+        print("Source to Sink")
+        print()
+        all_instructions = transaction_one.instructions
+        tod_source_instruction = tod_source_analyzer.get_tod_source().instruction_one
+        changed_instructions = instruction_changes_analyzer.get_instructions_with_different_inputs()
+        # only memory input changes for CALL/LOGs
+        potential_sinks = [
+            i
+            for i in changed_instructions
+            if i.opcode in [CALL.opcode, LOG0.opcode, LOG1.opcode, LOG2.opcode, LOG3.opcode] and i.memory_input_change
+        ]
+        potential_sink_instructions = [change.instruction_one for change in potential_sinks]
+
+        tod_source_instruction_index = all_instructions.index(tod_source_instruction)
+        potential_sink_instruction_indexes = [all_instructions.index(instr) for instr in potential_sink_instructions]
+        sink_instruction_index = min(potential_sink_instruction_indexes)
+        sink_instruction = all_instructions[sink_instruction_index]
+
+        source_to_sink_contexts: list[CallContext] = []
+
+        # NOTE: call contexts will go up and down and repeat themselves
+        for instr in all_instructions[tod_source_instruction_index : sink_instruction_index + 1]:
+            if not source_to_sink_contexts or instr.call_context is not source_to_sink_contexts[-1]:
+                source_to_sink_contexts.append(instr.call_context)
+
+        """
+        TODO:
+        - the source instruction is not necessarily related to the sink
+            -> should display all source instructions and the human can match it
+        - with information flow analysis, we could check which instruction is responsible for the change.
+            However, this would need to include stack, memory, tcache, calldata, returndata, and storage writes+reads
+        """
+        signature_lookup = SignatureRegistry("http://localhost:8000")
+        min_depth = min(context.depth for context in source_to_sink_contexts)
+        source_indent = "  " * (tod_source_instruction.call_context.depth - min_depth)
+        sink_indent = "  " * (sink_instruction.call_context.depth - min_depth)
+        print(f"{source_indent}> {tod_source_instruction}")
+        for context in source_to_sink_contexts:
+            # print(context)
+            signature = signature_lookup.lookup_by_hex(context.calldata[:8]) or context.calldata[:8]
+            indent = "  " * (context.depth - min_depth)
+            print(f"{indent}> {context.code_address}.{signature}")
+        print(f"{sink_indent}> {sink_instruction}")
 
     evaluations: list[Evaluation] = [
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
