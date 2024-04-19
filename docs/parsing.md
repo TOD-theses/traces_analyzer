@@ -100,6 +100,45 @@ At each instruction, we keep track which inputs it uses and which outputs it pro
 
 This helps us to track the information flow at a byte level, rather than grouping the values together per instruction. For instance, if a CALL takes multiple input parameters from the memory, the parameters will be composed of their own values with their own `touched_by` and `modified_by` fields. A `tokenAmount` would trace back to a different modifying instruction, than a `token` parameter in the same call.
 
+## Planned parsing process
+
+```plantuml
+@startuml
+participant TraceEventParser
+participant InstructionsParser
+participant Instruction
+participant Environment
+
+loop
+  TraceEventParser -> InstructionsParser: trace event
+
+  create Instruction
+  InstructionsParser -> Instruction: from(trace_event, env, next_stack)
+  Instruction -> Environment: access storage slices
+  Instruction <-- Environment: storage_slices
+
+  InstructionsParser -> Instruction: get_outputs()
+  InstructionsParser <-- Instruction: storage_writes
+
+  InstructionsParser -> Environment: apply_writes(storage_writes)
+
+  opt enters call context
+    InstructionsParser -> Environment: enter_call_context(instruction)
+  end
+  opt exits call context
+    InstructionsParser -> Environment: exit_call_context(instruction)
+  end
+end
+@enduml
+```
+
+To create the instruction, we need:
+
+- instruction metadata (opcode, name, pc)
+- access to storages to create input StorageAccessSets
+- access to the stack after the instruction for some output StorageWrites (for the others, the storage access is enough, eg current memory + stack)
+- call_context to link it for later analysis
+
 ### Information Flow
 
 To understand which instruction influenced the inputs of another instruction, we keep track which instructions modified a storage value. We keep track of the last instruction that **modified** the value. For instance, an ADD instruction will output a StorageValue with `modified_by == ADD`. However, a swap afterwards will only update the `touched_by`, the `modified_by` will continue to be the ADD instruction.
