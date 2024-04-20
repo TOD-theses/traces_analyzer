@@ -5,7 +5,7 @@ from typing import Sequence
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.call_context_manager import CallContextManager, CallTree
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.environment.storage import MemoryValue
+from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instruction_io import parse_instruction_io
@@ -60,14 +60,15 @@ def _parse_instructions(
         # no events to parse
         return []
     call_context = call_context_manager.get_current_call_context()
-    env.current_stack = current_event.stack
+    env.stack.push(StackValue(current_event.stack))
     env.memory.set(0, MemoryValue(current_event.memory or ""))
 
     for next_event in events_iterator:
         instruction = parse_instruction(env, current_event.op, current_event.pc, next_event.stack, next_event.memory)
         call_context_manager.on_step(instruction, next_event.depth)
         env.current_step_index += 1
-        env.current_stack = next_event.stack
+        env.stack.clear()
+        env.stack.push(StackValue(next_event.stack))
         env.memory.set(0, MemoryValue(next_event.memory or ""))
         current_event = next_event
         call_context = call_context_manager.get_current_call_context()
@@ -99,7 +100,7 @@ def parse_instruction(
 
     io = parse_instruction_io(
         spec,
-        env.current_stack,
+        env.stack.current_stack(),
         env.memory,
         next_stack,
         next_memory,

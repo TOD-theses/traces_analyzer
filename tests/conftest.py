@@ -8,7 +8,7 @@ from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import JUMPDEST
 from traces_analyzer.parser.instructions_parser import parse_instruction
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.environment.storage import MemoryValue
+from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
 
 
 @fixture
@@ -54,7 +54,7 @@ def make_instruction(
     # TODO: directly create instruction instead of parsing inputs/outputs from stack
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.current_step_index = step_index
-    env.current_stack = stack
+    env.stack.push(StackValue(stack))
     env.current_call_context = call_context
     env.memory.set(0, MemoryValue(memory))
     return parse_instruction(env, type.opcode, pc, stack_after, memory_after)

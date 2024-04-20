@@ -2,7 +2,7 @@ from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions_parser import parse_instruction
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.environment.storage import MemoryValue
+from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
 
 unknown_opcode = 0xF
 dummy_event = TraceEvent(0x1, unknown_opcode, [], 1, None)
@@ -33,6 +33,7 @@ def test_instruction_parser_call():
     mem_size = "0x2"
     env = ParsingEnvironment(dummy_call_context)
     env.current_stack = list(reversed([gas, to, value, mem_offset, mem_size, "0x0", "0x0"]))
+    env.stack.push(StackValue(reversed([gas, to, value, mem_offset, mem_size, "0x0", "0x0"])))
     env.memory.set(0, MemoryValue("0000000011110000"))
 
     instruction = parse_instruction(env, 0xF1, 0x1, [], "")

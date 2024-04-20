@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
@@ -35,6 +36,54 @@ class Storage(ABC, Generic[Key, Value]):
     @abstractmethod
     def get(self, key: Key) -> Value:
         pass
+
+
+@dataclass
+class StackIndexes(StorageKey):
+    indexes: Iterable[int]
+
+
+@dataclass
+class StackValue(StorageValue):
+    values: list[str]
+
+
+class StackStorage(Storage[StackIndexes, StackValue]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.stacks: list[list[str]] = [[]]
+
+    @override
+    def on_call_enter(self):
+        super().on_call_enter()
+        self.stacks.append([])
+
+    @override
+    def on_call_exit(self):
+        super().on_call_exit()
+        self.stacks.pop()
+
+    @override
+    def get(self, key: StackIndexes) -> StackValue:
+        stack = self.current_stack()
+        values = [stack[-index] for index in key.indexes]
+        return StackValue(values)
+
+    def push(self, value: StackValue):
+        """Push all values. Last value will be the top of the stack"""
+        self.current_stack().extend(value.values)
+
+    def pop_n(self, n: int):
+        """Pop and return the top n stack items"""
+        results = self.get(StackIndexes(indexes=range(n)))
+        del self.current_stack()[-n:]
+        return results
+
+    def clear(self):
+        self.stacks[-1] = []
+
+    def current_stack(self) -> list[str]:
+        return self.stacks[-1]
 
 
 @dataclass
