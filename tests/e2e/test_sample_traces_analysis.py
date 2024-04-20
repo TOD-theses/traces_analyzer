@@ -7,6 +7,7 @@ from traces_analyzer.features.extractors.instruction_differences import Instruct
 from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
+from traces_analyzer.parser.events_parser import parse_events
 from traces_analyzer.parser.instructions import LOG3, SLOAD
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 
@@ -18,14 +19,12 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     bundle = directory_loader.load()
 
     transactions_actual = parse_instructions(
-        TransactionParsingInfo(
-            bundle.tx_attack.trace_actual, bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata
-        )
+        TransactionParsingInfo(bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata),
+        parse_events(bundle.tx_attack.trace_actual),
     )
     transactions_reverse = parse_instructions(
-        TransactionParsingInfo(
-            bundle.tx_attack.trace_reverse, bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata
-        )
+        TransactionParsingInfo(bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata),
+        parse_events(bundle.tx_attack.trace_reverse),
     )
 
     instruction_usage_analyzer = SingleToDoubleInstructionFeatureExtractor(

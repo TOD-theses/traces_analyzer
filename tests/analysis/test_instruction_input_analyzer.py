@@ -16,15 +16,15 @@ def test_instruction_input_analyzer():
         make_instruction(
             CALL, stack=list(reversed(["0x1234", "0xchild", first_call_value, "0x0", "0x0", "0x0", "0x0"]))
         ),
-        make_instruction(STOP, call_context=child_context, depth=2),
+        make_instruction(STOP, call_context=child_context),
     ]
     second_trace = [
         make_instruction(),
         make_instruction(
             CALL, stack=list(reversed(["0x1234", "0xchild", second_call_value, "0x0", "0x0", "0x0", "0x0"]))
         ),
-        make_instruction(POP, call_context=child_context, depth=2),
-        make_instruction(STOP, call_context=child_context, depth=2),
+        make_instruction(POP, call_context=child_context),
+        make_instruction(STOP, call_context=child_context),
     ]
 
     # run feature extraction

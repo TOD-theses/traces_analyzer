@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Sequence
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,7 @@ class InstructionIOSpec:
 
 
 def parse_instruction_io(
-    spec: InstructionIOSpec, stack: list[str], mem: str | None, next_stack: list[str], next_mem: str | None
+    spec: InstructionIOSpec, stack: Sequence[str], mem: str | None, next_stack: Sequence[str], next_mem: str | None
 ) -> InstructionIO:
     inputs_stack = parse_stack_arg(stack, last_n_args=spec.stack_input_count)
     outputs_stack = parse_stack_arg(next_stack, last_n_args=spec.stack_output_count)
@@ -41,7 +42,7 @@ def parse_instruction_io(
     )
 
 
-def parse_stack_arg(stack: list[str], last_n_args: int) -> tuple[str, ...]:
+def parse_stack_arg(stack: Sequence[str], last_n_args: int) -> tuple[str, ...]:
     if last_n_args == 0:
         return tuple()
 

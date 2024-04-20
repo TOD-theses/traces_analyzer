@@ -1,19 +1,19 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Sequence, cast
+from typing import Sequence
 
 from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.call_context_manager import CallContextManager, CallTree
-from traces_analyzer.parser.events_parser import TraceEvent, parse_events
+from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instruction_io import parse_instruction_io
 from traces_analyzer.parser.instructions import get_instruction_class
+from traces_analyzer.parser.parsing_environment import ParsingEnvironment
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 @dataclass
 class TransactionParsingInfo:
-    trace_events_json: Iterable[str]
     sender: str
     to: str
     calldata: str
@@ -25,11 +25,11 @@ class ParsedTransaction:
     call_tree: CallTree
 
 
-def parse_instructions(parsing_info: TransactionParsingInfo) -> ParsedTransaction:
+def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Iterable[TraceEvent]) -> ParsedTransaction:
     call_context_manager = _setup_call_context_manager(parsing_info.sender, parsing_info.to, parsing_info.calldata)
+    env = ParsingEnvironment(call_context_manager.get_current_call_context())
 
-    events = parse_events(parsing_info.trace_events_json)
-    instructions = list(_parse_instructions(events, call_context_manager))
+    instructions = list(_parse_instructions(trace_events, env, call_context_manager))
 
     return ParsedTransaction(instructions, call_context_manager.get_call_tree())
 
@@ -48,56 +48,64 @@ def _setup_call_context_manager(sender: str, to: str, calldata: str) -> CallCont
 
 
 def _parse_instructions(
-    events: Iterable[TraceEvent], call_context_manager: CallContextManager
+    events: Iterable[TraceEvent],
+    env: ParsingEnvironment,
+    call_context_manager: CallContextManager,
 ) -> Iterable[Instruction]:
-    current_step_index = 0
     events_iterator = events.__iter__()
     try:
         current_event = next(events_iterator)
     except StopIteration:
         # no events to parse
         return []
+    env.current_stack = current_event.stack
+    env.current_memory = current_event.memory
+    call_context = call_context_manager.get_current_call_context()
 
     for next_event in events_iterator:
         instruction = parse_instruction(
-            current_event, next_event, call_context_manager.get_current_call_context(), current_step_index
+            env, current_event.op, current_event.pc, next_event.stack, next_event.memory, call_context
         )
         call_context_manager.on_step(instruction, next_event.depth)
+        env.current_step_index += 1
+        env.current_stack = next_event.stack
+        env.current_memory = next_event.memory
         current_event = next_event
-        current_step_index += 1
+        call_context = call_context_manager.get_current_call_context()
 
         yield instruction
 
     # NOTE: for the last event, we pass None instead of next_event
     # if this breaks something in the future (eg if the last TraceEvent is a SLOAD
-    # that tries to read the stack for the result), I'll need to change this
-    yield parse_instruction(
-        current_event, cast(TraceEvent, None), call_context_manager.get_current_call_context(), current_step_index
-    )
+    # that tries to read the stack for the result), we'll need to change this
+    yield parse_instruction(env, current_event.op, current_event.pc, [], None, call_context)
 
 
 def parse_instruction(
-    event: TraceEvent, next_event: TraceEvent, call_context: CallContext, step_index: int
+    env: ParsingEnvironment,
+    opcode: int,
+    program_counter: int,
+    next_stack: Sequence[str],
+    next_memory: str | None,
+    call_context: CallContext,
 ) -> Instruction:
-    opcode = event.op
     name = opcode_to_name(opcode) or "UNKNOWN"
-    program_counter = event.pc
 
     cls = get_instruction_class(opcode) or Instruction
     spec = cls.io_specification
 
     io = parse_instruction_io(
         spec,
-        event.stack,
-        event.memory,
-        next_event.stack if next_event else [],
-        next_event.memory if next_event else None,
+        env.current_stack,
+        env.current_memory,
+        next_stack,
+        next_memory,
     )
     return cls(
         opcode,
         name,
         program_counter,
-        step_index,
+        env.current_step_index,
         call_context,
         io.inputs_stack,
         io.outputs_stack,

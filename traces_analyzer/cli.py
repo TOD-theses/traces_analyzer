@@ -19,6 +19,7 @@ from traces_analyzer.features.feature_extractor import SingleToDoubleInstruction
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.parser.call_context import CallContext
+from traces_analyzer.parser.events_parser import parse_events
 from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
@@ -94,8 +95,8 @@ def compare_traces(
         InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
 
-    transaction_one = parse_instructions(TransactionParsingInfo(traces[0], sender, to, calldata))
-    transaction_two = parse_instructions(TransactionParsingInfo(traces[1], sender, to, calldata))
+    transaction_one = parse_instructions(TransactionParsingInfo(sender, to, calldata), parse_events(traces[0]))
+    transaction_two = parse_instructions(TransactionParsingInfo(sender, to, calldata), parse_events(traces[1]))
 
     runner = FeatureExtractionRunner(
         RunInfo(

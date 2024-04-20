@@ -8,6 +8,8 @@ from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import JUMPDEST
 from traces_analyzer.parser.instructions_parser import parse_instruction
+from traces_analyzer.parser.parsing_environment import ParsingEnvironment
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 @fixture
@@ -45,14 +47,14 @@ def make_instruction(
     pc=1,
     step_index=0,
     stack=[],
-    depth=1,
     memory="",
     stack_after=[],
     memory_after="",
-    depth_after=1,
     call_context=TEST_ROOT_CALLCONTEXT,
 ):
-    # TODO: consider to directly create Instruction
-    event = TraceEvent(pc, type.opcode, stack, depth, memory)
-    next_event = TraceEvent(pc + 1, JUMPDEST.opcode, stack_after, depth_after, memory_after)
-    return parse_instruction(event, next_event, call_context, step_index)
+    # TODO: directly create instruction instead of parsing inputs/outputs from stack
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_step_index = step_index
+    env.current_stack = stack
+    env.current_memory = memory
+    return parse_instruction(env, type.opcode, pc, stack_after, memory_after, call_context)
