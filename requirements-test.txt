@@ -10,3 +10,4 @@ gitchangelog
 mkdocs
 plantuml_markdown
 types-requests
+types-tqdm
