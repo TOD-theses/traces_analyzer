@@ -2,6 +2,7 @@ from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions_parser import parse_instruction
 from traces_analyzer.parser.parsing_environment import ParsingEnvironment
+from traces_analyzer.parser.storage import MemoryValue
 
 unknown_opcode = 0xF
 dummy_event = TraceEvent(0x1, unknown_opcode, [], 1, None)
@@ -10,7 +11,7 @@ dummy_call_context = TEST_ROOT_CALLCONTEXT
 
 def test_instruction_parser_unknown():
     env = ParsingEnvironment(dummy_call_context)
-    instruction = parse_instruction(env, 0xF, 0x1, [], "", dummy_call_context)
+    instruction = parse_instruction(env, 0xF, 0x1, [], "")
 
     assert instruction.opcode == 0xF
     assert instruction.name == "UNKNOWN"
@@ -30,11 +31,11 @@ def test_instruction_parser_call():
     to = hex(0xAABB)
     mem_offset = "0x4"
     mem_size = "0x2"
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env = ParsingEnvironment(dummy_call_context)
     env.current_stack = list(reversed([gas, to, value, mem_offset, mem_size, "0x0", "0x0"]))
-    env.current_memory = "0000000011110000"
+    env.memory.set(0, MemoryValue("0000000011110000"))
 
-    instruction = parse_instruction(env, 0xF1, 0x1, [], "", dummy_call_context)
+    instruction = parse_instruction(env, 0xF1, 0x1, [], "")
 
     assert instruction.opcode == 0xF1
     assert instruction.name == "CALL"

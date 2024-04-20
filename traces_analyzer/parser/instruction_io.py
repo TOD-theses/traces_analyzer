@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Sequence
 
+from traces_analyzer.parser.storage import MemoryStorage
+
 
 @dataclass(frozen=True)
 class InstructionIO:
@@ -23,12 +25,16 @@ class InstructionIOSpec:
 
 
 def parse_instruction_io(
-    spec: InstructionIOSpec, stack: Sequence[str], mem: str | None, next_stack: Sequence[str], next_mem: str | None
+    spec: InstructionIOSpec,
+    stack: Sequence[str],
+    memory: MemoryStorage,
+    next_stack: Sequence[str],
+    next_mem: str | None,
 ) -> InstructionIO:
     inputs_stack = parse_stack_arg(stack, last_n_args=spec.stack_input_count)
     outputs_stack = parse_stack_arg(next_stack, last_n_args=spec.stack_output_count)
     input_memory = parse_memory_via_stack_args(
-        mem, inputs_stack, spec.memory_input_offset_arg, spec.memory_input_size_arg
+        memory.get_all().value, inputs_stack, spec.memory_input_offset_arg, spec.memory_input_size_arg
     )
     output_memory = parse_memory_via_stack_args(
         next_mem, inputs_stack, spec.memory_output_offset_arg, spec.memory_output_size_arg

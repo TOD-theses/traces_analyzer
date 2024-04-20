@@ -9,6 +9,7 @@ from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instruction_io import parse_instruction_io
 from traces_analyzer.parser.instructions import get_instruction_class
 from traces_analyzer.parser.parsing_environment import ParsingEnvironment
+from traces_analyzer.parser.storage import MemoryValue
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
@@ -58,27 +59,30 @@ def _parse_instructions(
     except StopIteration:
         # no events to parse
         return []
-    env.current_stack = current_event.stack
-    env.current_memory = current_event.memory
     call_context = call_context_manager.get_current_call_context()
+    env.current_stack = current_event.stack
+    env.memory.set(0, MemoryValue(current_event.memory or ""))
 
     for next_event in events_iterator:
-        instruction = parse_instruction(
-            env, current_event.op, current_event.pc, next_event.stack, next_event.memory, call_context
-        )
+        instruction = parse_instruction(env, current_event.op, current_event.pc, next_event.stack, next_event.memory)
         call_context_manager.on_step(instruction, next_event.depth)
         env.current_step_index += 1
         env.current_stack = next_event.stack
-        env.current_memory = next_event.memory
+        env.memory.set(0, MemoryValue(next_event.memory or ""))
         current_event = next_event
         call_context = call_context_manager.get_current_call_context()
+
+        if call_context.depth > env.current_call_context.depth:
+            env.on_call_enter(call_context)
+        elif call_context.depth < env.current_call_context.depth:
+            env.on_call_exit(call_context)
 
         yield instruction
 
     # NOTE: for the last event, we pass None instead of next_event
     # if this breaks something in the future (eg if the last TraceEvent is a SLOAD
     # that tries to read the stack for the result), we'll need to change this
-    yield parse_instruction(env, current_event.op, current_event.pc, [], None, call_context)
+    yield parse_instruction(env, current_event.op, current_event.pc, [], None)
 
 
 def parse_instruction(
@@ -87,7 +91,6 @@ def parse_instruction(
     program_counter: int,
     next_stack: Sequence[str],
     next_memory: str | None,
-    call_context: CallContext,
 ) -> Instruction:
     name = opcode_to_name(opcode) or "UNKNOWN"
 
@@ -97,7 +100,7 @@ def parse_instruction(
     io = parse_instruction_io(
         spec,
         env.current_stack,
-        env.current_memory,
+        env.memory,
         next_stack,
         next_memory,
     )
@@ -106,7 +109,7 @@ def parse_instruction(
         name,
         program_counter,
         env.current_step_index,
-        call_context,
+        env.current_call_context,
         io.inputs_stack,
         io.outputs_stack,
         io.input_memory,
