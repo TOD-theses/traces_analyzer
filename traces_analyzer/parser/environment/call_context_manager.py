@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from hashlib import sha256
+from typing import Sequence
 
 from typing_extensions import Iterable, Self, TypeGuard
 
@@ -18,6 +19,8 @@ from traces_analyzer.parser.instructions import (
     STOP,
 )
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
+
+# TODO: rename and/or split this file
 
 # TODO: do not use a global signature registry
 signature_lookup = SignatureRegistry("http://localhost:8000")
@@ -61,26 +64,18 @@ class CallTree:
         return s
 
 
-class CallContextManager:
-    def __init__(self, root_call_context: CallContext) -> None:
-        self._call_tree = CallTree(root_call_context)
-        self._current_call_context = root_call_context
+def build_call_tree(root_call_context: CallContext, instructions: Sequence[Instruction]) -> CallTree:
+    current_call_context = root_call_context
+    call_tree = CallTree(current_call_context)
 
-    def get_current_call_context(self) -> CallContext:
-        return self._current_call_context
+    for instruction in instructions:
+        if instruction.call_context is not current_call_context:
+            # add context if we enter (ie we don't go up)
+            if instruction.call_context is not current_call_context.parent:
+                call_tree.add(instruction.call_context)
+            current_call_context = instruction.call_context
 
-    def get_call_tree(self) -> CallTree:
-        return self._call_tree
-
-    def on_step(self, instruction: Instruction, next_depth: int | None):
-        new_call_context = update_call_context(self._current_call_context, instruction, next_depth)
-        if new_call_context != self._current_call_context:
-            self._update_call_context(new_call_context)
-
-    def _update_call_context(self, new_call_context: CallContext):
-        if new_call_context is not self._current_call_context.parent:
-            self._call_tree.add(new_call_context)
-        self._current_call_context = new_call_context
+    return call_tree
 
 
 class ExpectedDepthChange(Exception):

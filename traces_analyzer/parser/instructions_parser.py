@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.environment.call_context_manager import CallContextManager, CallTree
+from traces_analyzer.parser.environment.call_context_manager import CallTree, build_call_tree, update_call_context
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
 from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
 from traces_analyzer.parser.events_parser import TraceEvent
@@ -27,24 +27,22 @@ class ParsedTransaction:
 
 
 def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Iterable[TraceEvent]) -> ParsedTransaction:
-    call_context_manager = _setup_call_context_manager(parsing_info.sender, parsing_info.to, parsing_info.calldata)
-    env = ParsingEnvironment(call_context_manager.get_current_call_context())
+    root_call_context = _create_root_call_context(parsing_info.sender, parsing_info.to, parsing_info.calldata)
 
-    instructions = list(_parse_instructions(trace_events, env, call_context_manager))
+    instructions = list(_parse_instructions(trace_events, root_call_context))
+    call_tree = build_call_tree(root_call_context, instructions)
 
-    return ParsedTransaction(instructions, call_context_manager.get_call_tree())
+    return ParsedTransaction(instructions, call_tree)
 
 
-def _setup_call_context_manager(sender: str, to: str, calldata: str) -> CallContextManager:
-    return CallContextManager(
-        CallContext(
-            parent=None,
-            calldata=calldata,
-            depth=1,
-            msg_sender=sender,
-            code_address=to,
-            storage_address=to,
-        )
+def _create_root_call_context(sender: str, to: str, calldata: str) -> CallContext:
+    return CallContext(
+        parent=None,
+        calldata=calldata,
+        depth=1,
+        msg_sender=sender,
+        code_address=to,
+        storage_address=to,
     )
 
 
@@ -63,12 +61,8 @@ class InstructionOutputOracle:
     depth: int | None
 
 
-def _parse_instructions(
-    events: Iterable[TraceEvent],
-    env: ParsingEnvironment,
-    call_context_manager: CallContextManager,
-) -> Iterable[Instruction]:
-    tracer_evm = TracerEVM(env, call_context_manager)
+def _parse_instructions(events: Iterable[TraceEvent], root_call_context: CallContext) -> Iterable[Instruction]:
+    tracer_evm = TracerEVM(root_call_context)
     events_iterator = events.__iter__()
     try:
         current_event = next(events_iterator)
@@ -90,9 +84,8 @@ def _parse_instructions(
 
 
 class TracerEVM:
-    def __init__(self, env: ParsingEnvironment, call_context_manager: CallContextManager) -> None:
-        self.env = env
-        self.call_context_manager = call_context_manager
+    def __init__(self, root_call_context: CallContext) -> None:
+        self.env = ParsingEnvironment(root_call_context)
 
     def step(self, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle) -> Instruction:
         instruction = self._parse_instruction(instruction_metadata, output_oracle)
@@ -109,13 +102,12 @@ class TracerEVM:
         self.env.memory.set(0, MemoryValue(output_oracle.memory))
 
     def _update_call_context(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
-        self.call_context_manager.on_step(instruction, output_oracle.depth)
-        call_context = self.call_context_manager.get_current_call_context()
+        next_call_context = update_call_context(self.env.current_call_context, instruction, output_oracle.depth)
 
-        if call_context.depth > self.env.current_call_context.depth:
-            self.env.on_call_enter(call_context)
-        elif call_context.depth < self.env.current_call_context.depth:
-            self.env.on_call_exit(call_context)
+        if next_call_context.depth > self.env.current_call_context.depth:
+            self.env.on_call_enter(next_call_context)
+        elif next_call_context.depth < self.env.current_call_context.depth:
+            self.env.on_call_exit(next_call_context)
 
     def _parse_instruction(
         self, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle
