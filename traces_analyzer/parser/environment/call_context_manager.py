@@ -72,7 +72,7 @@ class CallContextManager:
     def get_call_tree(self) -> CallTree:
         return self._call_tree
 
-    def on_step(self, instruction: Instruction, next_depth: int):
+    def on_step(self, instruction: Instruction, next_depth: int | None):
         new_call_context = update_call_context(self._current_call_context, instruction, next_depth)
         if new_call_context != self._current_call_context:
             self._update_call_context(new_call_context)
@@ -94,11 +94,14 @@ class UnexpectedDepthChange(Exception):
 def update_call_context(
     current_call_context: CallContext,
     instruction: Instruction,
-    next_depth: int,
+    next_depth: int | None,
 ):
     next_call_context = current_call_context
 
     # TODO: refactor this method
+    if next_depth is None:
+        # do not enter/return a callframe at the end of the trace
+        return next_call_context
     if enters_call_context_normal(instruction, current_call_context.depth, next_depth):
         next_call_context = CallContext(
             parent=current_call_context,

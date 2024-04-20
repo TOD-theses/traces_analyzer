@@ -194,7 +194,7 @@ def test_call_context_manager_throws_on_too_large_depth_change():
         manager.on_step(stop, grandchild.depth - 2)
 
 
-def test_call_context_manager_throws_on_stop_at_root():
+def test_call_context_manager_throws_when_attempting_to_stop_at_root():
     root = get_root()
     manager = get_manager(root)
     stop = get_stop(root)
@@ -214,6 +214,16 @@ def test_call_context_manager_returns_normal(ret):
     assert manager.get_current_call_context() == root
     assert not child.reverted
     assert child.halt_type == HaltType.NORMAL
+
+
+def test_call_context_manager_does_not_return_at_root():
+    root = get_root()
+    ret = get_return(root)
+    manager = get_manager(root)
+
+    manager.on_step(ret, None)
+
+    assert manager.get_current_call_context() == root
 
 
 def test_call_context_manager_reverts():

@@ -1,3 +1,4 @@
+from typing import Sequence
 from pytest import FixtureRequest, fixture
 from pathlib import Path
 import pytest
@@ -5,10 +6,11 @@ import sys
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import JUMPDEST
-from traces_analyzer.parser.instructions_parser import parse_instruction
+from traces_analyzer.parser.instruction_io import parse_instruction_io
+from traces_analyzer.parser.instructions import JUMPDEST, get_instruction_class
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
 from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 @fixture
@@ -57,4 +59,36 @@ def make_instruction(
     env.stack.push(StackValue(stack))
     env.current_call_context = call_context
     env.memory.set(0, MemoryValue(memory))
-    return parse_instruction(env, type.opcode, pc, stack_after, memory_after)
+    return _parse_instruction(env, type.opcode, pc, stack_after, memory_after)
+
+
+def _parse_instruction(
+    env: ParsingEnvironment,
+    opcode: int,
+    program_counter: int,
+    next_stack: Sequence[str],
+    next_memory: str | None,
+) -> Instruction:
+    name = opcode_to_name(opcode) or "UNKNOWN"
+
+    cls = get_instruction_class(opcode) or Instruction
+    spec = cls.io_specification
+
+    io = parse_instruction_io(
+        spec,
+        env.stack.current_stack(),
+        env.memory,
+        next_stack,
+        next_memory,
+    )
+    return cls(
+        opcode,
+        name,
+        program_counter,
+        env.current_step_index,
+        env.current_call_context,
+        io.inputs_stack,
+        io.outputs_stack,
+        io.input_memory,
+        io.output_memory,
+    )

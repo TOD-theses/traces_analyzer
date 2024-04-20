@@ -1,9 +1,9 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.environment.call_context_manager import CallContextManager
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions import (
     CALL,
+    JUMPDEST,
     POP,
 )
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
@@ -29,6 +29,10 @@ def get_parsing_info():
     return TransactionParsingInfo("0xsender", "0xto", "calldata")
 
 
+def get_dummy_event():
+    return TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], depth=1, memory="")
+
+
 def test_parser_empty_events():
     assert parse_instructions(get_parsing_info(), []).instructions == []
 
@@ -38,8 +42,8 @@ def test_call_inputs_memory_parsing():
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
 
     call_event = TraceEvent(pc=1234, op=CALL.opcode, stack=stack, memory=memory, depth=1)
-    instructions = parse_instructions(get_parsing_info(), [call_event]).instructions
-    call_instruction = instructions[0]
+    instructions = parse_instructions(get_parsing_info(), [get_dummy_event(), call_event]).instructions
+    call_instruction = instructions[1]
 
     assert isinstance(call_instruction, CALL)
     assert call_instruction.memory_input == "2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000"
@@ -51,6 +55,7 @@ def test_parser_builds_call_tree():
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
 
     events = [
+        get_dummy_event(),
         TraceEvent(pc=1, op=CALL.opcode, stack=stack, memory=memory, depth=1),
         TraceEvent(pc=2, op=POP.opcode, stack=["0x0"], memory="", depth=2),
     ]

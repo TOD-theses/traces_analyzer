@@ -48,71 +48,99 @@ def _setup_call_context_manager(sender: str, to: str, calldata: str) -> CallCont
     )
 
 
+@dataclass
+class InstructionMetadata:
+    opcode: int
+    pc: int
+
+
+@dataclass
+class InstructionOutputOracle:
+    """Output data we know from the trace. Oracle, because we can peek one step into the future with this"""
+
+    stack: list[str]
+    memory: str
+    depth: int | None
+
+
 def _parse_instructions(
     events: Iterable[TraceEvent],
     env: ParsingEnvironment,
     call_context_manager: CallContextManager,
 ) -> Iterable[Instruction]:
+    tracer_evm = TracerEVM(env, call_context_manager)
     events_iterator = events.__iter__()
     try:
         current_event = next(events_iterator)
     except StopIteration:
         # no events to parse
         return []
-    call_context = call_context_manager.get_current_call_context()
-    env.stack.push(StackValue(current_event.stack))
-    env.memory.set(0, MemoryValue(current_event.memory or ""))
 
     for next_event in events_iterator:
-        instruction = parse_instruction(env, current_event.op, current_event.pc, next_event.stack, next_event.memory)
-        call_context_manager.on_step(instruction, next_event.depth)
-        env.current_step_index += 1
-        env.stack.clear()
-        env.stack.push(StackValue(next_event.stack))
-        env.memory.set(0, MemoryValue(next_event.memory or ""))
+        yield tracer_evm.step(
+            instruction_metadata=InstructionMetadata(current_event.op, current_event.pc),
+            output_oracle=InstructionOutputOracle(next_event.stack, next_event.memory or "", next_event.depth),
+        )
         current_event = next_event
-        call_context = call_context_manager.get_current_call_context()
 
-        if call_context.depth > env.current_call_context.depth:
-            env.on_call_enter(call_context)
-        elif call_context.depth < env.current_call_context.depth:
-            env.on_call_exit(call_context)
-
-        yield instruction
-
-    # NOTE: for the last event, we pass None instead of next_event
-    # if this breaks something in the future (eg if the last TraceEvent is a SLOAD
-    # that tries to read the stack for the result), we'll need to change this
-    yield parse_instruction(env, current_event.op, current_event.pc, [], None)
-
-
-def parse_instruction(
-    env: ParsingEnvironment,
-    opcode: int,
-    program_counter: int,
-    next_stack: Sequence[str],
-    next_memory: str | None,
-) -> Instruction:
-    name = opcode_to_name(opcode) or "UNKNOWN"
-
-    cls = get_instruction_class(opcode) or Instruction
-    spec = cls.io_specification
-
-    io = parse_instruction_io(
-        spec,
-        env.stack.current_stack(),
-        env.memory,
-        next_stack,
-        next_memory,
+    yield tracer_evm.step(
+        instruction_metadata=InstructionMetadata(current_event.op, current_event.pc),
+        output_oracle=InstructionOutputOracle([], "", None),
     )
-    return cls(
-        opcode,
-        name,
-        program_counter,
-        env.current_step_index,
-        env.current_call_context,
-        io.inputs_stack,
-        io.outputs_stack,
-        io.input_memory,
-        io.output_memory,
-    )
+
+
+class TracerEVM:
+    def __init__(self, env: ParsingEnvironment, call_context_manager: CallContextManager) -> None:
+        self.env = env
+        self.call_context_manager = call_context_manager
+
+    def step(self, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle) -> Instruction:
+        instruction = self._parse_instruction(instruction_metadata, output_oracle)
+
+        self.env.current_step_index += 1
+        self._update_storages(instruction, output_oracle)
+        self._update_call_context(instruction, output_oracle)
+
+        return instruction
+
+    def _update_storages(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+        self.env.stack.clear()
+        self.env.stack.push(StackValue(output_oracle.stack))
+        self.env.memory.set(0, MemoryValue(output_oracle.memory))
+
+    def _update_call_context(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+        self.call_context_manager.on_step(instruction, output_oracle.depth)
+        call_context = self.call_context_manager.get_current_call_context()
+
+        if call_context.depth > self.env.current_call_context.depth:
+            self.env.on_call_enter(call_context)
+        elif call_context.depth < self.env.current_call_context.depth:
+            self.env.on_call_exit(call_context)
+
+    def _parse_instruction(
+        self, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle
+    ) -> Instruction:
+        opcode = instruction_metadata.opcode
+        name = opcode_to_name(opcode) or "UNKNOWN"
+
+        cls = get_instruction_class(opcode) or Instruction
+        spec = cls.io_specification
+
+        io = parse_instruction_io(
+            spec,
+            self.env.stack.current_stack(),
+            self.env.memory,
+            output_oracle.stack,
+            output_oracle.memory,
+        )
+        return cls(
+            opcode,
+            name,
+            instruction_metadata.pc,
+            self.env.current_step_index,
+            self.env.current_call_context,
+            io.inputs_stack,
+            io.outputs_stack,
+            io.input_memory,
+            io.output_memory,
+        )
