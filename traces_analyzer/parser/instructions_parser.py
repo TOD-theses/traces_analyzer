@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, cast
 
 from traces_analyzer.parser.call_context import CallContext
 from traces_analyzer.parser.call_context_manager import CallContextManager, CallTree
@@ -50,6 +50,7 @@ def _setup_call_context_manager(sender: str, to: str, calldata: str) -> CallCont
 def _parse_instructions(
     events: Iterable[TraceEvent], call_context_manager: CallContextManager
 ) -> Iterable[Instruction]:
+    current_step_index = 0
     events_iterator = events.__iter__()
     try:
         current_event = next(events_iterator)
@@ -58,19 +59,26 @@ def _parse_instructions(
         return []
 
     for next_event in events_iterator:
-        instruction = parse_instruction(current_event, next_event, call_context_manager.get_current_call_context())
+        instruction = parse_instruction(
+            current_event, next_event, call_context_manager.get_current_call_context(), current_step_index
+        )
         call_context_manager.on_step(instruction, next_event.depth)
         current_event = next_event
+        current_step_index += 1
 
         yield instruction
 
     # NOTE: for the last event, we pass None instead of next_event
     # if this breaks something in the future (eg if the last TraceEvent is a SLOAD
     # that tries to read the stack for the result), I'll need to change this
-    yield parse_instruction(current_event, None, call_context_manager.get_current_call_context())  # type: ignore
+    yield parse_instruction(
+        current_event, cast(TraceEvent, None), call_context_manager.get_current_call_context(), current_step_index
+    )
 
 
-def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_context: CallContext) -> Instruction:
+def parse_instruction(
+    event: TraceEvent, next_event: TraceEvent, call_context: CallContext, step_index: int
+) -> Instruction:
     opcode = event.op
     name = opcode_to_name(opcode) or "UNKNOWN"
     program_counter = event.pc
@@ -89,6 +97,7 @@ def parse_instruction(event: TraceEvent, next_event: TraceEvent, call_context: C
         opcode,
         name,
         program_counter,
+        step_index,
         call_context,
         io.inputs_stack,
         io.outputs_stack,

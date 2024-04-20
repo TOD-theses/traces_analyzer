@@ -8,11 +8,12 @@ dummy_call_context = TEST_ROOT_CALLCONTEXT
 
 
 def test_instruction_parser_unknown():
-    instruction = parse_instruction(TraceEvent(0x1, 0xF, [], 1, None), dummy_event, dummy_call_context)
+    instruction = parse_instruction(TraceEvent(0x1, 0xF, [], 1, None), dummy_event, dummy_call_context, 0)
 
     assert instruction.opcode == 0xF
     assert instruction.name == "UNKNOWN"
     assert instruction.program_counter == 0x1
+    assert instruction.step_index == 0
     assert instruction.stack_inputs == ()
     assert instruction.stack_outputs == ()
     assert instruction.memory_input == None
@@ -31,11 +32,12 @@ def test_instruction_parser_call():
     stack = list(reversed([gas, to, value, mem_offset, mem_size, "0x0", "0x0"]))
     call_event = TraceEvent(0x1, 0xF1, stack, 1, memory)
 
-    instruction = parse_instruction(call_event, dummy_event, dummy_call_context)
+    instruction = parse_instruction(call_event, dummy_event, dummy_call_context, 0)
 
     assert instruction.opcode == 0xF1
     assert instruction.name == "CALL"
     assert instruction.program_counter == 0x1
+    assert instruction.step_index == 0
     assert instruction.stack_inputs == (gas, to, value, mem_offset, mem_size, "0x0", "0x0")
     assert instruction.stack_outputs == ()
     assert instruction.memory_input == "1111"

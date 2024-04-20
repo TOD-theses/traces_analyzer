@@ -43,6 +43,7 @@ TEST_ROOT_CALLCONTEXT = CallContext(None, "", 1, "0x0", "0x0", "0x0", False, Non
 def make_instruction(
     type: type[Instruction] = JUMPDEST,
     pc=1,
+    step_index=0,
     stack=[],
     depth=1,
     memory="",
@@ -54,4 +55,4 @@ def make_instruction(
     # TODO: consider to directly create Instruction
     event = TraceEvent(pc, type.opcode, stack, depth, memory)
     next_event = TraceEvent(pc + 1, JUMPDEST.opcode, stack_after, depth_after, memory_after)
-    return parse_instruction(event, next_event, call_context)
+    return parse_instruction(event, next_event, call_context, step_index)

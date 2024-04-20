@@ -17,9 +17,11 @@ def test_instruction_differences_evaluation():
             address="0xtest",
             program_counter=5,
             opcode=CALL.opcode,
-            instruction_one=CALL(CALL.opcode, "CALL", 5, call_context, ("val_1", "val_2", "val_3"), (), "1111", None),
+            instruction_one=CALL(
+                CALL.opcode, "CALL", 5, 0, call_context, ("val_1", "val_2", "val_3"), (), "1111", None
+            ),
             instruction_two=CALL(
-                CALL.opcode, "CALL", 5, call_context, ("val_1", "val_2_x", "val_3_x"), (), "2222", None
+                CALL.opcode, "CALL", 5, 0, call_context, ("val_1", "val_2_x", "val_3_x"), (), "2222", None
             ),
             stack_input_changes=[
                 StackInputChange(index=1, first_value="val_2", second_value="val_2_x"),
@@ -33,6 +35,7 @@ def test_instruction_differences_evaluation():
             opcode=SLOAD.opcode,
             name="SLOAD",
             program_counter=10,
+            step_index=0,
             call_context=CallContext(None, "", 1, "0xsender", "0xtest", "0xtest", False, None, False),
             stack_inputs=("0xkey",),
             stack_outputs=("0xval",),

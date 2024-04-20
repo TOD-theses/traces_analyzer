@@ -56,3 +56,16 @@ def test_parser_updates_call_context_manager():
 
     assert manager.get_current_call_context() != root
     assert manager.get_current_call_context().code_address == call_target
+
+
+def test_parser_sets_step_indexes():
+    manager = get_sample_call_context_manager()
+    events = [
+        TraceEvent(pc=1, op=POP.opcode, stack=["0x0", "0x0"], memory=None, depth=1),
+        TraceEvent(pc=2, op=POP.opcode, stack=["0x0"], memory=None, depth=1),
+    ]
+
+    pop_1, pop_2 = list(_parse_instructions(events, manager))
+
+    assert pop_1.step_index == 0
+    assert pop_2.step_index == 1

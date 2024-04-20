@@ -12,6 +12,7 @@ class Instruction:
     opcode: int
     name: str
     program_counter: int
+    step_index: int
     call_context: CallContext
     stack_inputs: tuple[str, ...]
     stack_outputs: tuple[str, ...]

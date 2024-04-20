@@ -1,4 +1,3 @@
-import json
 from unittest.mock import Mock
 
 from tests.conftest import TEST_ROOT_CALLCONTEXT
@@ -28,8 +27,10 @@ def test_analysis_runner_empty_does_not_call_analyzer():
 def test_analysis_runner_calls_analyzer():
     feature_extractor_mock = Mock(spec_set=DoulbeInstructionFeatureExtractor)
     empty_call_tree = CallTree(TEST_ROOT_CALLCONTEXT)
-    instructions_one = [POP(POP.opcode, "POP", 1, TEST_ROOT_CALLCONTEXT, "0x1234", (), None, None)]
-    instructions_two = instructions_one + [POP(POP.opcode, "POP", 2, TEST_ROOT_CALLCONTEXT, "0x1111", (), None, None)]
+    instructions_one = [POP(POP.opcode, "POP", 1, 1, TEST_ROOT_CALLCONTEXT, "0x1234", (), None, None)]
+    instructions_two = instructions_one + [
+        POP(POP.opcode, "POP", 2, 2, TEST_ROOT_CALLCONTEXT, "0x1111", (), None, None)
+    ]
 
     transaction_one = ParsedTransaction(instructions_one, empty_call_tree)
     transaction_two = ParsedTransaction(instructions_two, empty_call_tree)

@@ -87,6 +87,8 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
         "0x6da0fd433c1a5d7a4faa01111c044910a184553",
         "0x822beb1cd1bd7148d07e4107b636fd15118913bc",
     )
+    assert transfer_log.instruction_one.step_index == 1921
+    assert transfer_log.instruction_two.step_index == 1921
     assert transfer_log.program_counter == 10748
     assert transfer_log.address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
     # NOTE: The value does not match the etherscan logs

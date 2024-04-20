@@ -30,6 +30,7 @@ enum HaltType {
 
 class Instruction {
   opcode: int
+  step_index: int
   name: str
   program_counter: int
   {static} io_specification: InstructionIOSpec
