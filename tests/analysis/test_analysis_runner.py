@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
 from traces_analyzer.features.feature_extraction_runner import RunInfo, FeatureExtractionRunner
-from traces_analyzer.parser.call_context_manager import CallTree
+from traces_analyzer.parser.environment.call_context_manager import CallTree
 from traces_analyzer.parser.instructions_parser import ParsedTransaction
 from traces_analyzer.parser.instructions import POP
 

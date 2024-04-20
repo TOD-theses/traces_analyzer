@@ -3,14 +3,12 @@ from pathlib import Path
 import pytest
 import sys
 
-from traces_analyzer.parser.call_context import CallContext
-from traces_analyzer.parser.events_parser import TraceEvent
+from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import JUMPDEST
 from traces_analyzer.parser.instructions_parser import parse_instruction
-from traces_analyzer.parser.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.storage import MemoryValue
-from traces_analyzer.utils.mnemonics import opcode_to_name
+from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
+from traces_analyzer.parser.environment.storage import MemoryValue
 
 
 @fixture

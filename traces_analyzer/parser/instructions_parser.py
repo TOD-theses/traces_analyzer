@@ -2,14 +2,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.call_context import CallContext
-from traces_analyzer.parser.call_context_manager import CallContextManager, CallTree
+from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.call_context_manager import CallContextManager, CallTree
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instruction_io import parse_instruction_io
 from traces_analyzer.parser.instructions import get_instruction_class
-from traces_analyzer.parser.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.storage import MemoryValue
+from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
+from traces_analyzer.parser.environment.storage import MemoryValue
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 

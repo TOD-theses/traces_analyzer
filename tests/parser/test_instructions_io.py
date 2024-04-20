@@ -1,5 +1,5 @@
 from traces_analyzer.parser.instruction_io import InstructionIOSpec, parse_instruction_io
-from traces_analyzer.parser.storage import MemoryStorage, MemoryValue
+from traces_analyzer.parser.environment.storage import MemoryStorage, MemoryValue
 
 
 def get_mem_storage(memory: str) -> MemoryStorage:

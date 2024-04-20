@@ -1,13 +1,13 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from traces_analyzer.parser.call_context import CallContext
-from traces_analyzer.parser.call_context_manager import CallContextManager
+from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.call_context_manager import CallContextManager
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions import (
     CALL,
     POP,
 )
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
-from traces_analyzer.parser.parsing_environment import ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
 
 
 def get_root_call_context():

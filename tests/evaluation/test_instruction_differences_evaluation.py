@@ -5,7 +5,7 @@ from traces_analyzer.features.extractors.instruction_differences import (
     InstructionInputChange,
 )
 from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
-from traces_analyzer.parser.call_context import CallContext
+from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import CALL, SLOAD
 

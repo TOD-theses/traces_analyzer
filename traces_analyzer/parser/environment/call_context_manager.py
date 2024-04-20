@@ -3,7 +3,7 @@ from hashlib import sha256
 
 from typing_extensions import Iterable, Self, TypeGuard
 
-from traces_analyzer.parser.call_context import CallContext, HaltType
+from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.instruction import Instruction
 from traces_analyzer.parser.instructions import (
     CALL,

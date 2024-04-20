@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.call_context import CallContext
-from traces_analyzer.parser.storage import MemoryStorage
+from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.storage import MemoryStorage
 
 
 @dataclass

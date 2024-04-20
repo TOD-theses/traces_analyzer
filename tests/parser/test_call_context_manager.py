@@ -1,7 +1,7 @@
 from typing import Callable
 import pytest
-from traces_analyzer.parser.call_context import CallContext, HaltType
-from traces_analyzer.parser.call_context_manager import (
+from traces_analyzer.parser.environment.call_context import CallContext, HaltType
+from traces_analyzer.parser.environment.call_context_manager import (
     CallContextManager,
     ExpectedDepthChange,
     UnexpectedDepthChange,

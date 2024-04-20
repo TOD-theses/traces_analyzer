@@ -1,7 +1,7 @@
 from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
-from traces_analyzer.parser.call_context import CallContext
+from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions import CALL, LOG1, POP, STOP
 
 

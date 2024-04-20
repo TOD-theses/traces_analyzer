@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.storage import MemoryStorage
+from traces_analyzer.parser.environment.storage import MemoryStorage
 
 
 @dataclass(frozen=True)
