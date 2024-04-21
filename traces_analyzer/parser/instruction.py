@@ -36,7 +36,10 @@ class Instruction:
         )
 
     def __str__(self) -> str:
-        return f"<{self.name}@{self.call_context.code_address}:{self.program_counter} {self.get_data()}>"
+        return (
+            f"<{self.name}@{self.call_context.code_address}:{self.program_counter}#{self.step_index} "
+            f"{self.get_data()}>"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
