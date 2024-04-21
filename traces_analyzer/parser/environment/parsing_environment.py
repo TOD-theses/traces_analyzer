@@ -20,3 +20,12 @@ class ParsingEnvironment:
         self.current_call_context = new_call_context
         self.stack.on_call_exit()
         self.memory.on_call_exit()
+
+
+@dataclass
+class InstructionOutputOracle:
+    """Output data we know from the trace. Oracle, because we can peek one step into the future with this"""
+
+    stack: list[str]
+    memory: str
+    depth: int | None

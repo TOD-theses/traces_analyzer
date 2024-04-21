@@ -4,11 +4,10 @@ from typing import Sequence
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.call_context_manager import CallTree, build_call_tree, update_call_context
-from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instruction_io import parse_instruction_io
 from traces_analyzer.parser.instructions import get_instruction_class
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -50,15 +49,6 @@ def _create_root_call_context(sender: str, to: str, calldata: str) -> CallContex
 class InstructionMetadata:
     opcode: int
     pc: int
-
-
-@dataclass
-class InstructionOutputOracle:
-    """Output data we know from the trace. Oracle, because we can peek one step into the future with this"""
-
-    stack: list[str]
-    memory: str
-    depth: int | None
 
 
 def _parse_instructions(events: Iterable[TraceEvent], root_call_context: CallContext) -> Iterable[Instruction]:
@@ -116,15 +106,8 @@ class TracerEVM:
         name = opcode_to_name(opcode) or "UNKNOWN"
 
         cls = get_instruction_class(opcode) or Instruction
-        spec = cls.io_specification
+        io = cls.parse_io(self.env, output_oracle)
 
-        io = parse_instruction_io(
-            spec,
-            self.env.stack.current_stack(),
-            self.env.memory,
-            output_oracle.stack,
-            output_oracle.memory,
-        )
         return cls(
             opcode,
             name,
