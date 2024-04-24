@@ -47,6 +47,7 @@ class Inputs {
   call value: StorageAccessSet
   return data: StorageAccessSet
   contract code: StorageAccessSet
+  blob: BlobAccessSet
 }
 
 class Outputs {

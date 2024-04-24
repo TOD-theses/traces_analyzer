@@ -72,6 +72,10 @@ class CALLCODE(Instruction):
 
 
 def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
+    """
+    TODO:
+    - pass list of InstructionIOFlow
+    """
     @dataclass(frozen=True, repr=False)
     class SimpleInstruction(Instruction):
         io_specification = io_spec
@@ -80,6 +84,7 @@ def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
 
 
 STOP = _make_simple()
+# flow([stack_range(2)] -> stack_index(0))
 ADD = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
 MUL = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
 SUB = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
@@ -105,16 +110,22 @@ BYTE = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1)
 SHL = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
 SHR = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
 SAR = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
+# flow([stack_range(2), mem_range_from_stack(0, 1)] -> stack_index(0))
 KECCAK256 = _make_simple(
     InstructionIOSpec(stack_input_count=2, stack_output_count=1, memory_input_offset_arg=0, memory_input_size_arg=1)
 )
+# flow([] -> stack_index(0))
 ADDRESS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+# flow([stack_range(1), balance_from_stack(0)] -> stack_index(0))
 BALANCE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 ORIGIN = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+# flow([msg_sender] -> [stack_index(0)])
 CALLER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+# flow([call_value] -> [stack_index(0)])
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# TODO: should we model calldata in the call context? if yes, we should add it here
+# flow([stack_range(1), call_data_from_stack(0)] -> [stack_index(0)])
 CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
+# flow([call_data] -> [stack_index(0)])
 CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 # TODO: should we model calldata in the call context? if yes, we should add it here
 CALLDATACOPY = _make_simple(
@@ -124,6 +135,27 @@ CODESIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_coun
 CODECOPY = _make_simple(InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2))
 GASPRICE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 EXTCODESIZE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
+"""
+Observations:
+I guess it will often (always?) be 3-staged:
+    1. stack accesses
+    2. other accesses, potentially using stack inputs
+    3. writes
+
+
+def flow(env):
+    stack_inputs = env.stack.range(3)
+    code_address, dest_offset, offset, size = stack_inputs
+    code = env.code.at(code_address).range(offset, size)
+    accesses = [
+        stack_access(range(3), stack_inputs),
+        code_access((code_address, (offset, size)), code),
+    ]
+    writes = [
+        mem_write((dest_offset, size), code),
+    ]
+    return accesses, writes
+"""
 EXTCODECOPY = _make_simple(InstructionIOSpec(stack_input_count=4, memory_output_offset_arg=1, memory_output_size_arg=3))
 RETURNDATASIZE = _make_simple(InstructionIOSpec(stack_output_count=1))
 RETURNDATACOPY = _make_simple(
