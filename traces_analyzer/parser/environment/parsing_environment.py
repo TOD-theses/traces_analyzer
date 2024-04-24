@@ -1,14 +1,14 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.environment.storage import MemoryStorage, StackStorage
+from traces_analyzer.parser.storage.storage import MemoryStorage, StackStorage
 
 
 @dataclass
 class ParsingEnvironment:
     current_call_context: CallContext
-    stack = StackStorage()
-    memory = MemoryStorage()
+    stack: StackStorage = field(default_factory=StackStorage)
+    memory: MemoryStorage = field(default_factory=MemoryStorage)
     current_step_index = 0
 
     def on_call_enter(self, new_call_context: CallContext):

@@ -96,6 +96,17 @@ class MemoryRange(StorageKey):
 class MemoryValue(StorageValue):
     value: str
 
+    @staticmethod
+    def pad_with_leading_zeros(value: str) -> str:
+        if len(value) % (32 * 2) == 0:
+            return value
+        return "0" * (32 * 2 - (len(value) % (32 * 2))) + value
+
+
+@dataclass
+class ReturnDataValue(StorageValue):
+    value: str
+
 
 class MemoryStorage(Storage[MemoryRange, MemoryValue]):
     def __init__(self) -> None:
@@ -117,19 +128,33 @@ class MemoryStorage(Storage[MemoryRange, MemoryValue]):
 
     @override
     def get(self, key: MemoryRange) -> MemoryValue:
-        memory = self.current_memory()
+        """Get memory range. Return 0s if accessing out of range memory, without expanding"""
         offset = key.offset * 2
-        to = offset + (key.size * 2)
-        if offset < 0 or offset >= len(memory) or to < 0 or to >= len(memory):
-            raise Exception(
-                f"Memory range goes outside of memory. Tried to access memory[{offset/2}:{to/2}] "
-                f"but memory has size {len(memory)/2}."
-            )
-        return MemoryValue(self.current_memory()[offset:to])
+        size = key.size * 2
+        current_memory = self.current_memory()
+        slice = current_memory[offset : offset + size]
+        slice = slice.ljust(size, "0")
+        return MemoryValue(slice)
 
     def get_all(self) -> MemoryValue:
         return MemoryValue(self.current_memory())
 
     def set(self, offset: int, value: MemoryValue):
+        if not value.value:
+            return
         data = value.value
-        self.memory_stack[-1] = self.memory_stack[-1][:offset] + data + self.memory_stack[-1][offset + len(data) + 1 :]
+        self.check_expansion(offset, len(data) // 2)
+        mem = self.memory_stack[-1]
+        self.memory_stack[-1] = mem[: offset * 2] + data + mem[offset * 2 + len(data) :]
+
+    def check_expansion(self, offset: int, size: int):
+        if size == 0:
+            return
+        while self.size() < offset + size:
+            self._expand()
+
+    def _expand(self):
+        self.memory_stack[-1] = self.memory_stack[-1] + "00" * 32
+
+    def size(self) -> int:
+        return len(self.memory_stack[-1]) // 2

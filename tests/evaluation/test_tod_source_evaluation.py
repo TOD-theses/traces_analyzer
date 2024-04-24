@@ -1,7 +1,7 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
-from traces_analyzer.parser.instructions import SLOAD
+from traces_analyzer.parser.instructions.instructions import SLOAD
 
 
 def test_tod_source_evaluation_found():

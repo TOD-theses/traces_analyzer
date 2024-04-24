@@ -6,7 +6,7 @@ from typing import Callable, Generic, Hashable, Mapping, Sequence, TypeVar
 from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
-from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instructions.instruction import Instruction
 
 
 @dataclass(frozen=True)

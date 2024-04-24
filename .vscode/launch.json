@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Benchmark Attack",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "traces_analyzer",
+            "args": ["--bundles", "traces/benchmark_traces/${input:pickAttack}"],
+        }
+    ],
+    "inputs": [
+        {
+            "id": "pickAttack",
+            "type": "promptString",
+            "description": "Benchmark Attack ID",
+            "default": "62a8b9ece30161692b68cbb5",
+        }
+    ]
+}

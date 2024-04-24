@@ -7,8 +7,8 @@ from traces_analyzer.parser.environment.call_context_manager import (
     build_call_tree,
     update_call_context,
 )
-from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import (
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instructions import (
     ADD,
     CALL,
     CALLCODE,

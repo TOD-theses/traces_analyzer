@@ -1,5 +1,5 @@
-from traces_analyzer.parser.instruction_io import InstructionIOSpec, parse_instruction_io
-from traces_analyzer.parser.environment.storage import MemoryStorage, MemoryValue
+from traces_analyzer.parser.instructions.instruction_io import InstructionIOSpec, parse_instruction_io
+from traces_analyzer.parser.storage.storage import MemoryStorage, MemoryValue
 
 
 def get_mem_storage(memory: str) -> MemoryStorage:
@@ -38,9 +38,9 @@ def test_parse_instructions_io_memory_via_args():
         memory_output_offset_arg=2,
         memory_output_size_arg=3,
     )
-    input_stack = list(reversed(["0x2", "0x4", "0x0", "0x6"]))
-    input_memory = "0000111122223333"
-    output_memory = "4444555566667777"
+    input_stack = list(reversed([hex(26), "0x4", hex(24), "0x6"]))
+    input_memory = "0000000000000000000000000000000000000000000000000000111122223333"
+    output_memory = "0000000000000000000000000000000000000000000000004444555566667777"
 
     io = parse_instruction_io(io_spec, input_stack, get_mem_storage(input_memory), [], output_memory)
 

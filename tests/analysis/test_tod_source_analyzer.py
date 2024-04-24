@@ -1,7 +1,7 @@
 from itertools import zip_longest
 from tests.conftest import make_instruction
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
-from traces_analyzer.parser.instructions import POP, PUSH0, SLOAD
+from traces_analyzer.parser.instructions.instructions import POP, PUSH0, SLOAD
 from traces_analyzer.parser.events_parser import TraceEvent
 
 

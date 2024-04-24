@@ -1,17 +1,11 @@
+from typing import Sequence, TypeVar, cast
 import pytest
-from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import *
+from tests.conftest import TEST_ROOT_CALLCONTEXT
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instructions import *
+from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
+from traces_analyzer.parser.storage.storage import StackValue
 
-# exported from evm.codes with following code:
-"""
-s = ''
-for (const row of document.getElementsByTagName('tbody')[0].children) {
-  const opcode = row.children[0].innerText;
-  const name = row.children[1].innerText;
-  s += `  (0x${opcode}, ${name}),\n`
-}
-console.log(s)
-"""
 
 _opcodes_to_instruction = [
     (0x00, STOP),
@@ -343,3 +337,64 @@ def test_memory_inputs():
         assert instruction.io_specification.memory_input_size_arg == input_size_arg
         assert instruction.io_specification.memory_output_offset_arg == output_offset_arg
         assert instruction.io_specification.memory_output_size_arg == output_size_arg
+
+
+InstructionType = TypeVar("InstructionType", bound=Instruction)
+
+
+def _test_parse_instruction(
+    instr: type[InstructionType], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> InstructionType:
+    return cast(InstructionType, parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle))
+
+
+dummy_output_oracle = InstructionOutputOracle([], "", None)
+
+
+def test_mload() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push(StackValue(["0x4"]))
+    env.memory.set(0x4, MemoryValue("11223344"))
+
+    mload = _test_parse_instruction(MLOAD, env, dummy_output_oracle)
+
+    padded_value = "11223344" + (28) * 2 * "0"
+    accesses = mload.get_accesses()
+    assert accesses.memory == [MemoryAccess(offset=0x4, value=MemoryValue(padded_value))]
+    assert mload.stack_outputs == (padded_value,)
+
+
+def test_mstore() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push(StackValue(list(reversed(["0x4", "0x11223344"]))))
+
+    mstore = _test_parse_instruction(MSTORE, env, dummy_output_oracle)
+
+    padded_value = (28) * 2 * "0" + "11223344"
+    writes = mstore.get_writes()
+    assert writes.memory == [MemoryWrite(offset=0x4, value=MemoryValue(padded_value))]
+
+
+def test_mstore8() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push(StackValue(list(reversed(["0x4", "0x1"]))))
+
+    mstore8 = _test_parse_instruction(MSTORE8, env, dummy_output_oracle)
+
+    padded_value = "01"
+    writes = mstore8.get_writes()
+    assert writes.memory == [MemoryWrite(offset=0x4, value=MemoryValue(padded_value))]
+
+
+def test_mcopy() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push(StackValue(list(reversed(["0x20", "0x3", "0x4"]))))
+    env.memory.set(0x4, MemoryValue("11223344"))
+
+    mcopy = _test_parse_instruction(MCOPY, env, dummy_output_oracle)
+
+    accesses = mcopy.get_accesses()
+    assert accesses.memory == [MemoryAccess(offset=0x3, value=MemoryValue("00112233"))]
+
+    writes = mcopy.get_writes()
+    assert writes.memory == [MemoryWrite(offset=0x20, value=MemoryValue("00112233"))]

@@ -4,8 +4,8 @@ from typing_extensions import override
 
 from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.features.extractors.instruction_differences import InstructionInputChange
-from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 

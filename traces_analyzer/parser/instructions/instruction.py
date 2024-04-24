@@ -1,11 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar
 
 from typing_extensions import Mapping
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.instruction_io import InstructionIOSpec, parse_instruction_io
+from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec, parse_instruction_io
+from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 
 
 @dataclass(frozen=True, repr=False)
@@ -14,19 +15,25 @@ class Instruction:
     name: str
     program_counter: int
     step_index: int
-    call_context: CallContext
+    call_context: CallContext = field(compare=False, hash=False)
     stack_inputs: tuple[str, ...]
     stack_outputs: tuple[str, ...]
     memory_input: str | None
     memory_output: str | None
     io_specification: ClassVar[InstructionIOSpec] = InstructionIOSpec()
 
+    def get_accesses(self) -> StorageAccesses:
+        return StorageAccesses()
+
+    def get_writes(self) -> StorageWrites:
+        return StorageWrites()
+
     def get_data(self) -> Mapping[str, object]:
         """Return formatted instruction data, depending on the instruction type"""
         return {}
 
     @classmethod
-    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
         return parse_instruction_io(
             cls.io_specification,
             env.stack.current_stack(),

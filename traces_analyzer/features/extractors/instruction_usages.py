@@ -4,7 +4,7 @@ from typing import Mapping
 from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import SingleInstructionFeatureExtractor
-from traces_analyzer.parser.instruction import Instruction
+from traces_analyzer.parser.instructions.instruction import Instruction
 
 
 class InstructionUsagesFeatureExtractor(SingleInstructionFeatureExtractor):

@@ -5,11 +5,11 @@ import pytest
 import sys
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instruction_io import parse_instruction_io
-from traces_analyzer.parser.instructions import JUMPDEST, get_instruction_class
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instruction_io import parse_instruction_io
+from traces_analyzer.parser.instructions.instructions import JUMPDEST, get_instruction_class
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.environment.storage import MemoryValue, StackValue
+from traces_analyzer.parser.storage.storage import MemoryValue, StackValue
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
@@ -40,7 +40,7 @@ def go_to_tmpdir(request):
         yield
 
 
-TEST_ROOT_CALLCONTEXT = CallContext(None, "", 1, "0x0", "0x0", "0x0", False, None)
+TEST_ROOT_CALLCONTEXT = CallContext(None, "", 1, "0x0", "0x0", "0x0", None, None, False, None)
 
 
 def make_instruction(
@@ -54,6 +54,9 @@ def make_instruction(
     call_context=TEST_ROOT_CALLCONTEXT,
 ):
     # TODO: directly create instruction instead of parsing inputs/outputs from stack
+    assert (
+        len(memory) % 64 == 0 and len(memory_after) % 64 == 0
+    ), f"Memory must be a multiple of 64: {memory} / {memory_after}"
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.current_step_index = step_index
     env.stack.push(StackValue(stack))

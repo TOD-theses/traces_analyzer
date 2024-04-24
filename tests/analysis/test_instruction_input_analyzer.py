@@ -2,7 +2,7 @@ from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.instructions import CALL, LOG1, POP, STOP
+from traces_analyzer.parser.instructions.instructions import CALL, LOG1, POP, STOP
 
 
 def test_instruction_input_analyzer():
@@ -51,10 +51,10 @@ def test_instruction_input_analyzer():
 
 
 def test_instruction_input_analyzer_reports_stack_differences():
-    memory_one = "0000000011110000"
-    memory_two = "0000000022220000"
-    mem_offset = "0x4"
-    mem_size = "0x2"
+    memory_one = "0000000000000000000000000000000000000000000000000000000011110000"
+    memory_two = "0000000000000000000000000000000000000000000000000000000022220000"
+    mem_offset = hex(28)
+    mem_size = hex(2)
     common_stack = list(reversed(["0x0", "0xchild", "0x0", mem_offset, mem_size, "0x0", "0x0"]))
 
     feature_extractor = InstructionDifferencesFeatureExtractor()
@@ -76,10 +76,10 @@ def test_instruction_input_analyzer_reports_stack_differences():
 
 def test_instruction_input_analyzer_reports_log_changes():
     topic = "0x1234"
-    memory_one = "0000000011110000"
-    memory_two = "0000000022220000"
-    mem_offset = "0x4"
-    mem_size = "0x2"
+    memory_one = "0000000000000000000000000000000000000000000000000000000011110000"
+    memory_two = "0000000000000000000000000000000000000000000000000000000022220000"
+    mem_offset = hex(28)
+    mem_size = hex(2)
     common_stack = list(reversed([mem_offset, mem_size, topic]))
 
     feature_extractor = InstructionDifferencesFeatureExtractor()

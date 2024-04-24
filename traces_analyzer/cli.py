@@ -20,7 +20,7 @@ from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import parse_events
-from traces_analyzer.parser.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
+from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 

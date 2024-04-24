@@ -1,10 +1,21 @@
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, replace
 from typing import Mapping, TypedDict
 
 from typing_extensions import override
 
-from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instruction_io import InstructionIOSpec
+from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
+from traces_analyzer.parser.storage.storage import MemoryRange, MemoryValue, ReturnDataValue
+from traces_analyzer.parser.storage.storage_writes import (
+    MemoryAccess,
+    MemoryWrite,
+    ReturnWrite,
+    StorageAccesses,
+    StorageWrites,
+)
 
 CallDataNew = TypedDict(
     "CallDataNew",
@@ -15,8 +26,18 @@ CallDataNew = TypedDict(
 )
 
 
+class CallInstruction(Instruction, ABC):
+    @abstractmethod
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        pass
+
+    @abstractmethod
+    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
+        pass
+
+
 @dataclass(frozen=True, repr=False)
-class CALL(Instruction):
+class CALL(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=7,
         memory_input_offset_arg=3,
@@ -28,9 +49,27 @@ class CALL(Instruction):
         assert self.memory_input is not None, f"Tried to get CALL data but contains no memory: {self}"
         return {"address": self.stack_inputs[1], "input": self.memory_input}
 
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        offset = int(self.stack_inputs[5], 16)
+        size = int(self.stack_inputs[6], 16)
+        return_data = child_call_context.return_data
+        # TODO: we should probably add an assert here for return_data is not None
+        if size == 0 or not return_data:
+            return StorageWrites()
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
+
+    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
+        """Writes that occur on a call to a precompiled contract or an EOA"""
+        offset = int(self.stack_inputs[5], 16)
+        size = int(self.stack_inputs[6], 16)
+        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
+
 
 @dataclass(frozen=True, repr=False)
-class STATICCALL(Instruction):
+class STATICCALL(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=6,
         memory_input_offset_arg=2,
@@ -39,12 +78,28 @@ class STATICCALL(Instruction):
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input, f"Tried to get CALL data but contains no memory: {self}"
+        assert self.memory_input is not None, f"Tried to get STATICCALL data but contains no memory: {self}"
         return {"address": self.stack_inputs[1], "input": self.memory_input}
+
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        offset = int(self.stack_inputs[4], 16)
+        size = int(self.stack_inputs[5], 16)
+        return_data = child_call_context.return_data
+        if size == 0 or not return_data:
+            return StorageWrites()
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
+
+    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
+        offset = int(self.stack_inputs[4], 16)
+        size = int(self.stack_inputs[5], 16)
+        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
 
 
 @dataclass(frozen=True, repr=False)
-class DELEGATECALL(Instruction):
+class DELEGATECALL(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=6,
         memory_input_offset_arg=2,
@@ -53,12 +108,30 @@ class DELEGATECALL(Instruction):
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input, f"Tried to get CALL data but contains no memory: {self}"
+        assert self.memory_input is not None, f"Tried to get DELEGATECALL data but contains no memory: {self}"
         return {"address": self.stack_inputs[1], "input": self.memory_input}
+
+    @override
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        offset = int(self.stack_inputs[4], 16)
+        size = int(self.stack_inputs[5], 16)
+        return_data = child_call_context.return_data
+        if size == 0 or not return_data:
+            return StorageWrites()
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
+
+    @override
+    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
+        offset = int(self.stack_inputs[4], 16)
+        size = int(self.stack_inputs[5], 16)
+        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
 
 
 @dataclass(frozen=True, repr=False)
-class CALLCODE(Instruction):
+class CALLCODE(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=7,
         memory_input_offset_arg=3,
@@ -67,8 +140,25 @@ class CALLCODE(Instruction):
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input, f"Tried to get CALL data but contains no memory: {self}"
+        assert self.memory_input is not None, f"Tried to get CALLCODE data but contains no memory: {self}"
         return {"address": self.stack_inputs[1], "input": self.memory_input}
+
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        offset = int(self.stack_inputs[5], 16)
+        size = int(self.stack_inputs[6], 16)
+        return_data = child_call_context.return_data
+        if size == 0 or not return_data:
+            return StorageWrites()
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
+
+    @override
+    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
+        offset = int(self.stack_inputs[5], 16)
+        size = int(self.stack_inputs[6], 16)
+        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        return_data_slice = return_data[: size * 2]
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(return_data_slice))])
 
 
 def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
@@ -76,6 +166,7 @@ def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
     TODO:
     - pass list of InstructionIOFlow
     """
+
     @dataclass(frozen=True, repr=False)
     class SimpleInstruction(Instruction):
         io_specification = io_spec
@@ -85,6 +176,7 @@ def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
 
 STOP = _make_simple()
 # flow([stack_range(2)] -> stack_index(0))
+# _from_flows([stack.push(combine(stack.arg(0), stack.arg(1)))])
 ADD = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
 MUL = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
 SUB = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
@@ -117,6 +209,7 @@ KECCAK256 = _make_simple(
 # flow([] -> stack_index(0))
 ADDRESS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 # flow([stack_range(1), balance_from_stack(0)] -> stack_index(0))
+# _from_flows([stack.push(balance.at(stack.arg(0)))])
 BALANCE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 ORIGIN = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 # flow([msg_sender] -> [stack_index(0)])
@@ -124,43 +217,93 @@ CALLER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=
 # flow([call_value] -> [stack_index(0)])
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 # flow([stack_range(1), call_data_from_stack(0)] -> [stack_index(0)])
+# _from_flows([stack.push(calldata.slice(stack.arg(0), const(1)))])
 CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 # flow([call_data] -> [stack_index(0)])
 CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# TODO: should we model calldata in the call context? if yes, we should add it here
-CALLDATACOPY = _make_simple(
-    InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
-)
+
+
+@dataclass(frozen=True, repr=False)
+class CALLDATACOPY(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
+
+    @classmethod
+    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
+        io = super().parse_io(env, output_oracle)
+        offset = int(io.inputs_stack[0], 16)
+        size = int(io.inputs_stack[2], 16)
+
+        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        offset = int(self.stack_inputs[0], 16)
+        assert self.memory_output is not None, f"CALLDATACOPY with None memory output: {self}"
+        return StorageWrites(memory=[MemoryWrite(offset, MemoryValue(self.memory_output))])
+
+
 CODESIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-CODECOPY = _make_simple(InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2))
+
+
+@dataclass(frozen=True, repr=False)
+class CODECOPY(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
+
+    @classmethod
+    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
+        io = super().parse_io(env, output_oracle)
+        offset = int(io.inputs_stack[0], 16)
+        size = int(io.inputs_stack[2], 16)
+
+        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        assert self.memory_output is not None, f"Tried to CODECOPY but no memory output: {self}"
+        return StorageWrites(memory=[MemoryWrite(int(self.stack_inputs[0], 16), MemoryValue(self.memory_output))])
+
+
+@dataclass(frozen=True, repr=False)
+class EXTCODECOPY(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=4, memory_output_offset_arg=1, memory_output_size_arg=3)
+
+    @classmethod
+    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
+        io = super().parse_io(env, output_oracle)
+        offset = int(io.inputs_stack[1], 16)
+        size = int(io.inputs_stack[3], 16)
+
+        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        assert self.memory_output is not None, f"Tried to EXTCODECOPY but no memory output: {self}"
+        return StorageWrites(memory=[MemoryWrite(int(self.stack_inputs[1], 16), MemoryValue(self.memory_output))])
+
+
 GASPRICE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 EXTCODESIZE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-"""
-Observations:
-I guess it will often (always?) be 3-staged:
-    1. stack accesses
-    2. other accesses, potentially using stack inputs
-    3. writes
-
-
-def flow(env):
-    stack_inputs = env.stack.range(3)
-    code_address, dest_offset, offset, size = stack_inputs
-    code = env.code.at(code_address).range(offset, size)
-    accesses = [
-        stack_access(range(3), stack_inputs),
-        code_access((code_address, (offset, size)), code),
-    ]
-    writes = [
-        mem_write((dest_offset, size), code),
-    ]
-    return accesses, writes
-"""
-EXTCODECOPY = _make_simple(InstructionIOSpec(stack_input_count=4, memory_output_offset_arg=1, memory_output_size_arg=3))
 RETURNDATASIZE = _make_simple(InstructionIOSpec(stack_output_count=1))
-RETURNDATACOPY = _make_simple(
-    InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
-)
+
+
+@dataclass(frozen=True, repr=False)
+class RETURNDATACOPY(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
+
+    @classmethod
+    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
+        io = super().parse_io(env, output_oracle)
+        offset = int(io.inputs_stack[0], 16)
+        size = int(io.inputs_stack[2], 16)
+
+        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        assert self.memory_output is not None, f"Tried to RETURNDATACOPY but no memory output: {self}"
+        return StorageWrites(memory=[MemoryWrite(int(self.stack_inputs[0], 16), MemoryValue(self.memory_output))])
+
+
 EXTCODEHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 BLOCKHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 COINBASE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
@@ -175,10 +318,48 @@ BLOBHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_coun
 BLOBBASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 POP = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=0))
 
-# TODO: fixed memory input size (word == 32 bytes)
-MLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1, memory_input_offset_arg=0))
-MSTORE = _make_simple(InstructionIOSpec(stack_input_count=2, memory_output_offset_arg=0))
-MSTORE8 = _make_simple(InstructionIOSpec(stack_input_count=2, memory_output_offset_arg=0))
+
+@dataclass(frozen=True, repr=False)
+class MLOAD(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=1, stack_output_count=1, memory_input_offset_arg=0)
+
+    @classmethod
+    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
+        io = super().parse_io(env, output_oracle)
+        offset = int(io.inputs_stack[0], 16)
+        memory = env.memory.get(MemoryRange(offset, 32)).value
+        return replace(io, outputs_stack=(memory,), input_memory=memory)
+
+    def get_accesses(self) -> StorageAccesses:
+        offset = int(self.stack_inputs[0], 16)
+        # TODO: I guess currently this is None, as we did not specifiy the size for the IOSpec
+        value = self.memory_input or "0" * 64
+        value = MemoryValue.pad_with_leading_zeros(value)
+        return StorageAccesses(memory=[MemoryAccess(offset, MemoryValue(value))])
+
+
+@dataclass(frozen=True, repr=False)
+class MSTORE(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=2, memory_output_offset_arg=0)
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        value = self.stack_inputs[1].removeprefix("0x")
+        value = MemoryValue.pad_with_leading_zeros(value)
+        return StorageWrites(memory=[MemoryWrite(int(self.stack_inputs[0], 16), MemoryValue(value))])
+
+
+@dataclass(frozen=True, repr=False)
+class MSTORE8(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=2, memory_output_offset_arg=0)
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        lsb = hex(int(self.stack_inputs[1], 16) & 0xFF)
+        lsb = lsb.removeprefix("0x")
+        lsb = lsb.rjust(2, "0")
+        return StorageWrites(memory=[MemoryWrite(int(self.stack_inputs[0], 16), MemoryValue(lsb))])
+
 
 SLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 SSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
@@ -190,15 +371,34 @@ GAS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 JUMPDEST = _make_simple()
 TLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 TSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
-MCOPY = _make_simple(
-    InstructionIOSpec(
+"""
+MCOPY = _from_flows([mem.write(stack.arg(0), mem.slice(stack.arg(1), stack.arg(2)))])
+MSTORE = _from_flows([mem.write(stack.arg(0), stack.arg(1))])
+"""
+
+
+@dataclass(frozen=True, repr=False)
+class MCOPY(Instruction):
+    io_specification = InstructionIOSpec(
         stack_input_count=3,
         memory_input_offset_arg=1,
         memory_input_size_arg=2,
         memory_output_offset_arg=0,
         memory_output_size_arg=2,
     )
-)
+
+    @override
+    def get_accesses(self) -> StorageAccesses:
+        offset = int(self.stack_inputs[1], 16)
+        assert self.memory_input is not None, f"Tried to MCOPY but no memory input: {self}"
+        return StorageAccesses(memory=[MemoryAccess(offset, MemoryValue(self.memory_input))])
+
+    @override
+    def get_writes(self) -> StorageWrites:
+        dest_offset = int(self.stack_inputs[0], 16)
+        assert self.memory_input is not None, f"Tried to MCOPY but no memory input: {self}"
+        return StorageWrites(memory=[MemoryWrite(dest_offset, MemoryValue(self.memory_input))])
+
 
 PUSH0 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 PUSH1 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
@@ -270,18 +470,50 @@ LOG1 = _make_simple(InstructionIOSpec(stack_input_count=3, memory_input_offset_a
 LOG2 = _make_simple(InstructionIOSpec(stack_input_count=4, memory_input_offset_arg=0, memory_input_size_arg=1))
 LOG3 = _make_simple(InstructionIOSpec(stack_input_count=5, memory_input_offset_arg=0, memory_input_size_arg=1))
 LOG4 = _make_simple(InstructionIOSpec(stack_input_count=6, memory_input_offset_arg=0, memory_input_size_arg=1))
-CREATE = _make_simple(
-    InstructionIOSpec(stack_input_count=3, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2)
-)
-# CALL - above
-# CALLCODE - above
-RETURN = _make_simple(InstructionIOSpec(stack_input_count=2, memory_input_offset_arg=0, memory_input_size_arg=1))
-# DELEGATECALL - above
-CREATE2 = _make_simple(
-    InstructionIOSpec(stack_input_count=4, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2)
-)
-# STATICCALL - above
-REVERT = _make_simple(InstructionIOSpec(stack_input_count=2, memory_input_offset_arg=0, memory_input_size_arg=1))
+
+
+@dataclass(frozen=True, repr=False)
+class CREATE(Instruction):
+    io_specification = InstructionIOSpec(
+        stack_input_count=3, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2
+    )
+
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        return StorageWrites()
+
+
+@dataclass(frozen=True, repr=False)
+class CREATE2(Instruction):
+    io_specification = InstructionIOSpec(
+        stack_input_count=4, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2
+    )
+
+    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        return StorageWrites()
+
+
+@dataclass(frozen=True, repr=False)
+class RETURN(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=2, memory_input_offset_arg=0, memory_input_size_arg=1)
+
+    def get_writes(self) -> StorageWrites:
+        assert self.memory_input is not None, f"Tried to RETURN but memory input was None: {self}"
+        return StorageWrites(
+            return_data=ReturnWrite(ReturnDataValue(self.memory_input)),
+        )
+
+
+@dataclass(frozen=True, repr=False)
+class REVERT(Instruction):
+    io_specification = InstructionIOSpec(stack_input_count=2, memory_input_offset_arg=0, memory_input_size_arg=1)
+
+    def get_writes(self) -> StorageWrites:
+        assert self.memory_input is not None, f"Tried to REVERT but memory input was None: {self}"
+        return StorageWrites(
+            return_data=ReturnWrite(ReturnDataValue(self.memory_input)),
+        )
+
+
 INVALID = _make_simple()
 SELFDESTRUCT = _make_simple(InstructionIOSpec(stack_input_count=1))
 

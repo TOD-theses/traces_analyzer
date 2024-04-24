@@ -8,7 +8,7 @@ from traces_analyzer.features.extractors.instruction_usages import InstructionUs
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.parser.events_parser import parse_events
-from traces_analyzer.parser.instructions import LOG3, SLOAD
+from traces_analyzer.parser.instructions.instructions import LOG3, SLOAD
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 
 

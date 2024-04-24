@@ -5,8 +5,8 @@ from typing import Sequence
 from typing_extensions import Iterable, Self, TypeGuard
 
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
-from traces_analyzer.parser.instruction import Instruction
-from traces_analyzer.parser.instructions import (
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instructions import (
     CALL,
     CALLCODE,
     CREATE,
@@ -100,6 +100,7 @@ def update_call_context(
     if enters_call_context_normal(instruction, current_call_context.depth, next_depth):
         next_call_context = CallContext(
             parent=current_call_context,
+            initiating_instruction=instruction,
             calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
@@ -109,6 +110,7 @@ def update_call_context(
     elif enters_call_context_without_storage(instruction, current_call_context.depth, next_depth):
         next_call_context = CallContext(
             parent=current_call_context,
+            initiating_instruction=instruction,
             calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
@@ -120,6 +122,7 @@ def update_call_context(
         created_contract_addr = "0x" + sha256(current_call_context.code_address.encode()).hexdigest()[12:]
         next_call_context = CallContext(
             parent=current_call_context,
+            initiating_instruction=instruction,
             calldata=instruction.memory_input or "",
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
@@ -184,7 +187,7 @@ def enters_call_context_without_storage(
     return current_depth + 1 == next_depth and isinstance(instruction, (DELEGATECALL, CALLCODE))
 
 
-def creates_contract(instruction: Instruction, current_depth: int, next_depth: int):
+def creates_contract(instruction: Instruction, current_depth: int, next_depth: int) -> TypeGuard[CREATE | CREATE2]:
     return current_depth + 1 == next_depth and isinstance(instruction, (CREATE, CREATE2))
 
 

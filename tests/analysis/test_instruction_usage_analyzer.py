@@ -1,7 +1,7 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.instructions import POP, PUSH0, RETURN, REVERT, STOP
+from traces_analyzer.parser.instructions.instructions import POP, PUSH0, RETURN, REVERT, STOP
 
 
 def test_instruction_usage_analyzer():
