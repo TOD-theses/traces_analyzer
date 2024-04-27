@@ -8,7 +8,7 @@ from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
-from traces_analyzer.parser.storage.storage import MemoryRange, MemoryValue, ReturnDataValue
+from traces_analyzer.parser.storage.storage import MemoryRange, MemoryValue, ReturnDataValue, mem_pad_with_leading_zeros
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,
@@ -334,7 +334,7 @@ class MLOAD(Instruction):
         offset = int(self.stack_inputs[0], 16)
         # TODO: I guess currently this is None, as we did not specifiy the size for the IOSpec
         value = self.memory_input or "0" * 64
-        value = MemoryValue.pad_with_leading_zeros(value)
+        value = mem_pad_with_leading_zeros(value)
         return StorageAccesses(memory=[MemoryAccess(offset, MemoryValue(value))])
 
 
@@ -345,7 +345,7 @@ class MSTORE(Instruction):
     @override
     def get_writes(self) -> StorageWrites:
         value = self.stack_inputs[1].removeprefix("0x")
-        value = MemoryValue.pad_with_leading_zeros(value)
+        value = mem_pad_with_leading_zeros(value)
         return StorageWrites(memory=[MemoryWrite(int(self.stack_inputs[0], 16), MemoryValue(value))])
 
 

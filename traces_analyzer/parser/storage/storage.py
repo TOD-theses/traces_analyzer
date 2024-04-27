@@ -11,7 +11,10 @@ class StorageKey(ABC):
 
 
 class StorageValue(ABC):
-    pass
+
+    @abstractmethod
+    def get_hexstring(self) -> str:
+        pass
 
 
 Key = TypeVar("Key", bound=StorageKey)
@@ -47,6 +50,10 @@ class StackIndexes(StorageKey):
 class StackValue(StorageValue):
     values: list[str]
 
+    def get_hexstring(self) -> str:
+        # TODO: I guess stack value should only be a single value
+        return "".join(self.values)
+
 
 class StackStorage(Storage[StackIndexes, StackValue]):
     def __init__(self) -> None:
@@ -65,6 +72,7 @@ class StackStorage(Storage[StackIndexes, StackValue]):
 
     @override
     def get(self, key: StackIndexes) -> StackValue:
+        """TODO: this is 1-indexed. How do I use it?"""
         stack = self.current_stack()
         values = [stack[-index] for index in key.indexes]
         return StackValue(values)
@@ -96,16 +104,21 @@ class MemoryRange(StorageKey):
 class MemoryValue(StorageValue):
     value: str
 
-    @staticmethod
-    def pad_with_leading_zeros(value: str) -> str:
-        if len(value) % (32 * 2) == 0:
-            return value
-        return "0" * (32 * 2 - (len(value) % (32 * 2))) + value
+    def get_hexstring(self) -> str:
+        return self.value
+
+def mem_pad_with_leading_zeros(value: str) -> str:
+    if len(value) % (32 * 2) == 0:
+        return value
+    return "0" * (32 * 2 - (len(value) % (32 * 2))) + value
 
 
 @dataclass
 class ReturnDataValue(StorageValue):
     value: str
+
+    def get_hexstring(self) -> str:
+        return self.value
 
 
 class MemoryStorage(Storage[MemoryRange, MemoryValue]):
