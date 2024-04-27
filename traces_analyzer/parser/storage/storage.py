@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Generic, Sequence, TypeVar
 
 from typing_extensions import override
 
@@ -15,6 +14,17 @@ class StorageValue(ABC):
     @abstractmethod
     def get_hexstring(self) -> str:
         pass
+
+
+@dataclass
+class HexStringStorageValue(StorageValue):
+    hexstring: str
+
+    def is_concrete(self) -> bool:
+        return True
+
+    def get_hexstring(self) -> str:
+        return self.hexstring
 
 
 Key = TypeVar("Key", bound=StorageKey)
@@ -42,20 +52,11 @@ class Storage(ABC, Generic[Key, Value]):
 
 
 @dataclass
-class StackIndexes(StorageKey):
-    indexes: Iterable[int]
+class StackIndex(StorageKey):
+    index: int
 
 
-@dataclass
-class StackValue(StorageValue):
-    values: list[str]
-
-    def get_hexstring(self) -> str:
-        # TODO: I guess stack value should only be a single value
-        return "".join(self.values)
-
-
-class StackStorage(Storage[StackIndexes, StackValue]):
+class StackStorage(Storage[StackIndex, HexStringStorageValue]):
     def __init__(self) -> None:
         super().__init__()
         self.stacks: list[list[str]] = [[]]
@@ -71,19 +72,23 @@ class StackStorage(Storage[StackIndexes, StackValue]):
         self.stacks.pop()
 
     @override
-    def get(self, key: StackIndexes) -> StackValue:
-        """TODO: this is 1-indexed. How do I use it?"""
+    def get(self, key: StackIndex) -> HexStringStorageValue:
+        """Get the nth element from the top of the stack (0-indexed)"""
         stack = self.current_stack()
-        values = [stack[-index] for index in key.indexes]
-        return StackValue(values)
+        return HexStringStorageValue(stack[-key.index - 1])
 
-    def push(self, value: StackValue):
-        """Push all values. Last value will be the top of the stack"""
-        self.current_stack().extend(value.values)
+    def push(self, value: HexStringStorageValue):
+        """Push a single value to the top of the stack"""
+        self.current_stack().append(value.get_hexstring())
+
+    def push_all(self, values: Sequence[HexStringStorageValue]):
+        """Push multiple values. First one will be on top of the stack"""
+        for value in reversed(values):
+            self.push(value)
 
     def pop_n(self, n: int):
         """Pop and return the top n stack items"""
-        results = self.get(StackIndexes(indexes=range(n)))
+        results = [self.get(StackIndex(i)) for i in range(n)]
         del self.current_stack()[-n:]
         return results
 
@@ -100,28 +105,13 @@ class MemoryRange(StorageKey):
     size: int
 
 
-@dataclass
-class MemoryValue(StorageValue):
-    value: str
-
-    def get_hexstring(self) -> str:
-        return self.value
-
 def mem_pad_with_leading_zeros(value: str) -> str:
     if len(value) % (32 * 2) == 0:
         return value
     return "0" * (32 * 2 - (len(value) % (32 * 2))) + value
 
 
-@dataclass
-class ReturnDataValue(StorageValue):
-    value: str
-
-    def get_hexstring(self) -> str:
-        return self.value
-
-
-class MemoryStorage(Storage[MemoryRange, MemoryValue]):
+class MemoryStorage(Storage[MemoryRange, HexStringStorageValue]):
     def __init__(self) -> None:
         super().__init__()
         self.memory_stack: list[str] = [""]
@@ -140,22 +130,22 @@ class MemoryStorage(Storage[MemoryRange, MemoryValue]):
         return self.memory_stack[-1]
 
     @override
-    def get(self, key: MemoryRange) -> MemoryValue:
+    def get(self, key: MemoryRange) -> HexStringStorageValue:
         """Get memory range. Return 0s if accessing out of range memory, without expanding"""
         offset = key.offset * 2
         size = key.size * 2
         current_memory = self.current_memory()
         slice = current_memory[offset : offset + size]
         slice = slice.ljust(size, "0")
-        return MemoryValue(slice)
+        return HexStringStorageValue(slice)
 
-    def get_all(self) -> MemoryValue:
-        return MemoryValue(self.current_memory())
+    def get_all(self) -> HexStringStorageValue:
+        return HexStringStorageValue(self.current_memory())
 
-    def set(self, offset: int, value: MemoryValue):
-        if not value.value:
+    def set(self, offset: int, value: HexStringStorageValue):
+        if not value.get_hexstring():
             return
-        data = value.value
+        data = value.get_hexstring()
         self.check_expansion(offset, len(data) // 2)
         mem = self.memory_stack[-1]
         self.memory_stack[-1] = mem[: offset * 2] + data + mem[offset * 2 + len(data) :]

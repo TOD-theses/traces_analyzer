@@ -8,7 +8,7 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CallInstruction, get_instruction_class
-from traces_analyzer.parser.storage.storage import StackValue
+from traces_analyzer.parser.storage.storage import HexStringStorageValue
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -104,7 +104,7 @@ class TracerEVM:
         # at least currently, we always overwrite the stack with the oracle
         # in the future, we should use the instructions stack outputs instead (pops and pushes)
         self.env.stack.clear()
-        self.env.stack.push(StackValue(output_oracle.stack))
+        self.env.stack.push_all([HexStringStorageValue(val) for val in reversed(output_oracle.stack)])
 
         self._apply_storage_writes(instruction.get_writes(), instruction, output_oracle)
         if isinstance(instruction, CallInstruction):
@@ -127,7 +127,7 @@ class TracerEVM:
 
     def _apply_storage_accesses(self, storage_accesses: StorageAccesses):
         for mem_access in storage_accesses.memory:
-            self.env.memory.check_expansion(mem_access.offset, len(mem_access.value.value) // 2)
+            self.env.memory.check_expansion(mem_access.offset, len(mem_access.value.get_hexstring()) // 2)
 
     def _apply_storage_writes(
         self, storage_writes: StorageWrites, instruction: Instruction, output_oracle: InstructionOutputOracle
@@ -135,7 +135,7 @@ class TracerEVM:
         for mem_write in storage_writes.memory:
             self.env.memory.set(mem_write.offset, mem_write.value)
         if storage_writes.return_data:
-            self.env.current_call_context.return_data = storage_writes.return_data.value.value
+            self.env.current_call_context.return_data = storage_writes.return_data.value.get_hexstring()
 
     def _verify_storage(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
         """Verify that current storages match the output oracle"""
@@ -147,7 +147,7 @@ class TracerEVM:
         if not output_oracle.memory:
             return
 
-        memory = self.env.memory.get_all().value.strip("0")
+        memory = self.env.memory.get_all().get_hexstring().strip("0")
         oracle_memory = output_oracle.memory.strip("0")
 
         if memory != oracle_memory:

@@ -34,7 +34,7 @@ def parse_instruction_io(
     inputs_stack = parse_stack_arg(stack, last_n_args=spec.stack_input_count)
     outputs_stack = parse_stack_arg(next_stack, last_n_args=spec.stack_output_count)
     input_memory = parse_memory_via_stack_args(
-        memory.get_all().value, inputs_stack, spec.memory_input_offset_arg, spec.memory_input_size_arg
+        memory.get_all().get_hexstring(), inputs_stack, spec.memory_input_offset_arg, spec.memory_input_size_arg
     )
     output_memory = parse_memory_via_stack_args(
         next_mem, inputs_stack, spec.memory_output_offset_arg, spec.memory_output_size_arg

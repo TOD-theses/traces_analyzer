@@ -9,7 +9,7 @@ from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import parse_instruction_io
 from traces_analyzer.parser.instructions.instructions import JUMPDEST, get_instruction_class
 from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.storage.storage import MemoryValue, StackValue
+from traces_analyzer.parser.storage.storage import HexStringStorageValue, HexStringStorageValue
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
@@ -59,9 +59,9 @@ def make_instruction(
     ), f"Memory must be a multiple of 64: {memory} / {memory_after}"
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.current_step_index = step_index
-    env.stack.push(StackValue(stack))
+    env.stack.push_all([HexStringStorageValue(value) for value in reversed(stack)])
     env.current_call_context = call_context
-    env.memory.set(0, MemoryValue(memory))
+    env.memory.set(0, HexStringStorageValue(memory))
     return _parse_instruction(env, type.opcode, pc, stack_after, memory_after)
 
 

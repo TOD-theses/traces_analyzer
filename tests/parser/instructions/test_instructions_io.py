@@ -1,10 +1,10 @@
 from traces_analyzer.parser.instructions.instruction_io import InstructionIOSpec, parse_instruction_io
-from traces_analyzer.parser.storage.storage import MemoryStorage, MemoryValue
+from traces_analyzer.parser.storage.storage import MemoryStorage, HexStringStorageValue
 
 
 def get_mem_storage(memory: str) -> MemoryStorage:
     mem = MemoryStorage()
-    mem.set(0, MemoryValue(memory))
+    mem.set(0, HexStringStorageValue(memory))
     return mem
 
 

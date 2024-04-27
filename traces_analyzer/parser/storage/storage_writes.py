@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.storage.storage import MemoryValue, ReturnDataValue, StackValue
+from traces_analyzer.parser.storage.storage import HexStringStorageValue
 
 
 @dataclass
@@ -14,40 +14,45 @@ class StorageWrite(ABC):
 class StorageAccess(ABC):
     pass
 
+
 @dataclass
 class StackAccess(StorageAccess):
     index: int
-    value: StackValue
+    value: HexStringStorageValue
+
 
 @dataclass
 class StackSet(StorageWrite):
     index: int
-    value: StackValue
+    value: HexStringStorageValue
+
 
 @dataclass
 class StackPush(StorageWrite):
-    value: StackValue
+    value: HexStringStorageValue
+
 
 @dataclass
 class StackPop(StorageWrite):
     pass
 
+
 @dataclass
 class MemoryWrite(StorageWrite):
     offset: int
-    value: MemoryValue
+    value: HexStringStorageValue
 
 
 @dataclass
 class MemoryAccess(StorageAccess):
     offset: int
-    value: MemoryValue
+    value: HexStringStorageValue
 
 
 @dataclass
 class ReturnWrite(StorageWrite):
     # TODO: wrap it to allow information flow analysis
-    value: ReturnDataValue
+    value: HexStringStorageValue
 
 
 @dataclass

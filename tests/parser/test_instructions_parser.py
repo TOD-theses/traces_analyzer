@@ -14,7 +14,7 @@ from traces_analyzer.parser.instructions_parser import (
     parse_instructions,
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.storage.storage import MemoryValue, StackValue
+from traces_analyzer.parser.storage.storage import HexStringStorageValue, HexStringStorageValue
 
 
 def get_root_call_context():
@@ -49,8 +49,8 @@ def test_call_inputs_memory_parsing():
     memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push(StackValue(stack))
-    env.memory.set(0, MemoryValue(memory))
+    env.stack.push_all([HexStringStorageValue(value) for value in reversed(stack)])
+    env.memory.set(0, HexStringStorageValue(memory))
 
     instruction_metadata = InstructionMetadata(CALL.opcode, 0x1234)
     output_oracle = InstructionOutputOracle([], "", None)
