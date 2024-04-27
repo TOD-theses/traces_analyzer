@@ -17,6 +17,10 @@ def test_hexstring_from_int_equals_str():
     assert "abcd" == HexString.from_int(0xABCD)
 
 
+def test_hexstring_as_int_equals_int():
+    assert 0xABCD == HexString("abcd").as_int()
+
+
 def test_hexstring_with_prefix():
     assert "0xabcd" == HexString("abcd").with_prefix()
 
@@ -33,13 +37,9 @@ def test_hexstring_slice():
     assert "bc" == HexString("abcd")[1:3]
 
 
-def test_hexstring_lsb():
-    assert "cd" == HexString("abcd").lsb()
+def test_hexstring_last_bytes():
+    assert "efgh" == HexString("abcdefgh").as_size(2)
 
 
-def test_hexstring_lsb_padding_1():
-    assert "0d" == HexString("d").lsb()
-
-
-def test_hexstring_lsb_padding_2():
-    assert "00" == HexString("").lsb()
+def test_hexstring_last_bytes_padding():
+    assert "00abcd" == HexString("abcd").as_size(3)

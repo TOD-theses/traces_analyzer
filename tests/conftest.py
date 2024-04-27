@@ -81,10 +81,11 @@ def _parse_instruction(
     name = opcode_to_name(opcode) or "UNKNOWN"
 
     cls = get_instruction_class(opcode) or Instruction
-    spec = cls.io_specification
+    io_spec = cls.io_specification
 
     io = parse_instruction_io(
-        spec,
+        # TODO
+        io_spec,  # type: ignore
         env.stack.current_stack(),
         env.memory,
         next_stack,

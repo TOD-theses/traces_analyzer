@@ -1,5 +1,6 @@
 from typing import Callable
 import pytest
+from tests.test_utils.test_utils import _test_addr
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.call_context_manager import (
     ExpectedDepthChange,
@@ -24,13 +25,13 @@ from traces_analyzer.parser.instructions.instructions import (
 from traces_analyzer.utils.hexstring import HexString
 
 get_root = lambda: CallContext(
-    None, HexString(""), 1, HexString("0xsender"), HexString("0xcode"), HexString("0xstorage")
+    None, HexString(""), 1, _test_addr("0xsender"), _test_addr("0xcode"), _test_addr("0xstorage")
 )
 get_child_of: Callable[[CallContext, HexString], CallContext] = lambda parent, address: CallContext(
     parent, HexString(""), parent.depth + 1, parent.code_address, address, address
 )
-get_child = lambda: get_child_of(get_root(), HexString("0xchild"))
-get_grandchild = lambda: get_child_of(get_child(), HexString("0xgrandchild"))
+get_child = lambda: get_child_of(get_root(), _test_addr("0xchild"))
+get_grandchild = lambda: get_child_of(get_child(), _test_addr("0xgrandchild"))
 
 get_add: Callable[[CallContext], Instruction] = lambda call_context: ADD(
     ADD.opcode, "ADD", 1, 1, call_context, (1, 2), (3), None, None
@@ -153,7 +154,7 @@ def test_call_context_managers_does_not_enter_without_depth_change():
 
 # TODO: are there other instructions that create a new call context? eg CREATE?
 @pytest.mark.parametrize(
-    "call", [get_call(get_root(), HexString("0xtarget")), get_staticcall(get_root(), HexString("0xtarget"))]
+    "call", [get_call(get_root(), _test_addr("0xtarget")), get_staticcall(get_root(), _test_addr("0xtarget"))]
 )
 def test_call_context_manager_enters_with_code_and_storage(call):
     root = get_root()
@@ -162,14 +163,14 @@ def test_call_context_manager_enters_with_code_and_storage(call):
 
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
-    assert next_call_context.code_address.with_prefix() == "0xtarget"
-    assert next_call_context.storage_address.with_prefix() == "0xtarget"
+    assert next_call_context.code_address == _test_addr("0xtarget")
+    assert next_call_context.storage_address == _test_addr("0xtarget")
     assert next_call_context.calldata == "11111111"
     assert not next_call_context.is_contract_initialization
 
 
 @pytest.mark.parametrize(
-    "call", [get_delegate_call(get_root(), HexString("0xtarget")), get_callcode(get_root(), HexString("0xtarget"))]
+    "call", [get_delegate_call(get_root(), _test_addr("0xtarget")), get_callcode(get_root(), _test_addr("0xtarget"))]
 )
 def test_call_context_manager_enters_only_with_code_address(call):
     root = get_root()
@@ -178,7 +179,7 @@ def test_call_context_manager_enters_only_with_code_address(call):
 
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
-    assert next_call_context.code_address.with_prefix() == "0xtarget"
+    assert next_call_context.code_address == _test_addr("0xtarget")
     assert next_call_context.storage_address == root.storage_address
     assert next_call_context.calldata == "11111111"
     assert not next_call_context.is_contract_initialization
@@ -194,8 +195,7 @@ def test_call_context_manager_enters_on_contract_creation(create):
     assert next_call_context.msg_sender == root.code_address
     # NOTE: the manager DOES NOT compute the correct addresses for the created contracts
     # TODO: should we bother to compute the correct addresses (also depending on CREATE/CREATE2)?
-    assert next_call_context.code_address.with_prefix() == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
-    assert next_call_context.storage_address.with_prefix() == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
+    assert next_call_context.code_address == next_call_context.storage_address
     assert next_call_context.calldata == "11111111"
     assert next_call_context.is_contract_initialization
 
@@ -271,10 +271,10 @@ def test_call_context_manager_makes_exceptional_halt():
 
 def test_build_call_tree():
     root = get_root()
-    first = get_child_of(root, "0xfirst")
-    first_nested = get_child_of(first, "0xfirst_nested")
-    second = get_child_of(root, "0xsecond")
-    third = get_child_of(root, "0xthird")
+    first = get_child_of(root, _test_addr("0xfirst"))
+    first_nested = get_child_of(first, _test_addr("0xfirst_nested"))
+    second = get_child_of(root, _test_addr("0xsecond"))
+    third = get_child_of(root, _test_addr("0xthird"))
 
     instructions = [
         get_add(root),
@@ -296,7 +296,7 @@ def test_build_call_tree():
     first_nested = first.children[0]
 
     # correct addresses
-    assert first.call_context.code_address == "0xfirst"
-    assert first_nested.call_context.code_address == "0xfirst_nested"
-    assert second.call_context.code_address == "0xsecond"
-    assert third.call_context.code_address == "0xthird"
+    assert first.call_context.code_address == _test_addr("0xfirst")
+    assert first_nested.call_context.code_address == _test_addr("0xfirst_nested")
+    assert second.call_context.code_address == _test_addr("0xsecond")
+    assert third.call_context.code_address == _test_addr("0xthird")

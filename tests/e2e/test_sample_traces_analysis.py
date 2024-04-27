@@ -10,6 +10,7 @@ from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.parser.events_parser import parse_events
 from traces_analyzer.parser.instructions.instructions import LOG3, SLOAD
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
+from traces_analyzer.utils.hexstring import HexString
 
 
 def test_sample_traces_analysis_e2e(sample_traces_path: Path):
@@ -82,12 +83,12 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
     )
     assert transfer_log.stack_input_changes == []
     assert transfer_log.instruction_one.stack_inputs == transfer_log.instruction_two.stack_inputs
-    assert transfer_log.instruction_one.stack_inputs[0] == "60"
-    assert transfer_log.instruction_one.stack_inputs[1] == "20"
+    assert transfer_log.instruction_one.stack_inputs[0].as_int() == 0x60
+    assert transfer_log.instruction_one.stack_inputs[1].as_int() == 0x20
     assert transfer_log.instruction_one.stack_inputs[2:] == (
-        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        "6da0fd433c1a5d7a4faa01111c044910a184553",
-        "822beb1cd1bd7148d07e4107b636fd15118913bc",
+        HexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").as_size(32),
+        HexString("6da0fd433c1a5d7a4faa01111c044910a184553").as_size(32),
+        HexString("822beb1cd1bd7148d07e4107b636fd15118913bc").as_size(32),
     )
     assert transfer_log.instruction_one.step_index == 1921
     assert transfer_log.instruction_two.step_index == 1921

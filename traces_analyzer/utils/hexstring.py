@@ -14,9 +14,14 @@ class HexString(UserString):
     def as_int(self) -> int:
         return int(self.data, 16)
 
-    def lsb(self) -> "HexString":
-        """Return the (padded) least significant byte"""
-        return self[-2:].rjust(2, ("0"))
+    def as_address(self) -> "HexString":
+        return self.as_size(20)
+
+    def as_size(self, n: int) -> "HexString":
+        """Return 0-padded last n bytes"""
+        if not n:
+            return self[0:0]
+        return self[-2 * n :].rjust(2 * n, "0")
 
     def __int__(self) -> int:
         return int(self.data, 16)

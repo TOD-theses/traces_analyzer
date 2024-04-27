@@ -8,6 +8,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     FlowWithResult,
     mem_range,
     mem_write,
+    noop,
     stack_arg,
     stack_push,
     stack_set,
@@ -43,6 +44,15 @@ def _test_node(value: StorageValue | str) -> FlowNode:
     return TestFlowNode(arguments=(), value=_test_value(value))
 
 
+def test_noop():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+
+    flow = noop().compute(env, dummy_output_oracle)
+
+    assert flow.accesses == StorageAccesses()
+    assert flow.writes == StorageWrites()
+
+
 def test_stack_arg_const():
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.stack.push(_test_value("10"))
@@ -51,7 +61,7 @@ def test_stack_arg_const():
 
     assert len(flow.accesses.stack) == 1
     assert flow.accesses.stack[0].index == 0
-    assert flow.accesses.stack[0].value.get_hexstring() == "10"
+    assert flow.accesses.stack[0].value.get_hexstring() == "10".rjust(64, "0")
 
     assert len(flow.writes.stack_pops) == 1
 
@@ -62,7 +72,7 @@ def test_stack_arg_node():
 
     flow = stack_arg(_test_node("00")).compute(env, dummy_output_oracle)
 
-    assert flow.result.get_hexstring() == "10"
+    assert flow.result.get_hexstring() == HexString("10").as_size(32)
 
 
 def test_mem_range_const():

@@ -18,8 +18,8 @@ def test_instruction_input_analyzer():
         None,
     )
 
-    first_call_value = HexString("0x1000")
-    second_call_value = HexString("0x100000")
+    first_call_value = HexString("0x1000").as_size(32)
+    second_call_value = HexString("0x100000").as_size(32)
 
     first_trace = [
         make_instruction(),

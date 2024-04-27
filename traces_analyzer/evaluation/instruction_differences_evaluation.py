@@ -87,7 +87,7 @@ class InstructionDifferencesEvaluation(Evaluation):
                 "Instruction:\n"
                 f"> opcode: {hex(instruction.opcode)}\n"
                 "Location:\n"
-                f"> address: {instruction.call_context.code_address}\n"
+                f"> address: {instruction.call_context.code_address.with_prefix()}\n"
                 f"> pc: {instruction.program_counter}\n"
             )
         return result
@@ -96,7 +96,7 @@ class InstructionDifferencesEvaluation(Evaluation):
 def occurence_change_to_dict(changed_instruction: Instruction) -> dict:
     return {
         "location": {
-            "address": changed_instruction.call_context.code_address,
+            "address": changed_instruction.call_context.code_address.with_prefix(),
             "pc": changed_instruction.program_counter,
         },
         "instruction": {
@@ -109,7 +109,7 @@ def occurence_change_to_dict(changed_instruction: Instruction) -> dict:
 def instruction_input_change_to_dict(input_change: InstructionInputChange) -> dict:
     return {
         "location": {
-            "address": input_change.address,
+            "address": input_change.address.with_prefix(),
             "pc": input_change.program_counter,
         },
         "instruction": {

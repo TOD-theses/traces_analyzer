@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Generic, Sequence, TypeVar
 
 from typing_extensions import override
@@ -79,6 +79,8 @@ class StackStorage(Storage[StackIndex, HexStringStorageValue]):
 
     def push(self, value: HexStringStorageValue):
         """Push a single value to the top of the stack"""
+        if len(value.get_hexstring()) != 64:
+            value = replace(value, hexstring=value.get_hexstring().rjust(64, "0"))
         self.current_stack().append(value.get_hexstring())
 
     def push_all(self, values: Sequence[HexStringStorageValue]):
@@ -103,12 +105,6 @@ class StackStorage(Storage[StackIndex, HexStringStorageValue]):
 class MemoryRange(StorageKey):
     offset: int
     size: int
-
-
-def mem_pad_with_leading_zeros(value: HexString) -> HexString:
-    if len(value) % (32 * 2) == 0:
-        return value
-    return "0" * (32 * 2 - (len(value) % (32 * 2))) + value
 
 
 class MemoryStorage(Storage[MemoryRange, HexStringStorageValue]):

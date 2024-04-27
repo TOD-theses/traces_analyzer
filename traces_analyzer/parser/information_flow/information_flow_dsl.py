@@ -29,7 +29,26 @@ class FlowWithResult(Flow):
 
 
 @dataclass
-class FlowNode:
+class FlowSpec:
+    @abstractmethod
+    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+        """Compute the output of an information flow for a specific environment"""
+        pass
+
+
+@dataclass
+class NoopNode(FlowSpec):
+    arguments: tuple[()]
+
+    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+        return Flow(
+            accesses=StorageAccesses(),
+            writes=StorageWrites(),
+        )
+
+
+@dataclass
+class FlowNode(FlowSpec):
     arguments: tuple["FlowNodeWithResult", ...]
 
     @abstractmethod
@@ -244,3 +263,7 @@ def mem_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) 
 
 def mem_write(offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
     return MemWriteNode(arguments=(as_node(offset), as_node(value)))
+
+
+def noop() -> FlowSpec:
+    return NoopNode(arguments=())

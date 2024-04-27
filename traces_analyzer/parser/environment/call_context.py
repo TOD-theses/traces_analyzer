@@ -30,3 +30,8 @@ class CallContext:
     reverted: bool = False
     halt_type: HaltType | None = None
     is_contract_initialization: bool = False
+
+    def __post_init__(self):
+        self.msg_sender = self.msg_sender.as_address()
+        self.code_address = self.code_address.as_address()
+        self.storage_address = self.storage_address.as_address()

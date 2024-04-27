@@ -6,9 +6,10 @@ from typing_extensions import override
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.information_flow.information_flow_dsl import mem_range, mem_write, stack_arg, stack_push
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
-from traces_analyzer.parser.storage.storage import HexStringStorageValue, MemoryRange, mem_pad_with_leading_zeros
+from traces_analyzer.parser.storage.storage import HexStringStorageValue
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,
@@ -328,32 +329,21 @@ POP = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=0))
 
 @dataclass(frozen=True, repr=False)
 class MLOAD(Instruction):
-    io_specification = InstructionIOSpec(stack_input_count=1, stack_output_count=1, memory_input_offset_arg=0)
-
-    @classmethod
-    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
-        io = super().parse_io(env, output_oracle)
-        offset = io.inputs_stack[0].as_int()
-        memory = env.memory.get(MemoryRange(offset, 32)).get_hexstring()
-        return replace(io, outputs_stack=(memory,), input_memory=memory)
+    flow_spec = stack_push(mem_range(stack_arg(0), 32))
 
     def get_accesses(self) -> StorageAccesses:
-        offset = self.stack_inputs[0].as_int()
-        # TODO: I guess currently this is None, as we did not specifiy the size for the IOSpec
-        value = self.memory_input or HexString("0" * 64)
-        value = mem_pad_with_leading_zeros(value)
-        return StorageAccesses(memory=[MemoryAccess(offset, HexStringStorageValue(value))])
+        assert self.flow
+        return self.flow.accesses
 
 
 @dataclass(frozen=True, repr=False)
 class MSTORE(Instruction):
-    io_specification = InstructionIOSpec(stack_input_count=2, memory_output_offset_arg=0)
+    flow_spec = mem_write(stack_arg(0), stack_arg(1))
 
     @override
     def get_writes(self) -> StorageWrites:
-        value = self.stack_inputs[1].removeprefix("0x")
-        value = mem_pad_with_leading_zeros(value)
-        return StorageWrites(memory=[MemoryWrite(self.stack_inputs[0].as_int(), HexStringStorageValue(value))])
+        assert self.flow
+        return self.flow.writes
 
 
 @dataclass(frozen=True, repr=False)
@@ -363,7 +353,7 @@ class MSTORE8(Instruction):
     @override
     def get_writes(self) -> StorageWrites:
         return StorageWrites(
-            memory=[MemoryWrite(self.stack_inputs[0].as_int(), HexStringStorageValue(self.stack_inputs[1].lsb()))]
+            memory=[MemoryWrite(self.stack_inputs[0].as_int(), HexStringStorageValue(self.stack_inputs[1].as_size(1)))]
         )
 
 
@@ -377,10 +367,6 @@ GAS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 JUMPDEST = _make_simple()
 TLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 TSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
-"""
-MCOPY = _from_flows([mem.write(stack.arg(0), mem.slice(stack.arg(1), stack.arg(2)))])
-MSTORE = _from_flows([mem.write(stack.arg(0), stack.arg(1))])
-"""
 
 
 @dataclass(frozen=True, repr=False)

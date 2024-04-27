@@ -1,4 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT
+from tests.test_utils.test_utils import _test_addr
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instructions import (
@@ -34,7 +35,9 @@ def get_sample_env():
 
 
 def get_parsing_info(verify_storages=True):
-    return TransactionParsingInfo("0xsender", "0xto", "calldata", verify_storages=verify_storages)
+    return TransactionParsingInfo(
+        _test_addr("0xsender"), _test_addr("0xto"), "calldata", verify_storages=verify_storages
+    )
 
 
 def get_dummy_event():
@@ -68,7 +71,7 @@ def test_call_inputs_memory_parsing():
 
 
 def test_parser_builds_call_tree():
-    call_target = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    call_target = HexString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").as_address()
     stack = [HexString(val) for val in ["0x0", "0x4bb", "0x24", "0xb", "0x0", call_target, "0x940f"]]
     memory = HexString(
         "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
@@ -80,23 +83,23 @@ def test_parser_builds_call_tree():
         TraceEvent(pc=3, op=POP.opcode, stack=[HexString("0x0")], memory="", depth=2),
     ]
     parsing_info = TransactionParsingInfo(
-        sender="0xsender",
-        to="0xto",
+        sender=_test_addr("0xsender"),
+        to=_test_addr("0xto"),
         calldata="calldata",
         verify_storages=False,
     )
 
     result = parse_instructions(parsing_info, events)
 
-    assert result.call_tree.call_context.code_address == "0xto"
+    assert result.call_tree.call_context.code_address == _test_addr("0xto")
     assert len(result.call_tree.children) == 1
-    assert result.call_tree.children[0].call_context.code_address.with_prefix() == call_target
+    assert result.call_tree.children[0].call_context.code_address == call_target
 
 
 def test_parser_sets_step_indexes():
     events = [
-        TraceEvent(pc=1, op=POP.opcode, stack=["0x0", "0x0"], memory=None, depth=1),
-        TraceEvent(pc=2, op=POP.opcode, stack=["0x0"], memory=None, depth=1),
+        TraceEvent(pc=1, op=POP.opcode, stack=[HexString("0x0"), HexString("0x0")], memory=None, depth=1),
+        TraceEvent(pc=2, op=POP.opcode, stack=[HexString("0x0")], memory=None, depth=1),
     ]
 
     pop_1, pop_2 = parse_instructions(get_parsing_info(verify_storages=False), events).instructions

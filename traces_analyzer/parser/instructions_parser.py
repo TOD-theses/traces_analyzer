@@ -168,7 +168,11 @@ def parse_instruction(
     name = opcode_to_name(opcode) or "UNKNOWN"
 
     cls = get_instruction_class(opcode) or Instruction
-    io = cls.parse_io(env, output_oracle)
+    if cls.io_specification:
+        io = cls.parse_io(env, output_oracle)
+        flow = None
+    else:
+        io, flow = cls.parse_flow(env, output_oracle)
 
     return cls(
         opcode,
@@ -180,4 +184,5 @@ def parse_instruction(
         io.outputs_stack,
         io.input_memory,
         io.output_memory,
+        flow,
     )
