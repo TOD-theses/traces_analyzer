@@ -15,6 +15,7 @@ from traces_analyzer.parser.instructions_parser import (
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.storage.storage import HexStringStorageValue, HexStringStorageValue
+from traces_analyzer.utils.hexstring import HexString
 
 
 def get_root_call_context():
@@ -45,8 +46,13 @@ def test_parser_empty_events():
 
 
 def test_call_inputs_memory_parsing():
-    stack = ["0x0", "0x4bb", "0x24", "0xb", "0x0", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "0x940f"]
-    memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    stack = [
+        HexString(val)
+        for val in ["0x0", "0x4bb", "0x24", "0xb", "0x0", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "0x940f"]
+    ]
+    memory = HexString(
+        "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    )
 
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.stack.push_all([HexStringStorageValue(value) for value in reversed(stack)])
@@ -63,13 +69,15 @@ def test_call_inputs_memory_parsing():
 
 def test_parser_builds_call_tree():
     call_target = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    stack = ["0x0", "0x4bb", "0x24", "0xb", "0x0", call_target, "0x940f"]
-    memory = "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
+    stack = [HexString(val) for val in ["0x0", "0x4bb", "0x24", "0xb", "0x0", call_target, "0x940f"]]
+    memory = HexString(
+        "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
+    )
 
     events = [
         TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], memory=memory, depth=1),
         TraceEvent(pc=2, op=CALL.opcode, stack=stack, memory=memory, depth=1),
-        TraceEvent(pc=3, op=POP.opcode, stack=["0x0"], memory="", depth=2),
+        TraceEvent(pc=3, op=POP.opcode, stack=[HexString("0x0")], memory="", depth=2),
     ]
     parsing_info = TransactionParsingInfo(
         sender="0xsender",
@@ -82,7 +90,7 @@ def test_parser_builds_call_tree():
 
     assert result.call_tree.call_context.code_address == "0xto"
     assert len(result.call_tree.children) == 1
-    assert result.call_tree.children[0].call_context.code_address == call_target
+    assert result.call_tree.children[0].call_context.code_address.with_prefix() == call_target
 
 
 def test_parser_sets_step_indexes():

@@ -4,6 +4,8 @@ from typing import Generic, Sequence, TypeVar
 
 from typing_extensions import override
 
+from traces_analyzer.utils.hexstring import HexString
+
 
 class StorageKey(ABC):
     pass
@@ -12,18 +14,16 @@ class StorageKey(ABC):
 class StorageValue(ABC):
 
     @abstractmethod
-    def get_hexstring(self) -> str:
+    def get_hexstring(self) -> HexString:
+        """The hexstring representation. May contain a leading 0x"""
         pass
 
 
 @dataclass
 class HexStringStorageValue(StorageValue):
-    hexstring: str
+    hexstring: HexString
 
-    def is_concrete(self) -> bool:
-        return True
-
-    def get_hexstring(self) -> str:
+    def get_hexstring(self) -> HexString:
         return self.hexstring
 
 
@@ -59,7 +59,7 @@ class StackIndex(StorageKey):
 class StackStorage(Storage[StackIndex, HexStringStorageValue]):
     def __init__(self) -> None:
         super().__init__()
-        self.stacks: list[list[str]] = [[]]
+        self.stacks: list[list[HexString]] = [[]]
 
     @override
     def on_call_enter(self):
@@ -95,7 +95,7 @@ class StackStorage(Storage[StackIndex, HexStringStorageValue]):
     def clear(self):
         self.stacks[-1] = []
 
-    def current_stack(self) -> list[str]:
+    def current_stack(self) -> list[HexString]:
         return self.stacks[-1]
 
 
@@ -105,7 +105,7 @@ class MemoryRange(StorageKey):
     size: int
 
 
-def mem_pad_with_leading_zeros(value: str) -> str:
+def mem_pad_with_leading_zeros(value: HexString) -> HexString:
     if len(value) % (32 * 2) == 0:
         return value
     return "0" * (32 * 2 - (len(value) % (32 * 2))) + value
@@ -114,19 +114,19 @@ def mem_pad_with_leading_zeros(value: str) -> str:
 class MemoryStorage(Storage[MemoryRange, HexStringStorageValue]):
     def __init__(self) -> None:
         super().__init__()
-        self.memory_stack: list[str] = [""]
+        self.memory_stack: list[HexString] = [HexString("")]
 
     @override
     def on_call_enter(self):
         super().on_call_enter()
-        self.memory_stack.append("")
+        self.memory_stack.append(HexString(""))
 
     @override
     def on_call_exit(self):
         super().on_call_exit()
         self.memory_stack.pop()
 
-    def current_memory(self) -> str:
+    def current_memory(self) -> HexString:
         return self.memory_stack[-1]
 
     @override
@@ -135,9 +135,9 @@ class MemoryStorage(Storage[MemoryRange, HexStringStorageValue]):
         offset = key.offset * 2
         size = key.size * 2
         current_memory = self.current_memory()
-        slice = current_memory[offset : offset + size]
+        slice = current_memory.without_prefix()[offset : offset + size]
         slice = slice.ljust(size, "0")
-        return HexStringStorageValue(slice)
+        return HexStringStorageValue(HexString(slice))
 
     def get_all(self) -> HexStringStorageValue:
         return HexStringStorageValue(self.current_memory())
@@ -145,10 +145,10 @@ class MemoryStorage(Storage[MemoryRange, HexStringStorageValue]):
     def set(self, offset: int, value: HexStringStorageValue):
         if not value.get_hexstring():
             return
-        data = value.get_hexstring()
+        data = value.get_hexstring().without_prefix()
         self.check_expansion(offset, len(data) // 2)
-        mem = self.memory_stack[-1]
-        self.memory_stack[-1] = mem[: offset * 2] + data + mem[offset * 2 + len(data) :]
+        mem = self.memory_stack[-1].without_prefix()
+        self.memory_stack[-1] = HexString(mem[: offset * 2] + data + mem[offset * 2 + len(data) :])
 
     def check_expansion(self, offset: int, size: int):
         if size == 0:

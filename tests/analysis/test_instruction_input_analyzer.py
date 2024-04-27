@@ -3,25 +3,61 @@ from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instructions import CALL, LOG1, POP, STOP
+from traces_analyzer.utils.hexstring import HexString
 
 
 def test_instruction_input_analyzer():
-    child_context = CallContext(TEST_ROOT_CALLCONTEXT, "", 2, "0xroot", "0xchild", "0xchild", False, None)
+    child_context = CallContext(
+        TEST_ROOT_CALLCONTEXT,
+        HexString(""),
+        2,
+        HexString("0xroot"),
+        HexString("0xchild"),
+        HexString("0xchild"),
+        False,
+        None,
+    )
 
-    first_call_value = "0x1000"
-    second_call_value = "0x100000"
+    first_call_value = HexString("0x1000")
+    second_call_value = HexString("0x100000")
 
     first_trace = [
         make_instruction(),
         make_instruction(
-            CALL, stack=list(reversed(["0x1234", "0xchild", first_call_value, "0x0", "0x0", "0x0", "0x0"]))
+            CALL,
+            stack=list(
+                reversed(
+                    [
+                        HexString("0x1234"),
+                        HexString("0xchild"),
+                        first_call_value,
+                        HexString("0x0"),
+                        HexString("0x0"),
+                        HexString("0x0"),
+                        HexString("0x0"),
+                    ]
+                )
+            ),
         ),
         make_instruction(STOP, call_context=child_context),
     ]
     second_trace = [
         make_instruction(),
         make_instruction(
-            CALL, stack=list(reversed(["0x1234", "0xchild", second_call_value, "0x0", "0x0", "0x0", "0x0"]))
+            CALL,
+            stack=list(
+                reversed(
+                    [
+                        HexString("0x1234"),
+                        HexString("0xchild"),
+                        second_call_value,
+                        HexString("0x0"),
+                        HexString("0x0"),
+                        HexString("0x0"),
+                        HexString("0x0"),
+                    ]
+                )
+            ),
         ),
         make_instruction(POP, call_context=child_context),
         make_instruction(STOP, call_context=child_context),

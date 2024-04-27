@@ -21,75 +21,110 @@ from traces_analyzer.parser.instructions.instructions import (
     STATICCALL,
     STOP,
 )
+from traces_analyzer.utils.hexstring import HexString
 
-get_root = lambda: CallContext(None, "", 1, "0xsender", "0xcode", "0xstorage")
-get_child_of: Callable[[CallContext, str], CallContext] = lambda parent, address: CallContext(
-    parent, "", parent.depth + 1, parent.code_address, address, address
+get_root = lambda: CallContext(
+    None, HexString(""), 1, HexString("0xsender"), HexString("0xcode"), HexString("0xstorage")
 )
-get_child = lambda: get_child_of(get_root(), "0xchild")
-get_grandchild = lambda: get_child_of(get_child(), "0xgrandchild")
+get_child_of: Callable[[CallContext, HexString], CallContext] = lambda parent, address: CallContext(
+    parent, HexString(""), parent.depth + 1, parent.code_address, address, address
+)
+get_child = lambda: get_child_of(get_root(), HexString("0xchild"))
+get_grandchild = lambda: get_child_of(get_child(), HexString("0xgrandchild"))
 
 get_add: Callable[[CallContext], Instruction] = lambda call_context: ADD(
     ADD.opcode, "ADD", 1, 1, call_context, (1, 2), (3), None, None
 )
-get_call: Callable[[CallContext, str], Instruction] = lambda call_context, address: CALL(
+get_call: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: CALL(
     CALL.opcode,
     "CALL",
     1,
     1,
     call_context,
-    ("0x1234", address, "0x1", "0x0", "0x4", "0x0", "0x0"),
+    (
+        HexString("0x1234"),
+        address,
+        HexString("0x1"),
+        HexString("0x0"),
+        HexString("0x4"),
+        HexString("0x0"),
+        HexString("0x0"),
+    ),
     (),
-    "11111111",
+    HexString("11111111"),
     None,
 )
-get_staticcall: Callable[[CallContext, str], Instruction] = lambda call_context, address: STATICCALL(
+get_staticcall: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: STATICCALL(
     STATICCALL.opcode,
     "STATICCALL",
     1,
     1,
     call_context,
-    ("0x1234", address, "0x0", "0x4", "0x0", "0x0"),
+    (HexString("0x1234"), address, HexString("0x0"), HexString("0x4"), HexString("0x0"), HexString("0x0")),
     (),
-    "11111111",
+    HexString("11111111"),
     None,
 )
-get_delegate_call: Callable[[CallContext, str], Instruction] = lambda call_context, address: DELEGATECALL(
+get_delegate_call: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: DELEGATECALL(
     DELEGATECALL.opcode,
     "DELEGATECALL",
     1,
     1,
     call_context,
-    ("0x1234", address, "0x0", "0x4", "0x0", "0x0"),
+    (HexString("0x1234"), address, HexString("0x0"), HexString("0x4"), HexString("0x0"), HexString("0x0")),
     (),
-    "11111111",
+    HexString("11111111"),
     None,
 )
-get_callcode: Callable[[CallContext, str], Instruction] = lambda call_context, address: CALLCODE(
+get_callcode: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: CALLCODE(
     CALLCODE.opcode,
     "CALLCODE",
     1,
     1,
     call_context,
-    ("0x1234", address, "0x1", "0x0", "0x4", "0x0", "0x0"),
+    (
+        HexString("0x1234"),
+        address,
+        HexString("0x1"),
+        HexString("0x0"),
+        HexString("0x4"),
+        HexString("0x0"),
+        HexString("0x0"),
+    ),
     (),
-    "11111111",
+    HexString("11111111"),
     None,
 )
 get_create: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
-    CREATE.opcode, "CREATE", 1, 1, call_context, ("0x0", "0x0", "0x4"), (), "11111111", None
+    CREATE.opcode,
+    "CREATE",
+    1,
+    1,
+    call_context,
+    (HexString("0x0"), HexString("0x0"), HexString("0x4")),
+    (),
+    HexString("11111111"),
+    None,
 )
 get_create2: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
-    CREATE2.opcode, "CREATE2", 1, 1, call_context, ("0x0", "0x0", "0x4", "0x0"), (), "11111111", None
+    CREATE2.opcode,
+    "CREATE2",
+    1,
+    1,
+    call_context,
+    (HexString("0x0"), HexString("0x0"), HexString("0x4"), HexString("0x0")),
+    (),
+    HexString("11111111"),
+    None,
 )
 get_stop: Callable[[CallContext], Instruction] = lambda call_context: STOP(
     STOP.opcode, "STOP", 1, 1, call_context, (), (), None, None
 )
 get_return: Callable[[CallContext], Instruction] = lambda call_context: RETURN(
-    RETURN.opcode, "RETURN", 1, 1, call_context, ("0x0", "0x0"), (), "", ""
+    RETURN.opcode, "RETURN", 1, 1, call_context, (HexString("0x0"), HexString("0x0")), (), None, None
 )
 get_revert: Callable[[CallContext], Instruction] = lambda call_context: REVERT(
-    REVERT.opcode, "REVERT", 1, 1, call_context, ("0x0", "0x0"), (), "", ""
+    REVERT.opcode, "REVERT", 1, 1, call_context, (HexString("0x0"), HexString("0x0")), (), None, None
 )
 get_selfdestruct: Callable[[CallContext], Instruction] = lambda call_context: SELFDESTRUCT(
     SELFDESTRUCT.opcode, "SELFDESTRUCT", 1, 1, call_context, ("0x0"), (), "", ""
@@ -117,7 +152,9 @@ def test_call_context_managers_does_not_enter_without_depth_change():
 
 
 # TODO: are there other instructions that create a new call context? eg CREATE?
-@pytest.mark.parametrize("call", [get_call(get_root(), "0xtarget"), get_staticcall(get_root(), "0xtarget")])
+@pytest.mark.parametrize(
+    "call", [get_call(get_root(), HexString("0xtarget")), get_staticcall(get_root(), HexString("0xtarget"))]
+)
 def test_call_context_manager_enters_with_code_and_storage(call):
     root = get_root()
 
@@ -125,13 +162,15 @@ def test_call_context_manager_enters_with_code_and_storage(call):
 
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
-    assert next_call_context.code_address == "0xtarget"
-    assert next_call_context.storage_address == "0xtarget"
+    assert next_call_context.code_address.with_prefix() == "0xtarget"
+    assert next_call_context.storage_address.with_prefix() == "0xtarget"
     assert next_call_context.calldata == "11111111"
     assert not next_call_context.is_contract_initialization
 
 
-@pytest.mark.parametrize("call", [get_delegate_call(get_root(), "0xtarget"), get_callcode(get_root(), "0xtarget")])
+@pytest.mark.parametrize(
+    "call", [get_delegate_call(get_root(), HexString("0xtarget")), get_callcode(get_root(), HexString("0xtarget"))]
+)
 def test_call_context_manager_enters_only_with_code_address(call):
     root = get_root()
 
@@ -139,7 +178,7 @@ def test_call_context_manager_enters_only_with_code_address(call):
 
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
-    assert next_call_context.code_address == "0xtarget"
+    assert next_call_context.code_address.with_prefix() == "0xtarget"
     assert next_call_context.storage_address == root.storage_address
     assert next_call_context.calldata == "11111111"
     assert not next_call_context.is_contract_initialization
@@ -155,8 +194,8 @@ def test_call_context_manager_enters_on_contract_creation(create):
     assert next_call_context.msg_sender == root.code_address
     # NOTE: the manager DOES NOT compute the correct addresses for the created contracts
     # TODO: should we bother to compute the correct addresses (also depending on CREATE/CREATE2)?
-    assert next_call_context.code_address == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
-    assert next_call_context.storage_address == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
+    assert next_call_context.code_address.with_prefix() == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
+    assert next_call_context.storage_address.with_prefix() == "0x812ae3f62c368435ee7783a18a29b0c91ae375c302bbf9d73cac"
     assert next_call_context.calldata == "11111111"
     assert next_call_context.is_contract_initialization
 

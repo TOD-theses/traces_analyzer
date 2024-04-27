@@ -10,14 +10,15 @@ from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CallInstruction, get_instruction_class
 from traces_analyzer.parser.storage.storage import HexStringStorageValue
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 @dataclass
 class TransactionParsingInfo:
-    sender: str
-    to: str
-    calldata: str
+    sender: HexString
+    to: HexString
+    calldata: HexString
     verify_storages: bool = True
 
 
@@ -36,7 +37,7 @@ def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Itera
     return ParsedTransaction(instructions, call_tree)
 
 
-def _create_root_call_context(sender: str, to: str, calldata: str) -> CallContext:
+def _create_root_call_context(sender: HexString, to: HexString, calldata: HexString) -> CallContext:
     return CallContext(
         parent=None,
         calldata=calldata,
@@ -69,7 +70,9 @@ def _parse_instructions(
         instructions.append(
             tracer_evm.step(
                 instruction_metadata=InstructionMetadata(current_event.op, current_event.pc),
-                output_oracle=InstructionOutputOracle(next_event.stack, next_event.memory or "", next_event.depth),
+                output_oracle=InstructionOutputOracle(
+                    next_event.stack, next_event.memory or HexString(""), next_event.depth
+                ),
             )
         )
         current_event = next_event
@@ -77,7 +80,7 @@ def _parse_instructions(
     instructions.append(
         tracer_evm.step(
             instruction_metadata=InstructionMetadata(current_event.op, current_event.pc),
-            output_oracle=InstructionOutputOracle([], "", None),
+            output_oracle=InstructionOutputOracle([], HexString(""), None),
         )
     )
     return instructions

@@ -7,6 +7,7 @@ from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec, parse_instruction_io
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
+from traces_analyzer.utils.hexstring import HexString
 
 
 @dataclass(frozen=True, repr=False)
@@ -16,10 +17,10 @@ class Instruction:
     program_counter: int
     step_index: int
     call_context: CallContext = field(compare=False, hash=False)
-    stack_inputs: tuple[str, ...]
-    stack_outputs: tuple[str, ...]
-    memory_input: str | None
-    memory_output: str | None
+    stack_inputs: tuple[HexString, ...]
+    stack_outputs: tuple[HexString, ...]
+    memory_input: HexString | None
+    memory_output: HexString | None
     io_specification: ClassVar[InstructionIOSpec] = InstructionIOSpec()
 
     def get_accesses(self) -> StorageAccesses:

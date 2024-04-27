@@ -7,26 +7,27 @@ from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
 from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.utils.hexstring import HexString
 
 
 @dataclass(frozen=True)
 class StackInputChange:
     index: int
-    first_value: str
-    second_value: str
+    first_value: HexString
+    second_value: HexString
 
 
 @dataclass(frozen=True)
 class MemoryInputChange:
-    first_value: str | None
-    second_value: str | None
+    first_value: HexString | None
+    second_value: HexString | None
 
 
 @dataclass(frozen=True)
 class InstructionInputChange:
     """Same instruction with different inputs"""
 
-    address: str
+    address: HexString
     program_counter: int
     opcode: int
 
@@ -92,7 +93,9 @@ def _create_input_change(instruction_one: Instruction, instruction_two: Instruct
     )
 
 
-def _create_stack_input_changes(stack_one: tuple[str, ...], stack_two: tuple[str, ...]) -> list[StackInputChange]:
+def _create_stack_input_changes(
+    stack_one: tuple[HexString, ...], stack_two: tuple[HexString, ...]
+) -> list[StackInputChange]:
     changes = []
     for i, (first_input, second_input) in enumerate(zip_longest(stack_one, stack_two)):
         if first_input != second_input:
@@ -101,7 +104,7 @@ def _create_stack_input_changes(stack_one: tuple[str, ...], stack_two: tuple[str
     return changes
 
 
-def _create_memory_input_change(memory_one: str | None, memory_two: str | None) -> MemoryInputChange | None:
+def _create_memory_input_change(memory_one: HexString | None, memory_two: HexString | None) -> MemoryInputChange | None:
     if memory_one == memory_two:
         return None
     return MemoryInputChange(memory_one, memory_two)

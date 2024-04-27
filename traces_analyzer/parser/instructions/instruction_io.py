@@ -2,14 +2,15 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from traces_analyzer.parser.storage.storage import MemoryStorage
+from traces_analyzer.utils.hexstring import HexString
 
 
 @dataclass(frozen=True)
 class InstructionIO:
-    inputs_stack: tuple[str, ...] = ()
-    outputs_stack: tuple[str, ...] = ()
-    input_memory: str | None = None
-    output_memory: str | None = None
+    inputs_stack: tuple[HexString, ...] = ()
+    outputs_stack: tuple[HexString, ...] = ()
+    input_memory: HexString | None = None
+    output_memory: HexString | None = None
 
 
 @dataclass(frozen=True)
@@ -26,10 +27,10 @@ class InstructionIOSpec:
 
 def parse_instruction_io(
     spec: InstructionIOSpec,
-    stack: Sequence[str],
+    stack: Sequence[HexString],
     memory: MemoryStorage,
-    next_stack: Sequence[str],
-    next_mem: str | None,
+    next_stack: Sequence[HexString],
+    next_mem: HexString | None,
 ) -> InstructionIO:
     inputs_stack = parse_stack_arg(stack, last_n_args=spec.stack_input_count)
     outputs_stack = parse_stack_arg(next_stack, last_n_args=spec.stack_output_count)
@@ -48,7 +49,7 @@ def parse_instruction_io(
     )
 
 
-def parse_stack_arg(stack: Sequence[str], last_n_args: int) -> tuple[str, ...]:
+def parse_stack_arg(stack: Sequence[HexString], last_n_args: int) -> tuple[HexString, ...]:
     if last_n_args == 0:
         return tuple()
 
@@ -56,18 +57,21 @@ def parse_stack_arg(stack: Sequence[str], last_n_args: int) -> tuple[str, ...]:
 
 
 def parse_memory_via_stack_args(
-    memory: str | None, stack_args: tuple[str, ...], offset_arg_index: int | None, offset_size_index: int | None
-) -> str | None:
+    memory: HexString | None,
+    stack_args: tuple[HexString, ...],
+    offset_arg_index: int | None,
+    offset_size_index: int | None,
+) -> HexString | None:
     if offset_arg_index is None or offset_size_index is None:
         return None
 
-    offset = int(stack_args[offset_arg_index], 16)
-    size = int(stack_args[offset_size_index], 16)
+    offset = stack_args[offset_arg_index].as_int()
+    size = stack_args[offset_size_index].as_int()
 
     return parse_memory_arg(memory, offset, size)
 
 
-def parse_memory_arg(memory: str | None, mem_offset: int, mem_size: int) -> str | None:
+def parse_memory_arg(memory: HexString | None, mem_offset: int, mem_size: int) -> HexString | None:
     # TODO: use EventMemory class instead of passing str|None
     if memory is None:
         return None

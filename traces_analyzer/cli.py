@@ -22,6 +22,7 @@ from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import parse_events
 from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 
@@ -82,10 +83,10 @@ def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, verbose: boo
 
 
 def compare_traces(
-    hash: str,
-    sender: str,
-    to: str,
-    calldata: str,
+    hash: HexString,
+    sender: HexString,
+    to: HexString,
+    calldata: HexString,
     traces: tuple[Iterable[str], Iterable[str]],
     verbose: bool,
 ) -> list[Evaluation]:

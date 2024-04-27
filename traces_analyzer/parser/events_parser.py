@@ -2,22 +2,16 @@ import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from traces_analyzer.utils.hexstring import HexString
+
 
 @dataclass(frozen=True)
 class TraceEvent:
     pc: int
     op: int
-    stack: list[str]
+    stack: list[HexString]
     depth: int
-    memory: str | None = None
-
-    def mem_at(self, offset_bytes: int, size_bytes: int) -> str | None:
-        """Return the specified memory slice. If memory is not set, return None."""
-        if not self.memory:
-            return None
-        start = 2 * offset_bytes
-        end = 2 * (offset_bytes + size_bytes)
-        return self.memory[start:end]
+    memory: HexString | None = None
 
 
 def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
@@ -27,11 +21,11 @@ def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
             continue
         memory = None
         if "memory" in obj:
-            memory = obj["memory"].removeprefix("0x")
+            memory = HexString(obj["memory"])
         yield TraceEvent(
             pc=obj["pc"],
             op=obj["op"],
-            stack=obj["stack"],
+            stack=[HexString(val) for val in obj["stack"]],
             memory=memory,
             depth=obj["depth"],
         )

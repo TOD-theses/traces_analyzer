@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Iterable
 
 from traces_analyzer.loader.loader import TraceBundle, TraceLoader, TransactionBundle
+from traces_analyzer.utils.hexstring import HexString
 
 
 class DirectoryLoader(TraceLoader):
@@ -32,23 +33,23 @@ class DirectoryLoader(TraceLoader):
         assert (
             tx_actual["hash"] == tx_reverse["hash"]
         ), f"Tried to compare traces with different transaction hashes: {tx_actual['hash']} {tx_reverse['hash']}"
-        hash = tx_actual["hash"]
+        hash = HexString(tx_actual["hash"])
 
         return TransactionBundle(
             hash=hash,
-            caller=tx_actual["from"],
-            to=tx_actual["to"],
+            caller=HexString(tx_actual["from"]),
+            to=HexString(tx_actual["to"]),
             # TODO: remove get when it is implemented in the metadata
-            calldata=tx_actual.get("calldata", ""),
-            trace_actual=lazy_load_file(self._dir / "actual" / (hash + ".jsonl")),
-            trace_reverse=lazy_load_file(self._dir / "reverse" / (hash + ".jsonl")),
+            calldata=HexString(tx_actual.get("calldata", "")),
+            trace_actual=lazy_load_file(self._dir / "actual" / (hash.with_prefix() + ".jsonl")),
+            trace_reverse=lazy_load_file(self._dir / "reverse" / (hash.with_prefix() + ".jsonl")),
         )
 
 
 # TODO: implement a cleaner solution (maybe making the class closable?)
 # I think this does not close except if everything in the file was read
 # Hence, it does not close on errors
-def lazy_load_file(path: str) -> Iterable[str]:
+def lazy_load_file(path: Path) -> Iterable[str]:
     with open(path) as file:
         for line in file:
             yield line

@@ -2,6 +2,7 @@
 
 import requests
 
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.signatures.signature_lookup import SignatureLookup
 
 
@@ -10,7 +11,7 @@ class SignatureRegistry(SignatureLookup):
         super().__init__()
         self._base_url = base_url
 
-    def lookup_by_hex(self, signature_hex: str) -> str | None:
+    def lookup_by_hex(self, signature_hex: HexString) -> str | None:
         # using ordering to get the earliest first (which is likely the best one)
         url = f"{self._base_url}/api/v1/signatures/?ordering=created_at&hex_signature={signature_hex}"
         try:

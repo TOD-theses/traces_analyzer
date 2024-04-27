@@ -1,10 +1,11 @@
 from traces_analyzer.parser.instructions.instruction_io import InstructionIOSpec, parse_instruction_io
 from traces_analyzer.parser.storage.storage import MemoryStorage, HexStringStorageValue
+from traces_analyzer.utils.hexstring import HexString
 
 
 def get_mem_storage(memory: str) -> MemoryStorage:
     mem = MemoryStorage()
-    mem.set(0, HexStringStorageValue(memory))
+    mem.set(0, HexStringStorageValue(HexString(memory)))
     return mem
 
 
@@ -38,9 +39,9 @@ def test_parse_instructions_io_memory_via_args():
         memory_output_offset_arg=2,
         memory_output_size_arg=3,
     )
-    input_stack = list(reversed([hex(26), "0x4", hex(24), "0x6"]))
-    input_memory = "0000000000000000000000000000000000000000000000000000111122223333"
-    output_memory = "0000000000000000000000000000000000000000000000004444555566667777"
+    input_stack = list(reversed([HexString.from_int(26), HexString("0x4"), HexString.from_int(24), HexString("0x6")]))
+    input_memory = HexString("0000000000000000000000000000000000000000000000000000111122223333")
+    output_memory = HexString("0000000000000000000000000000000000000000000000004444555566667777")
 
     io = parse_instruction_io(io_spec, input_stack, get_mem_storage(input_memory), [], output_memory)
 

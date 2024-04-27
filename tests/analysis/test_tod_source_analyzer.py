@@ -37,8 +37,8 @@ def test_tod_source_analyzer():
 
     assert tod_source.instruction_one.program_counter == 0x2
     assert tod_source.instruction_one.opcode == SLOAD.opcode
-    assert tod_source.instruction_one.stack_outputs == ("0x1234",)
+    assert tod_source.instruction_one.stack_outputs == ("1234",)
 
     assert tod_source.instruction_two.program_counter == 0x2
     assert tod_source.instruction_two.opcode == SLOAD.opcode
-    assert tod_source.instruction_two.stack_outputs == ("0x5678",)
+    assert tod_source.instruction_two.stack_outputs == ("5678",)

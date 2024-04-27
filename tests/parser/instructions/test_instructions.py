@@ -5,6 +5,7 @@ from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
 from traces_analyzer.parser.storage.storage import HexStringStorageValue
+from traces_analyzer.utils.hexstring import HexString
 
 
 _opcodes_to_instruction = [
@@ -348,17 +349,17 @@ def _test_parse_instruction(
     return cast(InstructionType, parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle))
 
 
-dummy_output_oracle = InstructionOutputOracle([], "", None)
+dummy_output_oracle = InstructionOutputOracle([], HexString(""), None)
 
 
 def test_mload() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push(HexStringStorageValue("0x4"))
-    env.memory.set(0x4, HexStringStorageValue("11223344"))
+    env.stack.push(HexStringStorageValue(HexString("0x4")))
+    env.memory.set(0x4, HexStringStorageValue(HexString("11223344")))
 
     mload = _test_parse_instruction(MLOAD, env, dummy_output_oracle)
 
-    padded_value = "11223344" + (28) * 2 * "0"
+    padded_value = HexString("11223344" + (28) * 2 * "0")
     accesses = mload.get_accesses()
     assert accesses.memory == [MemoryAccess(offset=0x4, value=HexStringStorageValue(padded_value))]
     assert mload.stack_outputs == (padded_value,)
@@ -366,35 +367,41 @@ def test_mload() -> None:
 
 def test_mstore() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([HexStringStorageValue("0x4"), HexStringStorageValue("0x11223344")])
+    env.stack.push_all([HexStringStorageValue(HexString("0x4")), HexStringStorageValue(HexString("0x11223344"))])
 
     mstore = _test_parse_instruction(MSTORE, env, dummy_output_oracle)
 
-    padded_value = (28) * 2 * "0" + "11223344"
+    padded_value = HexString((28) * 2 * "0" + "11223344")
     writes = mstore.get_writes()
     assert writes.memory == [MemoryWrite(offset=0x4, value=HexStringStorageValue(padded_value))]
 
 
 def test_mstore8() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([HexStringStorageValue("0x4"), HexStringStorageValue("0x1")])
+    env.stack.push_all([HexStringStorageValue(HexString("0x4")), HexStringStorageValue(HexString("0x1"))])
 
     mstore8 = _test_parse_instruction(MSTORE8, env, dummy_output_oracle)
 
-    padded_value = "01"
+    padded_value = HexString("01")
     writes = mstore8.get_writes()
     assert writes.memory == [MemoryWrite(offset=0x4, value=HexStringStorageValue(padded_value))]
 
 
 def test_mcopy() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([HexStringStorageValue("0x20"), HexStringStorageValue("0x3"), HexStringStorageValue("0x4")])
-    env.memory.set(0x4, HexStringStorageValue("11223344"))
+    env.stack.push_all(
+        [
+            HexStringStorageValue(HexString("0x20")),
+            HexStringStorageValue(HexString("0x3")),
+            HexStringStorageValue(HexString("0x4")),
+        ]
+    )
+    env.memory.set(0x4, HexStringStorageValue(HexString("11223344")))
 
     mcopy = _test_parse_instruction(MCOPY, env, dummy_output_oracle)
 
     accesses = mcopy.get_accesses()
-    assert accesses.memory == [MemoryAccess(offset=0x3, value=HexStringStorageValue("00112233"))]
+    assert accesses.memory == [MemoryAccess(offset=0x3, value=HexStringStorageValue(HexString("00112233")))]
 
     writes = mcopy.get_writes()
-    assert writes.memory == [MemoryWrite(offset=0x20, value=HexStringStorageValue("00112233"))]
+    assert writes.memory == [MemoryWrite(offset=0x20, value=HexStringStorageValue(HexString("00112233")))]

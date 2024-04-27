@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.storage.storage import MemoryStorage, StackStorage
+from traces_analyzer.utils.hexstring import HexString
 
 
 @dataclass
@@ -26,6 +27,6 @@ class ParsingEnvironment:
 class InstructionOutputOracle:
     """Output data we know from the trace. Oracle, because we can peek one step into the future with this"""
 
-    stack: list[str]
-    memory: str
+    stack: list[HexString]
+    memory: HexString
     depth: int | None

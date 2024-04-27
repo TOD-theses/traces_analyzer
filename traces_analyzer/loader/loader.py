@@ -2,14 +2,16 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Iterable
 
+from traces_analyzer.utils.hexstring import HexString
+
 
 # TODO: better naming / structure
 @dataclass
 class TransactionBundle:
-    caller: str
-    to: str
-    hash: str
-    calldata: str
+    caller: HexString
+    to: HexString
+    hash: HexString
+    calldata: HexString
     trace_actual: Iterable[str]
     trace_reverse: Iterable[str]
 

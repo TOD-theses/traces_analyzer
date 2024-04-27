@@ -1,3 +1,5 @@
+from traces_analyzer.utils.hexstring import HexString
+
 _ADDR_TO_NAME = {
     1: "ecRecover",
     2: "SHA2-256",
@@ -11,9 +13,9 @@ _ADDR_TO_NAME = {
 }
 
 
-def is_precompiled_contract(addr: str) -> bool:
+def is_precompiled_contract(addr: HexString) -> bool:
     return addr_to_precompiled_contract_name(addr) is not None
 
 
-def addr_to_precompiled_contract_name(addr: str, default: str | None = None) -> str | None:
-    return _ADDR_TO_NAME.get(int(addr, 16), default)
+def addr_to_precompiled_contract_name(addr: HexString, default: str | None = None) -> str | None:
+    return _ADDR_TO_NAME.get(addr.as_int(), default)

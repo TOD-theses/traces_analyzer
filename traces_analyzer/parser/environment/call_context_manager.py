@@ -18,6 +18,7 @@ from traces_analyzer.parser.instructions.instructions import (
     STATICCALL,
     STOP,
 )
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 # TODO: rename and/or split this file
@@ -101,33 +102,34 @@ def update_call_context(
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
+            calldata=instruction.memory_input or HexString(""),
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=instruction.get_data()["address"],
-            storage_address=instruction.get_data()["address"],
+            code_address=(instruction.get_data()["address"]),
+            storage_address=(instruction.get_data()["address"]),
         )
     elif enters_call_context_without_storage(instruction, current_call_context.depth, next_depth):
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            calldata=instruction.memory_input or "",  # TODO: use appropriate method instead
+            # TODO: use appropriate method instead
+            calldata=instruction.memory_input or HexString(""),
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=instruction.get_data()["address"],
+            code_address=(instruction.get_data()["address"]),
             storage_address=current_call_context.storage_address,
         )
     elif creates_contract(instruction, current_call_context.depth, next_depth):
         # NOTE: we currently do not compute the correct addresses
-        created_contract_addr = "0x" + sha256(current_call_context.code_address.encode()).hexdigest()[12:]
+        created_contract_addr = "0x" + sha256(current_call_context.code_address.with_prefix().encode()).hexdigest()[12:]
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            calldata=instruction.memory_input or "",
+            calldata=instruction.memory_input or HexString(""),
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=created_contract_addr,
-            storage_address=created_contract_addr,
+            code_address=HexString(created_contract_addr),
+            storage_address=HexString(created_contract_addr),
             is_contract_initialization=True,
         )
     elif makes_normal_halt(instruction, current_call_context.depth, next_depth) or makes_exceptional_halt(
