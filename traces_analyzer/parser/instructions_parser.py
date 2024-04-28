@@ -8,7 +8,7 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CallInstruction, get_instruction_class
-from traces_analyzer.parser.storage.storage import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name

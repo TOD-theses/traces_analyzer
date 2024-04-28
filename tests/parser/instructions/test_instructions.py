@@ -4,7 +4,8 @@ from tests.conftest import TEST_ROOT_CALLCONTEXT
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
-from traces_analyzer.parser.storage.storage import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
 from traces_analyzer.utils.hexstring import HexString
 
 

@@ -50,7 +50,7 @@ class Instruction:
     ) -> InstructionIO:
         return parse_instruction_io(
             io_spec,
-            env.stack.current_stack(),
+            env.stack,
             env.memory,
             output_oracle.stack,
             output_oracle.memory,

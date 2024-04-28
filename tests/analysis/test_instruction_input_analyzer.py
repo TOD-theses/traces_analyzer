@@ -1,8 +1,9 @@
 from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
+from tests.test_utils.test_utils import _test_mem, _test_stack
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.instructions.instructions import CALL, LOG1, POP, STOP
+from traces_analyzer.parser.instructions.instructions import CALL, JUMPDEST, LOG1, POP, STOP
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -25,18 +26,16 @@ def test_instruction_input_analyzer():
         make_instruction(),
         make_instruction(
             CALL,
-            stack=list(
-                reversed(
-                    [
-                        HexString("0x1234"),
-                        HexString("0xchild"),
-                        first_call_value,
-                        HexString("0x0"),
-                        HexString("0x0"),
-                        HexString("0x0"),
-                        HexString("0x0"),
-                    ]
-                )
+            stack=_test_stack(
+                [
+                    HexString("0x1234"),
+                    HexString("0xchild"),
+                    first_call_value,
+                    HexString("0x0"),
+                    HexString("0x0"),
+                    HexString("0x0"),
+                    HexString("0x0"),
+                ]
             ),
         ),
         make_instruction(STOP, call_context=child_context),
@@ -45,21 +44,19 @@ def test_instruction_input_analyzer():
         make_instruction(),
         make_instruction(
             CALL,
-            stack=list(
-                reversed(
-                    [
-                        HexString("0x1234"),
-                        HexString("0xchild"),
-                        second_call_value,
-                        HexString("0x0"),
-                        HexString("0x0"),
-                        HexString("0x0"),
-                        HexString("0x0"),
-                    ]
-                )
+            stack=_test_stack(
+                [
+                    HexString("0x1234"),
+                    HexString("0xchild"),
+                    second_call_value,
+                    HexString("0x0"),
+                    HexString("0x0"),
+                    HexString("0x0"),
+                    HexString("0x0"),
+                ]
             ),
         ),
-        make_instruction(POP, call_context=child_context),
+        make_instruction(JUMPDEST, call_context=child_context),
         make_instruction(STOP, call_context=child_context),
     ]
 
@@ -83,7 +80,7 @@ def test_instruction_input_analyzer():
     only_first_executions, only_second_executions = feature_extractor.get_instructions_only_executed_by_one_trace()
     assert only_first_executions == []
     assert len(only_second_executions) == 1
-    assert only_second_executions[0].opcode == POP.opcode
+    assert only_second_executions[0].opcode == JUMPDEST.opcode
 
 
 def test_instruction_input_analyzer_reports_stack_differences():
@@ -91,12 +88,12 @@ def test_instruction_input_analyzer_reports_stack_differences():
     memory_two = "0000000000000000000000000000000000000000000000000000000022220000"
     mem_offset = hex(28)
     mem_size = hex(2)
-    common_stack = list(reversed(["0x0", "0xchild", "0x0", mem_offset, mem_size, "0x0", "0x0"]))
+    common_stack = ["0x0", "0xchild", "0x0", mem_offset, mem_size, "0x0", "0x0"]
 
     feature_extractor = InstructionDifferencesFeatureExtractor()
     feature_extractor.on_instructions(
-        make_instruction(CALL, stack=common_stack, memory=memory_one),
-        make_instruction(CALL, stack=common_stack, memory=memory_two),
+        make_instruction(CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_one)),
+        make_instruction(CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_two)),
     )
 
     # check if it detected the different CALL inputs
@@ -116,12 +113,12 @@ def test_instruction_input_analyzer_reports_log_changes():
     memory_two = "0000000000000000000000000000000000000000000000000000000022220000"
     mem_offset = hex(28)
     mem_size = hex(2)
-    common_stack = list(reversed([mem_offset, mem_size, topic]))
+    common_stack = [mem_offset, mem_size, topic]
 
     feature_extractor = InstructionDifferencesFeatureExtractor()
     feature_extractor.on_instructions(
-        make_instruction(LOG1, stack=common_stack, memory=memory_one),
-        make_instruction(LOG1, stack=common_stack, memory=memory_two),
+        make_instruction(LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_one)),
+        make_instruction(LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_two)),
     )
 
     # check if it detected the different CALL inputs

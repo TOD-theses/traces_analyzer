@@ -9,7 +9,7 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.information_flow.information_flow_dsl import mem_range, mem_write, stack_arg, stack_push
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
-from traces_analyzer.parser.storage.storage import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,

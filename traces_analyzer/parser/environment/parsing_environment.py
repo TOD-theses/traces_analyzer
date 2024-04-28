@@ -1,26 +1,36 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.storage.storage import MemoryStorage, StackStorage
+from traces_analyzer.parser.storage.memory import Memory
+from traces_analyzer.parser.storage.stack import Stack
+from traces_analyzer.parser.storage.storage import ContextSpecificStorage
 from traces_analyzer.utils.hexstring import HexString
 
 
-@dataclass
 class ParsingEnvironment:
-    current_call_context: CallContext
-    stack: StackStorage = field(default_factory=StackStorage)
-    memory: MemoryStorage = field(default_factory=MemoryStorage)
-    current_step_index = 0
+    def __init__(self, root_call_context: CallContext) -> None:
+        self.current_call_context = root_call_context
+        self.current_step_index = 0
+        self._stack_storage = ContextSpecificStorage(Stack)
+        self._memory_storage = ContextSpecificStorage(Memory)
 
     def on_call_enter(self, new_call_context: CallContext):
         self.current_call_context = new_call_context
-        self.stack.on_call_enter()
-        self.memory.on_call_enter()
+        self._stack_storage.on_call_enter()
+        self._memory_storage.on_call_enter()
 
     def on_call_exit(self, new_call_context: CallContext):
         self.current_call_context = new_call_context
-        self.stack.on_call_exit()
-        self.memory.on_call_exit()
+        self._stack_storage.on_call_exit()
+        self._memory_storage.on_call_exit()
+
+    @property
+    def stack(self) -> Stack:
+        return self._stack_storage.current()
+
+    @property
+    def memory(self) -> Memory:
+        return self._memory_storage.current()
 
 
 @dataclass

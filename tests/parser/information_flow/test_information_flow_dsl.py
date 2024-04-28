@@ -13,7 +13,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     stack_push,
     stack_set,
 )
-from traces_analyzer.parser.storage.storage import HexStringStorageValue, HexStringStorageValue, StorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import StorageValue
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 

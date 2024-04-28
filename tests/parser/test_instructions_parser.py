@@ -15,7 +15,7 @@ from traces_analyzer.parser.instructions_parser import (
     parse_instructions,
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.storage.storage import HexStringStorageValue, HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -80,7 +80,7 @@ def test_parser_builds_call_tree():
     events = [
         TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], memory=memory, depth=1),
         TraceEvent(pc=2, op=CALL.opcode, stack=stack, memory=memory, depth=1),
-        TraceEvent(pc=3, op=POP.opcode, stack=[HexString("0x0")], memory="", depth=2),
+        TraceEvent(pc=3, op=JUMPDEST.opcode, stack=[], memory="", depth=2),
     ]
     parsing_info = TransactionParsingInfo(
         sender=_test_addr("0xsender"),
@@ -98,11 +98,13 @@ def test_parser_builds_call_tree():
 
 def test_parser_sets_step_indexes():
     events = [
-        TraceEvent(pc=1, op=POP.opcode, stack=[HexString("0x0"), HexString("0x0")], memory=None, depth=1),
-        TraceEvent(pc=2, op=POP.opcode, stack=[HexString("0x0")], memory=None, depth=1),
+        TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], memory=HexString(""), depth=1),
+        TraceEvent(pc=2, op=POP.opcode, stack=[HexString("0x0"), HexString("0x0")], memory=None, depth=1),
+        TraceEvent(pc=3, op=POP.opcode, stack=[HexString("0x0")], memory=None, depth=1),
     ]
 
-    pop_1, pop_2 = parse_instructions(get_parsing_info(verify_storages=False), events).instructions
+    jumpdest, pop_1, pop_2 = parse_instructions(get_parsing_info(verify_storages=False), events).instructions
 
-    assert pop_1.step_index == 0
-    assert pop_2.step_index == 1
+    assert jumpdest.step_index == 0
+    assert pop_1.step_index == 1
+    assert pop_2.step_index == 2

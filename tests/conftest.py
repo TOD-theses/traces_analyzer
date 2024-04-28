@@ -1,15 +1,13 @@
-from typing import Sequence
 from pytest import FixtureRequest, fixture
 from pathlib import Path
 import pytest
 import sys
 
+from tests.test_utils.test_utils import _test_mem, _test_stack
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import parse_instruction_io
 from traces_analyzer.parser.instructions.instructions import JUMPDEST, get_instruction_class
-from traces_analyzer.parser.environment.parsing_environment import ParsingEnvironment
-from traces_analyzer.parser.storage.storage import HexStringStorageValue, HexStringStorageValue
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -50,53 +48,35 @@ def make_instruction(
     type: type[Instruction] = JUMPDEST,
     pc=1,
     step_index=0,
-    stack=[],
-    memory="",
+    stack=_test_stack([]),
+    memory=_test_mem(""),
     stack_after=[],
     memory_after="",
     call_context=TEST_ROOT_CALLCONTEXT,
 ):
     # TODO: directly create instruction instead of parsing inputs/outputs from stack
-    assert (
-        len(memory) % 64 == 0 and len(memory_after) % 64 == 0
-    ), f"Memory must be a multiple of 64: {memory} / {memory_after}"
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.current_step_index = step_index
-    env.stack.push_all([HexStringStorageValue(HexString(value)) for value in reversed(stack)])
-    env.current_call_context = call_context
-    env.memory.set(0, HexStringStorageValue(HexString(memory)))
     stack_after = [HexString(val) for val in stack_after]
     memory_after = HexString(memory_after)
 
-    return _parse_instruction(env, type.opcode, pc, stack_after, memory_after)
+    name = opcode_to_name(type.opcode) or "UNKNOWN"
 
-
-def _parse_instruction(
-    env: ParsingEnvironment,
-    opcode: int,
-    program_counter: int,
-    next_stack: Sequence[HexString],
-    next_memory: HexString | None,
-) -> Instruction:
-    name = opcode_to_name(opcode) or "UNKNOWN"
-
-    cls = get_instruction_class(opcode) or Instruction
+    cls = get_instruction_class(type.opcode) or Instruction
     io_spec = cls.io_specification
 
     io = parse_instruction_io(
         # TODO
         io_spec,  # type: ignore
-        env.stack.current_stack(),
-        env.memory,
-        next_stack,
-        next_memory,
+        stack,
+        memory,
+        stack_after,
+        memory_after,
     )
     return cls(
-        opcode,
+        type.opcode,
         name,
-        program_counter,
-        env.current_step_index,
-        env.current_call_context,
+        pc,
+        step_index,
+        call_context,
         io.inputs_stack,
         io.outputs_stack,
         io.input_memory,

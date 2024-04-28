@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.storage.storage import HexStringStorageValue, MemoryRange, StackIndex, StorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue, StorageValue
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,
@@ -161,7 +161,7 @@ class StackArgNode(FlowNodeWithResult):
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> FlowWithResult:
         index = args[0].result.get_hexstring().as_int()
-        result = env.stack.get(StackIndex(index))
+        result = env.stack.peek(index)
 
         return FlowWithResult(
             accesses=StorageAccesses(
@@ -212,7 +212,7 @@ class MemRangeNode(FlowNodeWithResult):
     ) -> FlowWithResult:
         offset = args[0].result.get_hexstring().as_int()
         size = args[1].result.get_hexstring().as_int()
-        result = env.memory.get(MemoryRange(offset, size))
+        result = env.memory.get(offset, size)
         mem_access = MemoryAccess(offset, result)
 
         return FlowWithResult(

@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.storage.storage import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
 
 
 @dataclass

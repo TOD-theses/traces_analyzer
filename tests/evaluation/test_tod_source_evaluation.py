@@ -1,4 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
+from tests.test_utils.test_utils import _test_stack
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.parser.instructions.instructions import SLOAD
@@ -7,8 +8,8 @@ from traces_analyzer.parser.instructions.instructions import SLOAD
 def test_tod_source_evaluation_found():
     tod_source = TODSource(
         found=True,
-        instruction_one=make_instruction(SLOAD, pc=1234, stack=["0x1122"], stack_after=["0x10"]),
-        instruction_two=make_instruction(SLOAD, pc=1234, stack=["0x1122"], stack_after=["0x20"]),
+        instruction_one=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]),
+        instruction_two=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]),
     )
 
     evaluation = TODSourceEvaluation(tod_source)

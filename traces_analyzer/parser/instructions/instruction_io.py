@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from traces_analyzer.parser.storage.storage import MemoryStorage
+from traces_analyzer.parser.storage.memory import Memory
+from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -27,13 +28,13 @@ class InstructionIOSpec:
 
 def parse_instruction_io(
     spec: InstructionIOSpec,
-    stack: Sequence[HexString],
-    memory: MemoryStorage,
+    stack: Stack,
+    memory: Memory,
     next_stack: Sequence[HexString],
     next_mem: HexString | None,
 ) -> InstructionIO:
     inputs_stack = parse_stack_arg(stack, last_n_args=spec.stack_input_count)
-    outputs_stack = parse_stack_arg(next_stack, last_n_args=spec.stack_output_count)
+    outputs_stack = parse_next_stack_arg(next_stack, last_n_args=spec.stack_output_count)
     input_memory = parse_memory_via_stack_args(
         memory.get_all().get_hexstring(), inputs_stack, spec.memory_input_offset_arg, spec.memory_input_size_arg
     )
@@ -49,7 +50,14 @@ def parse_instruction_io(
     )
 
 
-def parse_stack_arg(stack: Sequence[HexString], last_n_args: int) -> tuple[HexString, ...]:
+def parse_stack_arg(stack: Stack, last_n_args: int) -> tuple[HexString, ...]:
+    if last_n_args == 0:
+        return tuple()
+
+    return tuple(stack.peek(i).get_hexstring() for i in range(last_n_args))
+
+
+def parse_next_stack_arg(stack: Sequence[HexString], last_n_args: int) -> tuple[HexString, ...]:
     if last_n_args == 0:
         return tuple()
 
@@ -72,7 +80,6 @@ def parse_memory_via_stack_args(
 
 
 def parse_memory_arg(memory: HexString | None, mem_offset: int, mem_size: int) -> HexString | None:
-    # TODO: use EventMemory class instead of passing str|None
     if memory is None:
         return None
     return memory[2 * mem_offset : 2 * (mem_offset + mem_size)]

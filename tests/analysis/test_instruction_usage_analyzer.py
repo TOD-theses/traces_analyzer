@@ -1,5 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_addr
+from tests.test_utils.test_utils import _test_addr, _test_stack
 from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instructions import POP, PUSH0, RETURN, REVERT, STOP
@@ -15,10 +15,10 @@ def test_instruction_usage_analyzer():
     trace = [
         make_instruction(PUSH0),
         make_instruction(STOP),
-        make_instruction(REVERT, stack=["0x0", "0x0"]),
+        make_instruction(REVERT, stack=_test_stack(["0x0", "0x0"])),
         make_instruction(PUSH0, call_context=child_context),
-        make_instruction(POP, call_context=child_context),
-        make_instruction(RETURN, stack=["0x0", "0x0"], call_context=child_context),
+        make_instruction(POP, stack=_test_stack(["0x0"]), call_context=child_context),
+        make_instruction(RETURN, stack=_test_stack(["0x0", "0x0"]), call_context=child_context),
     ]
 
     feature_extractor = InstructionUsagesFeatureExtractor()
