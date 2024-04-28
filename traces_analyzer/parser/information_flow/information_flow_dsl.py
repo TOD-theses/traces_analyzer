@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.storage.storage_value import HexStringStorageValue, StorageValue
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,
@@ -25,7 +25,7 @@ class Flow:
 
 @dataclass(frozen=True)
 class FlowWithResult(Flow):
-    result: StorageValue
+    result: StorageByteGroup
 
 
 @dataclass
@@ -149,7 +149,7 @@ class ConstNode(FlowNodeWithResult):
         return FlowWithResult(
             accesses=StorageAccesses(),
             writes=StorageWrites(),
-            result=HexStringStorageValue(self.hexstring),
+            result=StorageByteGroup.from_hexstring(self.hexstring, env.current_step_index),
         )
 
 
@@ -179,11 +179,7 @@ class StackPushNode(WritingFlowNode):
     def _get_writes(
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
-        # TODO: storage value conversion
-        # TODO: remove 0x for all stack values everywhere and use common class
-        hex_value = "0x" + args[0].result.get_hexstring()
-        value = HexStringStorageValue(hex_value)
-        return StorageWrites(stack_pushes=[StackPush(value)])
+        return StorageWrites(stack_pushes=[StackPush(args[0].result)])
 
 
 @dataclass
@@ -193,13 +189,9 @@ class StackSetNode(WritingFlowNode):
     def _get_writes(
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
-        # TODO: storage value conversion
-        # TODO: remove 0x for all stack values everywhere and use common class
         index = args[0].result.get_hexstring().as_int()
-        hex_value = "0x" + args[1].result.get_hexstring()
-        value = HexStringStorageValue(hex_value)
         return StorageWrites(
-            stack_sets=[StackSet(index, value)],
+            stack_sets=[StackSet(index, args[1].result)],
         )
 
 
@@ -212,7 +204,7 @@ class MemRangeNode(FlowNodeWithResult):
     ) -> FlowWithResult:
         offset = args[0].result.get_hexstring().as_int()
         size = args[1].result.get_hexstring().as_int()
-        result = env.memory.get(offset, size)
+        result = env.memory.get(offset, size, env.current_step_index)
         mem_access = MemoryAccess(offset, result)
 
         return FlowWithResult(
@@ -230,11 +222,7 @@ class MemWriteNode(WritingFlowNode):
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
         offset = args[0].result.get_hexstring().as_int()
-        # TODO: how should we convert the storage types?
-        # Or should we unify it so we don't need conversion?
-        value = HexStringStorageValue(args[1].result.get_hexstring())
-
-        return StorageWrites(memory=(MemoryWrite(offset, value),))
+        return StorageWrites(memory=(MemoryWrite(offset, args[1].result),))
 
 
 def as_node(node_or_value: FlowNodeWithResult | int | str) -> FlowNodeWithResult:

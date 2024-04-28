@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 from tests.conftest import TEST_ROOT_CALLCONTEXT
+from tests.test_utils.test_utils import _test_group
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     FlowNode,
@@ -13,8 +14,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     stack_push,
     stack_set,
 )
-from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
-from traces_analyzer.parser.storage.storage_value import StorageValue
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 
@@ -23,7 +24,7 @@ dummy_output_oracle = InstructionOutputOracle([], HexString(""), None)
 
 @dataclass
 class TestFlowNode(FlowNodeWithResult):
-    value: StorageValue
+    value: StorageByteGroup
 
     def _get_result(
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -35,14 +36,10 @@ class TestFlowNode(FlowNodeWithResult):
         )
 
 
-def _test_value(value: str) -> HexStringStorageValue:
-    return HexStringStorageValue(HexString(value))
-
-
-def _test_node(value: StorageValue | str) -> FlowNode:
-    if isinstance(value, StorageValue):
+def _test_node(value: StorageByteGroup | str) -> FlowNode:
+    if isinstance(value, StorageByteGroup):
         return TestFlowNode(arguments=(), value=value)
-    return TestFlowNode(arguments=(), value=_test_value(value))
+    return TestFlowNode(arguments=(), value=_test_group(value))
 
 
 def test_noop():
@@ -56,7 +53,7 @@ def test_noop():
 
 def test_stack_arg_const():
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push(_test_value("10"))
+    env.stack.push(_test_group("10"))
 
     flow = stack_arg(0).compute(env, dummy_output_oracle)
 
@@ -69,7 +66,7 @@ def test_stack_arg_const():
 
 def test_stack_arg_node():
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push(_test_value("10"))
+    env.stack.push(_test_group("10"))
 
     flow = stack_arg(_test_node("00")).compute(env, dummy_output_oracle)
 
@@ -78,21 +75,21 @@ def test_stack_arg_node():
 
 def test_mem_range_const():
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.memory.set(0, _test_value("00112233445566778899"))
+    env.memory.set(0, _test_group("00112233445566778899"), -1)
 
     flow = mem_range(2, 4).compute(env, dummy_output_oracle)
 
     assert flow.result.get_hexstring() == "22334455"
     assert len(flow.accesses.memory) == 1
     assert flow.accesses.memory[0].offset == 2
-    assert flow.accesses.memory[0].value == _test_value("22334455")
+    assert flow.accesses.memory[0].value == _test_group("22334455")
 
 
 def test_mem_range_stack_args():
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push(_test_value("4"))
-    env.stack.push(_test_value("2"))
-    env.memory.set(0, _test_value("00112233445566778899"))
+    env.stack.push(_test_group("4"))
+    env.stack.push(_test_group("2"))
+    env.memory.set(0, _test_group("00112233445566778899"), -1)
 
     flow = mem_range(stack_arg(0), stack_arg(1)).compute(env, dummy_output_oracle)
 

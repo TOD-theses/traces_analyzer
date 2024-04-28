@@ -43,3 +43,15 @@ def test_hexstring_last_bytes():
 
 def test_hexstring_last_bytes_padding():
     assert "00abcd" == HexString("abcd").as_size(3)
+
+
+def test_hexstring_iter_bytes_empty():
+    assert [] == list(HexString("").iter_bytes())
+
+
+def test_hexstring_iter_bytes_single():
+    assert ["aa"] == list(HexString("aa").iter_bytes())
+
+
+def test_hexstring_iter_bytes():
+    assert ["ab", "cd", "ef"] == list(HexString("abcdef").iter_bytes())

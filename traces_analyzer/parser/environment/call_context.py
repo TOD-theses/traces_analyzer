@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import Self
 
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ class CallContext:
     code_address: HexString
     storage_address: HexString
     initiating_instruction: CallInstruction | CREATE | CREATE2 | None = field(default=None, compare=False, hash=False)
-    return_data: HexString | None = None
+    return_data: StorageByteGroup | None = None
     reverted: bool = False
     halt_type: HaltType | None = None
     is_contract_initialization: bool = False

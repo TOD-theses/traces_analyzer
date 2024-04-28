@@ -1,5 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_addr
+from tests.test_utils.test_utils import _test_addr, _test_group
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instructions import (
@@ -15,7 +15,7 @@ from traces_analyzer.parser.instructions_parser import (
     parse_instructions,
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -58,8 +58,8 @@ def test_call_inputs_memory_parsing():
     )
 
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([HexStringStorageValue(value) for value in reversed(stack)])
-    env.memory.set(0, HexStringStorageValue(memory))
+    env.stack.push_all([_test_group(value) for value in reversed(stack)])
+    env.memory.set(0, _test_group(memory), -1)
 
     instruction_metadata = InstructionMetadata(CALL.opcode, 0x1234)
     output_oracle = InstructionOutputOracle([], "", None)

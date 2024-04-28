@@ -1,4 +1,5 @@
 from collections import UserString
+from collections.abc import Iterable
 
 
 class HexString(UserString):
@@ -22,6 +23,12 @@ class HexString(UserString):
         if not n:
             return self[0:0]
         return self[-2 * n :].rjust(2 * n, "0")
+
+    def iter_bytes(self) -> Iterable["HexString"]:
+        if not len(self):
+            return
+        for i in range(0, len(self), 2):
+            yield self[i : i + 2]
 
     def __int__(self) -> int:
         return int(self.data, 16)

@@ -9,7 +9,7 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.information_flow.information_flow_dsl import mem_range, mem_write, stack_arg, stack_push
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
-from traces_analyzer.parser.storage.storage_value import HexStringStorageValue
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,
@@ -58,8 +58,8 @@ class CALL(CallInstruction):
         # TODO: we should probably add an assert here for return_data is not None
         if size == 0 or not return_data:
             return StorageWrites()
-        return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return_data_slice = return_data[:size]
+        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
         """Writes that occur on a call to a precompiled contract or an EOA"""
@@ -67,7 +67,9 @@ class CALL(CallInstruction):
         size = self.stack_inputs[6].as_int()
         return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
         return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return StorageWrites(
+            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+        )
 
 
 @dataclass(frozen=True, repr=False)
@@ -89,15 +91,17 @@ class STATICCALL(CallInstruction):
         return_data = child_call_context.return_data
         if size == 0 or not return_data:
             return StorageWrites()
-        return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return_data_slice = return_data[:size]
+        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
         offset = self.stack_inputs[4].as_int()
         size = self.stack_inputs[5].as_int()
         return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
         return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return StorageWrites(
+            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+        )
 
 
 @dataclass(frozen=True, repr=False)
@@ -121,7 +125,7 @@ class DELEGATECALL(CallInstruction):
         if size == 0 or not return_data:
             return StorageWrites()
         return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     @override
     def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
@@ -129,7 +133,9 @@ class DELEGATECALL(CallInstruction):
         size = self.stack_inputs[5].as_int()
         return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
         return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return StorageWrites(
+            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+        )
 
 
 @dataclass(frozen=True, repr=False)
@@ -151,8 +157,8 @@ class CALLCODE(CallInstruction):
         return_data = child_call_context.return_data
         if size == 0 or not return_data:
             return StorageWrites()
-        return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return_data_slice = return_data[:size]
+        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     @override
     def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
@@ -160,7 +166,9 @@ class CALLCODE(CallInstruction):
         size = self.stack_inputs[6].as_int()
         return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
         return_data_slice = return_data[: size * 2]
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(return_data_slice))])
+        return StorageWrites(
+            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+        )
 
 
 def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
@@ -241,7 +249,9 @@ class CALLDATACOPY(Instruction):
     def get_writes(self) -> StorageWrites:
         offset = self.stack_inputs[0].as_int()
         assert self.memory_output is not None, f"CALLDATACOPY with None memory output: {self}"
-        return StorageWrites(memory=[MemoryWrite(offset, HexStringStorageValue(self.memory_output))])
+        return StorageWrites(
+            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(self.memory_output))]
+        )
 
 
 CODESIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
@@ -263,7 +273,11 @@ class CODECOPY(Instruction):
     def get_writes(self) -> StorageWrites:
         assert self.memory_output is not None, f"Tried to CODECOPY but no memory output: {self}"
         return StorageWrites(
-            memory=[MemoryWrite(self.stack_inputs[0].as_int(), HexStringStorageValue(self.memory_output))]
+            memory=[
+                MemoryWrite(
+                    self.stack_inputs[0].as_int(), StorageByteGroup.deprecated_from_hexstring(self.memory_output)
+                )
+            ]
         )
 
 
@@ -283,7 +297,11 @@ class EXTCODECOPY(Instruction):
     def get_writes(self) -> StorageWrites:
         assert self.memory_output is not None, f"Tried to EXTCODECOPY but no memory output: {self}"
         return StorageWrites(
-            memory=[MemoryWrite(self.stack_inputs[1].as_int(), HexStringStorageValue(self.memory_output))]
+            memory=[
+                MemoryWrite(
+                    self.stack_inputs[1].as_int(), StorageByteGroup.deprecated_from_hexstring(self.memory_output)
+                )
+            ]
         )
 
 
@@ -308,7 +326,11 @@ class RETURNDATACOPY(Instruction):
     def get_writes(self) -> StorageWrites:
         assert self.memory_output is not None, f"Tried to RETURNDATACOPY but no memory output: {self}"
         return StorageWrites(
-            memory=[MemoryWrite(self.stack_inputs[0].as_int(), HexStringStorageValue(self.memory_output))]
+            memory=[
+                MemoryWrite(
+                    self.stack_inputs[0].as_int(), StorageByteGroup.deprecated_from_hexstring(self.memory_output)
+                )
+            ]
         )
 
 
@@ -353,7 +375,12 @@ class MSTORE8(Instruction):
     @override
     def get_writes(self) -> StorageWrites:
         return StorageWrites(
-            memory=[MemoryWrite(self.stack_inputs[0].as_int(), HexStringStorageValue(self.stack_inputs[1].as_size(1)))]
+            memory=[
+                MemoryWrite(
+                    self.stack_inputs[0].as_int(),
+                    StorageByteGroup.deprecated_from_hexstring(self.stack_inputs[1].as_size(1)),
+                )
+            ]
         )
 
 
@@ -383,13 +410,17 @@ class MCOPY(Instruction):
     def get_accesses(self) -> StorageAccesses:
         offset = self.stack_inputs[1].as_int()
         assert self.memory_input is not None, f"Tried to MCOPY but no memory input: {self}"
-        return StorageAccesses(memory=[MemoryAccess(offset, HexStringStorageValue(self.memory_input))])
+        return StorageAccesses(
+            memory=[MemoryAccess(offset, StorageByteGroup.deprecated_from_hexstring(self.memory_input))]
+        )
 
     @override
     def get_writes(self) -> StorageWrites:
         dest_offset = self.stack_inputs[0].as_int()
         assert self.memory_input is not None, f"Tried to MCOPY but no memory input: {self}"
-        return StorageWrites(memory=[MemoryWrite(dest_offset, HexStringStorageValue(self.memory_input))])
+        return StorageWrites(
+            memory=[MemoryWrite(dest_offset, StorageByteGroup.deprecated_from_hexstring(self.memory_input))]
+        )
 
 
 PUSH0 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
@@ -491,7 +522,7 @@ class RETURN(Instruction):
     def get_writes(self) -> StorageWrites:
         assert self.memory_input is not None, f"Tried to RETURN but memory input was None: {self}"
         return StorageWrites(
-            return_data=ReturnWrite(HexStringStorageValue(self.memory_input)),
+            return_data=ReturnWrite(StorageByteGroup.deprecated_from_hexstring(self.memory_input)),
         )
 
 
@@ -502,7 +533,7 @@ class REVERT(Instruction):
     def get_writes(self) -> StorageWrites:
         assert self.memory_input is not None, f"Tried to REVERT but memory input was None: {self}"
         return StorageWrites(
-            return_data=ReturnWrite(HexStringStorageValue(self.memory_input)),
+            return_data=ReturnWrite(StorageByteGroup.deprecated_from_hexstring(self.memory_input)),
         )
 
 
