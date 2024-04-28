@@ -1,4 +1,5 @@
 from traces_analyzer.parser.events_parser import parse_events
+from traces_analyzer.utils.hexstring import HexString
 
 
 def test_events_parser():
@@ -20,13 +21,13 @@ def test_events_parser():
 
     assert events[1].op == 96
     assert events[1].pc == 2
-    assert events[1].stack == ["80"]
+    assert events[1].stack == [HexString("80").as_size(32)]
     assert events[1].memory == ""
     assert events[1].depth == 1
 
     assert events[2].op == 82
     assert events[2].pc == 4
-    assert events[2].stack == ["80", "40"]
+    assert events[2].stack == [HexString("80").as_size(32), HexString("40").as_size(32)]
     assert events[2].memory == ""
     assert events[2].depth == 1
 
