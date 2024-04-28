@@ -97,6 +97,7 @@ class TracerEVM:
         self.env.current_step_index += 1
         self._update_storages(instruction, output_oracle)
         self._update_call_context(instruction, output_oracle)
+        self._apply_stack_oracle(output_oracle)
 
         if self._should_verify_storages:
             self._verify_storage(instruction, output_oracle)
@@ -104,11 +105,6 @@ class TracerEVM:
         return instruction
 
     def _update_storages(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
-        # at least currently, we always overwrite the stack with the oracle
-        # in the future, we should use the instructions stack outputs instead (pops and pushes)
-        self.env.stack.clear()
-        self.env.stack.push_all([HexStringStorageValue(val) for val in reversed(output_oracle.stack)])
-
         self._apply_storage_writes(instruction.get_writes(), instruction, output_oracle)
         if isinstance(instruction, CallInstruction):
             self._apply_storage_writes(
@@ -127,6 +123,12 @@ class TracerEVM:
             if call is not None:
                 return_writes = call.get_return_writes(current_call_context)
                 self._apply_storage_writes(return_writes, call, output_oracle)
+
+    def _apply_stack_oracle(self, output_oracle: InstructionOutputOracle):
+        # at least currently, we always overwrite the stack with the oracle
+        # in the future, we should use the instructions stack outputs instead (pops and pushes)
+        self.env.stack.clear()
+        self.env.stack.push_all([HexStringStorageValue(val) for val in reversed(output_oracle.stack)])
 
     def _apply_storage_accesses(self, storage_accesses: StorageAccesses):
         for mem_access in storage_accesses.memory:
@@ -158,6 +160,15 @@ class TracerEVM:
                 f"The environments memory does not match the output_oracles memory after {instruction}:\n"
                 f"Environment: {memory}\n"
                 f"Oracle:      {oracle_memory}"
+            )
+        stack = [x.get_hexstring().as_size(32) for x in reversed(self.env.stack.get_all())]
+        oracle_stack = [x.as_size(32) for x in output_oracle.stack]
+
+        if stack != oracle_stack:
+            raise Exception(
+                f"The environments stack does not match the output_oracles stack after {instruction}:\n"
+                f"Environment: {stack}\n"
+                f"Oracle:      {oracle_stack}"
             )
 
 
