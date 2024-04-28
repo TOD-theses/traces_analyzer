@@ -23,7 +23,7 @@ dummy_output_oracle = InstructionOutputOracle([], HexString(""), None)
 
 
 @dataclass
-class TestFlowNode(FlowNodeWithResult):
+class _TestFlowNode(FlowNodeWithResult):
     value: StorageByteGroup
 
     def _get_result(
@@ -38,8 +38,8 @@ class TestFlowNode(FlowNodeWithResult):
 
 def _test_node(value: StorageByteGroup | str) -> FlowNode:
     if isinstance(value, StorageByteGroup):
-        return TestFlowNode(arguments=(), value=value)
-    return TestFlowNode(arguments=(), value=_test_group(value))
+        return _TestFlowNode(arguments=(), value=value)
+    return _TestFlowNode(arguments=(), value=_test_group(value))
 
 
 def test_noop():

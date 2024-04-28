@@ -1,3 +1,4 @@
+import json
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from tests.test_utils.test_utils import _test_stack
 from traces_analyzer.features.extractors.tod_source import TODSource
@@ -21,7 +22,7 @@ def test_tod_source_evaluation_found():
             "found": True,
             "source": {
                 "location": {
-                    "address": TEST_ROOT_CALLCONTEXT.code_address,
+                    "address": TEST_ROOT_CALLCONTEXT.code_address.with_prefix(),
                     "pc": 1234,
                 },
                 "instruction": {
@@ -35,6 +36,18 @@ def test_tod_source_evaluation_found():
 
     assert "TOD source" in evaluation_str
     assert "SLOAD" in evaluation_str
+
+
+def test_tod_source_serializable():
+    tod_source = TODSource(
+        found=True,
+        instruction_one=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]),
+        instruction_two=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]),
+    )
+
+    evaluation = TODSourceEvaluation(tod_source)
+
+    json.dumps(evaluation.dict_report())
 
 
 def test_tod_source_not_found():

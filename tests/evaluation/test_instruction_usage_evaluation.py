@@ -1,3 +1,4 @@
+import json
 from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -42,3 +43,16 @@ def test_instruction_usage_evaluation():
     assert "0xchild" in evaluation_str
     assert opcode_to_name(0x5) in evaluation_str
     assert opcode_to_name(0x6) not in evaluation_str
+
+
+def test_instruction_usage_evaluation_serializable():
+    opcodes = {
+        "0xroot": {0x1, 0x2, 0x3},
+    }
+
+    evaluation = InstructionUsageEvaluation(
+        opcodes_per_contract_one=opcodes,
+        opcodes_per_contract_two=opcodes,
+    )
+
+    json.dumps(evaluation.dict_report())

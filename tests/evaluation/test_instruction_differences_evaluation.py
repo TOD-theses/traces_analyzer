@@ -1,3 +1,4 @@
+import json
 from tests.conftest import TEST_ROOT_CALLCONTEXT
 from tests.test_utils.test_utils import _test_addr
 from traces_analyzer.features.extractors.instruction_differences import (
@@ -9,6 +10,7 @@ from traces_analyzer.evaluation.instruction_differences_evaluation import Instru
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CALL, SLOAD
+from traces_analyzer.utils.hexstring import HexString
 
 
 def test_instruction_differences_evaluation():
@@ -19,16 +21,32 @@ def test_instruction_differences_evaluation():
             program_counter=5,
             opcode=CALL.opcode,
             instruction_one=CALL(
-                CALL.opcode, "CALL", 5, 0, call_context, ("val_1", "val_2", "val_3"), (), "1111", None
+                CALL.opcode,
+                "CALL",
+                5,
+                0,
+                call_context,
+                (HexString("val_1"), HexString("val_2"), HexString("val_3")),
+                (),
+                HexString("1111"),
+                None,
             ),
             instruction_two=CALL(
-                CALL.opcode, "CALL", 5, 0, call_context, ("val_1", "val_2_x", "val_3_x"), (), "2222", None
+                CALL.opcode,
+                "CALL",
+                5,
+                0,
+                call_context,
+                (HexString("val_1"), HexString("val_2_x"), HexString("val_3_x")),
+                (),
+                HexString("2222"),
+                None,
             ),
             stack_input_changes=[
-                StackInputChange(index=1, first_value="val_2", second_value="val_2_x"),
-                StackInputChange(index=2, first_value="val_3", second_value="val_3_x"),
+                StackInputChange(index=1, first_value=HexString("val_2"), second_value=HexString("val_2_x")),
+                StackInputChange(index=2, first_value=HexString("val_3"), second_value=HexString("val_3_x")),
             ],
-            memory_input_change=MemoryInputChange("1111", "2222"),
+            memory_input_change=MemoryInputChange(HexString("1111"), HexString("2222")),
         )
     ]
     only_first = [
@@ -40,8 +58,8 @@ def test_instruction_differences_evaluation():
             call_context=CallContext(
                 None, "", 1, _test_addr("0xsender"), _test_addr("0xtest"), _test_addr("0xtest"), False, None, False
             ),
-            stack_inputs=("0xkey",),
-            stack_outputs=("0xval",),
+            stack_inputs=(HexString("0xkey"),),
+            stack_outputs=(HexString("0xval"),),
             memory_input=None,
             memory_output=None,
         )
@@ -68,29 +86,29 @@ def test_instruction_differences_evaluation():
                     },
                     "inputs": [
                         {
-                            "stack": ("val_1", "val_2", "val_3"),
-                            "memory": "1111",
+                            "stack": ("0xval_1", "0xval_2", "0xval_3"),
+                            "memory": "0x1111",
                         },
                         {
-                            "stack": ("val_1", "val_2_x", "val_3_x"),
-                            "memory": "2222",
+                            "stack": ("0xval_1", "0xval_2_x", "0xval_3_x"),
+                            "memory": "0x2222",
                         },
                     ],
                     "stack_input_changes": [
                         {
                             "index": 1,
-                            "first_value": "val_2",
-                            "second_value": "val_2_x",
+                            "first_value": "0xval_2",
+                            "second_value": "0xval_2_x",
                         },
                         {
                             "index": 2,
-                            "first_value": "val_3",
-                            "second_value": "val_3_x",
+                            "first_value": "0xval_3",
+                            "second_value": "0xval_3_x",
                         },
                     ],
                     "memory_input_change": {
-                        "first_value": "1111",
-                        "second_value": "2222",
+                        "first_value": "0x1111",
+                        "second_value": "0x2222",
                     },
                 }
             ],
@@ -112,3 +130,6 @@ def test_instruction_differences_evaluation():
     evaluation_str = evaluation.cli_report()
 
     assert "Instruction differences" in evaluation_str
+
+    # check if it's serializable
+    json.dumps(evaluation_dict)
