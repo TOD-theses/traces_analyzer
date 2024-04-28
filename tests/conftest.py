@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import sys
 
-from tests.test_utils.test_utils import _test_mem, _test_stack
+from tests.test_utils.test_utils import _test_group, _test_mem, _test_stack
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import parse_instruction_io
@@ -40,7 +40,7 @@ def go_to_tmpdir(request):
 
 
 TEST_ROOT_CALLCONTEXT = CallContext(
-    None, HexString(""), 1, HexString("0"), HexString("0"), HexString("0"), None, None, False, None
+    None, HexString(""), 1, HexString("0"), HexString("0"), HexString("0"), None, _test_group(""), False, None
 )
 
 

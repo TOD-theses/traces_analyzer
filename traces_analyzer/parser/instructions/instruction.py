@@ -27,9 +27,13 @@ class Instruction:
     flow_spec: ClassVar[FlowSpec] = noop()
 
     def get_accesses(self) -> StorageAccesses:
+        if self.flow is not None:
+            return self.flow.accesses
         return StorageAccesses()
 
     def get_writes(self) -> StorageWrites:
+        if self.flow is not None:
+            return self.flow.writes
         return StorageWrites()
 
     def get_data(self) -> Mapping[str, object]:

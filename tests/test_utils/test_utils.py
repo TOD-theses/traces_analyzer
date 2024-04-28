@@ -14,8 +14,10 @@ def _test_stack(items: list[str]) -> Stack:
     return stack
 
 
-def _test_group(hexstring: str, step_index=1) -> StorageByteGroup:
-    return StorageByteGroup.from_hexstring(HexString(hexstring), step_index)
+def _test_group(hexstring: str | HexString, step_index=1) -> StorageByteGroup:
+    if isinstance(hexstring, str):
+        hexstring = HexString(hexstring)
+    return StorageByteGroup.from_hexstring(hexstring, step_index)
 
 
 def _test_mem(memory: str, step_index=1) -> Memory:

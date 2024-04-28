@@ -6,6 +6,7 @@ from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
     MemoryWrite,
+    ReturnDataAccess,
     ReturnWrite,
     StackAccess,
     StackPop,
@@ -59,13 +60,16 @@ class FlowNode(FlowSpec):
     def _merge_accesses(accesses: list[StorageAccesses]) -> StorageAccesses:
         memory_accesss: list[MemoryAccess] = []
         stack_accesses: list[StackAccess] = []
+        return_data_access: ReturnDataAccess | None = None
         for access in accesses:
             memory_accesss.extend(access.memory)
             stack_accesses.extend(access.stack)
+            return_data_access = return_data_access or access.return_data
 
         return StorageAccesses(
             stack=stack_accesses,
             memory=memory_accesss,
+            return_data=return_data_access,
         )
 
     @staticmethod
@@ -215,6 +219,87 @@ class MemRangeNode(FlowNodeWithResult):
 
 
 @dataclass
+class SizeNode(FlowNodeWithResult):
+    arguments: tuple[FlowNodeWithResult, FlowNodeWithResult]
+
+    def _get_result(
+        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> FlowWithResult:
+        value = args[0].result
+        size = args[1].result.get_hexstring().as_int()
+        if len(value) > size:
+            value = value[-size:]
+        elif len(value) < size:
+            missing_bytes = size - len(value)
+            padding = StorageByteGroup.from_hexstring(HexString("00" * missing_bytes), env.current_step_index)
+            value = padding + value
+
+        return FlowWithResult(
+            accesses=StorageAccesses(),
+            writes=StorageWrites(),
+            result=value,
+        )
+
+
+@dataclass
+class ReturnDataRangeNode(FlowNodeWithResult):
+    arguments: tuple[FlowNodeWithResult, FlowNodeWithResult]
+
+    def _get_result(
+        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> FlowWithResult:
+        offset = args[0].result.get_hexstring().as_int()
+        size = args[1].result.get_hexstring().as_int()
+        if size == 0:
+            return FlowWithResult(
+                accesses=StorageAccesses(),
+                writes=StorageWrites(),
+                result=StorageByteGroup(),
+            )
+        return_data = env.current_call_context.return_data
+        if len(return_data) < offset + size:
+            # should revert
+            result = StorageByteGroup()
+        else:
+            result = return_data[offset : offset + size]
+
+        return FlowWithResult(
+            accesses=StorageAccesses(return_data=ReturnDataAccess(offset, size, result)),
+            writes=StorageWrites(),
+            result=result,
+        )
+
+
+@dataclass
+class ReturnDataSizeNode(FlowNodeWithResult):
+    arguments: tuple[()]
+
+    def _get_result(
+        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> FlowWithResult:
+        return_data = env.current_call_context.return_data
+        size = len(return_data)
+
+        return FlowWithResult(
+            accesses=StorageAccesses(return_data=ReturnDataAccess(0, size, return_data)),
+            writes=StorageWrites(),
+            result=StorageByteGroup.from_hexstring(HexString(hex(size)).as_size(32), env.current_step_index),
+        )
+
+
+@dataclass
+class ReturnDataWriteNode(WritingFlowNode):
+    arguments: tuple[FlowNodeWithResult]
+
+    def _get_writes(
+        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        return StorageWrites(
+            return_data=ReturnWrite(args[0].result),
+        )
+
+
+@dataclass
 class MemWriteNode(WritingFlowNode):
     arguments: tuple[FlowNodeWithResult, FlowNodeWithResult]
 
@@ -251,6 +336,22 @@ def mem_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) 
 
 def mem_write(offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
     return MemWriteNode(arguments=(as_node(offset), as_node(value)))
+
+
+def to_size(value: FlowNodeWithResult, bytes_size: int) -> FlowNodeWithResult:
+    return SizeNode(arguments=(value, as_node(bytes_size)))
+
+
+def return_data_range(offset: FlowNodeWithResult, size: FlowNodeWithResult) -> FlowNodeWithResult:
+    return ReturnDataRangeNode(arguments=(offset, size))
+
+
+def return_data_write(value: FlowNodeWithResult) -> WritingFlowNode:
+    return ReturnDataWriteNode(arguments=(value,))
+
+
+def return_data_size() -> FlowNodeWithResult:
+    return ReturnDataSizeNode(arguments=())
 
 
 def noop() -> FlowSpec:

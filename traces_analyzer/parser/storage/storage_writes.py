@@ -51,7 +51,13 @@ class MemoryAccess(StorageAccess):
 
 @dataclass
 class ReturnWrite(StorageWrite):
-    # TODO: wrap it to allow information flow analysis
+    value: StorageByteGroup
+
+
+@dataclass
+class ReturnDataAccess(StorageAccess):
+    offset: int
+    size: int
     value: StorageByteGroup
 
 
@@ -68,3 +74,4 @@ class StorageWrites:
 class StorageAccesses:
     stack: Sequence[StackAccess] = ()
     memory: Sequence[MemoryAccess] = ()
+    return_data: ReturnDataAccess | None = None

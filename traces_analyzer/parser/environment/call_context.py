@@ -27,7 +27,7 @@ class CallContext:
     code_address: HexString
     storage_address: HexString
     initiating_instruction: CallInstruction | CREATE | CREATE2 | None = field(default=None, compare=False, hash=False)
-    return_data: StorageByteGroup | None = None
+    return_data: StorageByteGroup = field(default_factory=StorageByteGroup)
     reverted: bool = False
     halt_type: HaltType | None = None
     is_contract_initialization: bool = False

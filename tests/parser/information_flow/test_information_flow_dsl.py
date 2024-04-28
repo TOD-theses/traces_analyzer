@@ -10,13 +10,17 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     mem_range,
     mem_write,
     noop,
+    return_data_range,
+    return_data_size,
+    return_data_write,
     stack_arg,
     stack_push,
     stack_set,
+    to_size,
 )
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
+from traces_analyzer.parser.storage.storage_writes import ReturnDataAccess, ReturnWrite, StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 
 dummy_output_oracle = InstructionOutputOracle([], HexString(""), None)
@@ -143,3 +147,78 @@ def test_mem_write_const():
     assert len(flow.writes.memory) == 1
     assert flow.writes.memory[0].offset == 2
     assert flow.writes.memory[0].value.get_hexstring() == "22334455"
+
+
+def test_to_size_noop():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+
+    flow = to_size(_test_node("11223344"), 4).compute(env, dummy_output_oracle)
+
+    assert len(flow.result) == 4
+
+
+def test_to_size_increase():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+
+    flow = to_size(_test_node("1122"), 4).compute(env, dummy_output_oracle)
+
+    assert len(flow.result) == 4
+
+
+def test_to_size_decrease():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+
+    flow = to_size(_test_node("112233445566"), 4).compute(env, dummy_output_oracle)
+
+    assert len(flow.result) == 4
+
+
+def test_return_data_range_noop():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_call_context.return_data = _test_group("1234")
+
+    flow = return_data_range(_test_node("2"), _test_node("0")).compute(env, dummy_output_oracle)
+
+    assert len(flow.result) == 0
+    assert flow.accesses.return_data == None
+
+
+def test_return_data_range_if_not_set():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_call_context.return_data = _test_group("")
+
+    flow = return_data_range(_test_node("2"), _test_node("4")).compute(env, dummy_output_oracle)
+
+    assert len(flow.result) == 0
+    assert flow.accesses.return_data == ReturnDataAccess(2, 4, _test_group(""))
+
+
+def test_return_data_range():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_call_context.return_data = _test_group("11223344556677889900")
+
+    flow = return_data_range(_test_node("2"), _test_node("4")).compute(env, dummy_output_oracle)
+
+    assert len(flow.result) == 4
+    assert flow.result == _test_group("33445566")
+    assert flow.accesses.return_data == ReturnDataAccess(2, 4, _test_group("33445566"))
+
+
+def test_return_data_write():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+
+    flow = return_data_write(_test_node("11223344")).compute(env, dummy_output_oracle)
+
+    assert flow.writes.return_data == ReturnWrite(_test_group("11223344"))
+
+
+def test_return_data_size():
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_call_context.return_data = _test_group("11" * 40)
+
+    flow = return_data_size().compute(env, dummy_output_oracle)
+
+    assert flow.result.get_hexstring().as_int() == 40
+    assert flow.accesses.return_data.offset == 0
+    assert flow.accesses.return_data.size == 40
+    assert flow.accesses.return_data.value.get_hexstring() == HexString("11" * 40)

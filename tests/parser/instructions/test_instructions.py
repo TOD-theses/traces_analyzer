@@ -1,5 +1,4 @@
-from typing import Sequence, TypeVar, cast
-import pytest
+from typing import TypeVar, cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT
 from tests.test_utils.test_utils import _test_group
 from traces_analyzer.parser.instructions.instruction import Instruction
@@ -7,6 +6,7 @@ from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
+from traces_analyzer.parser.storage.storage_writes import MemoryAccess
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -211,8 +211,8 @@ _instruction_stack_io_counts = [
     (GASPRICE, 0, 1),
     (EXTCODESIZE, 1, 1),
     (EXTCODECOPY, 4, 0),
-    (RETURNDATASIZE, 0, 1),
-    (RETURNDATACOPY, 3, 0),
+    #  (RETURNDATASIZE, 0, 1),
+    #  (RETURNDATACOPY, 3, 0),
     (EXTCODEHASH, 1, 1),
     (BLOCKHASH, 1, 1),
     (COINBASE, 0, 1),
@@ -228,7 +228,7 @@ _instruction_stack_io_counts = [
     (POP, 1, 0),
     # (MLOAD, 1, 1),
     # (MSTORE, 2, 0),
-    (MSTORE8, 2, 0),
+    # (MSTORE8, 2, 0),
     (SLOAD, 1, 1),
     (SSTORE, 2, 0),
     (JUMP, 1, 0),
@@ -239,7 +239,7 @@ _instruction_stack_io_counts = [
     (JUMPDEST, 0, 0),
     (TLOAD, 1, 1),
     (TSTORE, 2, 0),
-    (MCOPY, 3, 0),
+    # (MCOPY, 3, 0),
     (PUSH1, 0, 1),
     (PUSH2, 0, 1),
     (PUSH3, 0, 1),
@@ -296,11 +296,11 @@ _instruction_stack_io_counts = [
     (CREATE, 3, 1),
     (CALL, 7, 0),
     (CALLCODE, 7, 0),
-    (RETURN, 2, 0),
+    # (RETURN, 2, 0),
     (DELEGATECALL, 6, 0),
     (CREATE2, 4, 1),
     (STATICCALL, 6, 0),
-    (REVERT, 2, 0),
+    # (REVERT, 2, 0),
     (INVALID, 0, 0),
     (SELFDESTRUCT, 1, 0),
 ]
@@ -317,20 +317,20 @@ _instruction_memory_args = [
     (CALLDATACOPY, None, None, 0, 2),
     (CODECOPY, None, None, 0, 2),
     (EXTCODECOPY, None, None, 1, 3),
-    (RETURNDATACOPY, None, None, 0, 2),
+    # (RETURNDATACOPY, None, None, 0, 2),
     # (MLOAD, 0, None, None, None),
     # (MSTORE, None, None, 0, None),
-    (MSTORE8, None, None, 0, None),
-    (MCOPY, 1, 2, 0, 2),
+    # (MSTORE8, None, None, 0, None),
+    # (MCOPY, 1, 2, 0, 2),
     *[(log, 0, 1, None, None) for log in [LOG0, LOG1, LOG2, LOG3, LOG4]],
     (CREATE, 1, 2, None, None),
     (CALL, 3, 4, None, None),
     (CALLCODE, 3, 4, None, None),
-    (RETURN, 0, 1, None, None),
+    # (RETURN, 0, 1, None, None),
     (DELEGATECALL, 2, 3, None, None),
     (CREATE2, 1, 2, None, None),
     (STATICCALL, 2, 3, None, None),
-    (REVERT, 0, 1, None, None),
+    # (REVERT, 0, 1, None, None),
 ]
 
 
@@ -390,7 +390,7 @@ def test_mstore8() -> None:
     mstore8 = _test_parse_instruction(MSTORE8, env, dummy_output_oracle)
 
     writes = mstore8.get_writes()
-    assert writes.memory == [MemoryWrite(offset=0x4, value=_test_group("01"))]
+    assert writes.memory == [MemoryWrite(offset=0x4, value=_test_group(HexString("01").as_size(8)))]
 
 
 def test_mcopy() -> None:
@@ -405,3 +405,73 @@ def test_mcopy() -> None:
 
     writes = mcopy.get_writes()
     assert writes.memory == [MemoryWrite(offset=0x20, value=_test_group("00112233"))]
+
+
+def test_return() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push_all([_test_group("2"), _test_group("4")])
+    env.memory.set(0, _test_group("1122334455667788"), 1)
+
+    return_instr = _test_parse_instruction(RETURN, env, dummy_output_oracle)
+
+    accesses = return_instr.get_accesses()
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 2
+    assert accesses.memory[0].value == _test_group("33445566")
+
+    writes = return_instr.get_writes()
+    assert writes.return_data
+    assert writes.return_data.value == _test_group("33445566")
+
+
+def test_revert() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push_all([_test_group("2"), _test_group("4")])
+    env.memory.set(0, _test_group("1122334455667788"), 1)
+
+    revert = _test_parse_instruction(REVERT, env, dummy_output_oracle)
+
+    accesses = revert.get_accesses()
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 2
+    assert accesses.memory[0].value == _test_group("33445566")
+
+    writes = revert.get_writes()
+    assert writes.return_data
+    assert writes.return_data.value == _test_group("33445566")
+
+
+def test_returndatasize() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_call_context.return_data = _test_group("112233445566")
+
+    returndatasize = _test_parse_instruction(RETURNDATASIZE, env, dummy_output_oracle)
+
+    accesses = returndatasize.get_accesses()
+    assert accesses.return_data
+    assert accesses.return_data.offset == 0
+    assert accesses.return_data.size == 6
+    assert accesses.return_data.value == _test_group("112233445566")
+
+    writes = returndatasize.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_int() == 6
+
+
+def test_returndatacopy() -> None:
+    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.stack.push_all([_test_group("123"), _test_group("2"), _test_group("4")])
+    env.current_call_context.return_data = _test_group("1122334455667788")
+
+    returndatasize = _test_parse_instruction(RETURNDATACOPY, env, dummy_output_oracle)
+
+    accesses = returndatasize.get_accesses()
+    assert accesses.return_data
+    assert accesses.return_data.offset == 2
+    assert accesses.return_data.size == 4
+    assert accesses.return_data.value == _test_group("33445566")
+
+    writes = returndatasize.get_writes()
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 0x123
+    assert writes.memory[0].value == _test_group("33445566")
