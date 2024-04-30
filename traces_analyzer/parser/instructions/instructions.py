@@ -349,7 +349,7 @@ class MSTORE(Instruction):
 
 @dataclass(frozen=True, repr=False)
 class MSTORE8(Instruction):
-    flow_spec = mem_write(stack_arg(0), to_size(stack_arg(1), 8))
+    flow_spec = mem_write(stack_arg(0), to_size(stack_arg(1), 1))
 
 
 SLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))

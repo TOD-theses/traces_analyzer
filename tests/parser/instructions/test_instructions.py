@@ -356,14 +356,20 @@ dummy_output_oracle = InstructionOutputOracle([], HexString(""), None)
 
 def test_mload() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_step_index = 3
     env.stack.push(_test_group("4"))
-    env.memory.set(0x4, _test_group("11223344"), -1)
+    env.memory.set(0x4, _test_group("11223344", 2), 2)
 
+    # load memory[4:36]
     mload = _test_parse_instruction(MLOAD, env, dummy_output_oracle)
 
     padded_value = "11223344" + (28) * 2 * "0"
     accesses = mload.get_accesses()
-    assert accesses.memory == [MemoryAccess(offset=0x4, value=_test_group(padded_value))]
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x4
+    assert accesses.memory[0].value.get_hexstring() == padded_value
+    # the access outside of memory range is padded by the current instruction (3)
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {2, 3}
     assert mload.stack_outputs == (padded_value,)
 
 
@@ -372,78 +378,94 @@ def test_mstore() -> None:
     env.stack.push_all(
         [
             _test_group("4"),
-            _test_group("11223344"),
+            _test_group32("11223344", 1),
         ]
     )
 
     mstore = _test_parse_instruction(MSTORE, env, dummy_output_oracle)
 
-    padded_value = 28 * 2 * "0" + "11223344"
     writes = mstore.get_writes()
-    assert writes.memory == [MemoryWrite(offset=0x4, value=_test_group(padded_value))]
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 0x4
+    assert writes.memory[0].value.get_hexstring() == "00" * 28 + "11223344"
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
 
 
 def test_mstore8() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group32("4"), _test_group32("1")])
+    env.stack.push_all([_test_group32("4"), _test_group32("1", 1)])
 
     mstore8 = _test_parse_instruction(MSTORE8, env, dummy_output_oracle)
 
     writes = mstore8.get_writes()
-    assert writes.memory == [MemoryWrite(offset=0x4, value=_test_group(HexString("01").as_size(8)))]
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 0x4
+    assert writes.memory[0].value.get_hexstring() == "01"
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
 
 
 def test_mcopy() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    env.current_step_index = 2
     env.stack.push_all([_test_group("20"), _test_group("3"), _test_group("4")])
-    env.memory.set(0x4, _test_group("11223344"), -1)
+    env.memory.set(0x4, _test_group("11223344", 1), 1)
 
     mcopy = _test_parse_instruction(MCOPY, env, dummy_output_oracle)
 
     accesses = mcopy.get_accesses()
-    assert accesses.memory == [MemoryAccess(offset=0x3, value=_test_group("00112233"))]
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x3
+    assert accesses.memory[0].value.get_hexstring() == "00112233"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
 
     writes = mcopy.get_writes()
-    assert writes.memory == [MemoryWrite(offset=0x20, value=_test_group("00112233"))]
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 0x20
+    assert writes.memory[0].value.get_hexstring() == "00112233"
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
 
 
 def test_return() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.stack.push_all([_test_group("2"), _test_group("4")])
-    env.memory.set(0, _test_group("1122334455667788"), 1)
+    env.memory.set(0, _test_group("1122334455667788", 1), -1)
 
     return_instr = _test_parse_instruction(RETURN, env, dummy_output_oracle)
 
     accesses = return_instr.get_accesses()
     assert len(accesses.memory) == 1
     assert accesses.memory[0].offset == 2
-    assert accesses.memory[0].value == _test_group("33445566")
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
 
     writes = return_instr.get_writes()
     assert writes.return_data
-    assert writes.return_data.value == _test_group("33445566")
+    assert writes.return_data.value.get_hexstring() == "33445566"
+    assert writes.return_data.value.depends_on_instruction_indexes() == {1}
 
 
 def test_revert() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.stack.push_all([_test_group("2"), _test_group("4")])
-    env.memory.set(0, _test_group("1122334455667788"), 1)
+    env.memory.set(0, _test_group("1122334455667788", 1), -1)
 
     revert = _test_parse_instruction(REVERT, env, dummy_output_oracle)
 
     accesses = revert.get_accesses()
     assert len(accesses.memory) == 1
-    assert accesses.memory[0].offset == 2
-    assert accesses.memory[0].value == _test_group("33445566")
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
 
     writes = revert.get_writes()
     assert writes.return_data
-    assert writes.return_data.value == _test_group("33445566")
+    assert writes.return_data.value.get_hexstring() == "33445566"
+    assert writes.return_data.value.depends_on_instruction_indexes() == {1}
 
 
 def test_returndatasize() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.current_call_context.return_data = _test_group("112233445566")
+    env.current_step_index = 2
+    env.current_call_context.return_data = _test_group("112233445566", 1)
 
     returndatasize = _test_parse_instruction(RETURNDATASIZE, env, dummy_output_oracle)
 
@@ -451,17 +473,19 @@ def test_returndatasize() -> None:
     assert accesses.return_data
     assert accesses.return_data.offset == 0
     assert accesses.return_data.size == 6
-    assert accesses.return_data.value == _test_group("112233445566")
+    assert accesses.return_data.value.get_hexstring() == "112233445566"
+    assert accesses.return_data.value.depends_on_instruction_indexes() == {1}
 
     writes = returndatasize.get_writes()
     assert len(writes.stack_pushes) == 1
     assert writes.stack_pushes[0].value.get_hexstring().as_int() == 6
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
 
 def test_returndatacopy() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
     env.stack.push_all([_test_group("123"), _test_group("2"), _test_group("4")])
-    env.current_call_context.return_data = _test_group("1122334455667788")
+    env.current_call_context.return_data = _test_group("1122334455667788", 1234)
 
     returndatasize = _test_parse_instruction(RETURNDATACOPY, env, dummy_output_oracle)
 
@@ -469,9 +493,11 @@ def test_returndatacopy() -> None:
     assert accesses.return_data
     assert accesses.return_data.offset == 2
     assert accesses.return_data.size == 4
-    assert accesses.return_data.value == _test_group("33445566")
+    assert accesses.return_data.value.get_hexstring() == "33445566"
+    assert accesses.return_data.value.depends_on_instruction_indexes() == {1234}
 
     writes = returndatasize.get_writes()
     assert len(writes.memory) == 1
     assert writes.memory[0].offset == 0x123
-    assert writes.memory[0].value == _test_group("33445566")
+    assert writes.memory[0].value.get_hexstring() == "33445566"
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
