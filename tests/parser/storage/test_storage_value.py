@@ -45,4 +45,12 @@ def test_storage_byte_group_assign_slice_hexstrings():
 def test_storage_byte_group_iterate_bytes():
     group = StorageByteGroup.from_hexstring(HexString("abcd"), 1)
 
-    assert all(b.created_at_step_index == 1 for b in group)
+    assert all(b._created_at_step_index == 1 for b in group)
+
+
+def test_storage_byte_group_depends_on_instruction_indexes():
+    group = StorageByteGroup.from_hexstring(HexString("abcd1234"), 1)
+    group[1:3] = StorageByteGroup.from_hexstring(HexString("11"), 2)
+    group += StorageByteGroup.from_hexstring(HexString("ef"), 3)
+
+    assert group.depends_on_instruction_indexes() == {1, 2, 3}

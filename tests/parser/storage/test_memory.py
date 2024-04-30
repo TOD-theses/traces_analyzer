@@ -35,9 +35,9 @@ def test_memory_set_expands_with_step_index():
     mem_set = mem.get(10, 32, -1)
     mem_expanded_2 = mem.get(42, 22, -1)
 
-    assert {2} == set(byte.created_at_step_index for byte in mem_expanded_1)
-    assert {1} == set(byte.created_at_step_index for byte in mem_set)
-    assert {2} == set(byte.created_at_step_index for byte in mem_expanded_2)
+    assert mem_expanded_1.depends_on_instruction_indexes() == {2}
+    assert mem_set.depends_on_instruction_indexes() == {1}
+    assert mem_expanded_2.depends_on_instruction_indexes() == {2}
 
 
 def test_memory_get():
@@ -62,4 +62,4 @@ def test_memory_expands():
     mem.check_expansion(50, 20, 1)
 
     assert mem.size() == 96
-    assert {1} == set(byte.created_at_step_index for byte in mem.get(64, 32, -1))
+    assert mem.get(64, 32, -1).depends_on_instruction_indexes() == {1}

@@ -14,9 +14,18 @@ def _test_stack(items: list[str]) -> Stack:
     return stack
 
 
-def _test_group(hexstring: str | HexString, step_index=1) -> StorageByteGroup:
+def _test_group(hexstring: str | HexString, step_index=-1) -> StorageByteGroup:
     if isinstance(hexstring, str):
         hexstring = HexString(hexstring)
+    return StorageByteGroup.from_hexstring(hexstring, step_index)
+
+
+def _test_group32(hexstring: str | HexString, step_index=-1) -> StorageByteGroup:
+    if isinstance(hexstring, str):
+        hexstring = HexString(hexstring)
+    if len(hexstring) < 32:
+        padding = HexString("0" * (64 - len(hexstring)))
+        hexstring = padding + hexstring
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
 

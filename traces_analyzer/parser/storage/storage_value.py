@@ -6,15 +6,15 @@ from traces_analyzer.utils.hexstring import HexString
 
 class StorageByte:
     def __init__(self, byte: bytes, created_at_step_index: int) -> None:
-        self.byte = byte
-        self.created_at_step_index = created_at_step_index
+        self._byte = byte
+        self._created_at_step_index = created_at_step_index
         # self.touched_at_step_indexes: list[int] = []
 
     def __str__(self) -> str:
-        return self.byte.decode("utf-8")
+        return self._byte.decode("utf-8")
 
     def __repr__(self) -> str:
-        return f'<{self.byte.decode("utf-8")},{self.created_at_step_index}>'
+        return f'<{self._byte.decode("utf-8")},{self._created_at_step_index}>'
 
 
 class StorageByteGroup(UserList[StorageByte]):
@@ -22,8 +22,11 @@ class StorageByteGroup(UserList[StorageByte]):
         super().__init__(storage_bytes)
 
     def get_hexstring(self) -> HexString:
-        x: list[str] = [storage_byte.byte.decode("utf-8") for storage_byte in self.data]
+        x: list[str] = [storage_byte._byte.decode("utf-8") for storage_byte in self.data]
         return HexString("".join(x))
+
+    def depends_on_instruction_indexes(self) -> set[int]:
+        return set(byte._created_at_step_index for byte in self)
 
     @staticmethod
     def from_hexstring(hexstring: HexString, creation_step_index: int):

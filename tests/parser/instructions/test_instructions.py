@@ -1,6 +1,6 @@
 from typing import TypeVar, cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_group
+from tests.test_utils.test_utils import _test_group, _test_group32
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
@@ -385,7 +385,7 @@ def test_mstore() -> None:
 
 def test_mstore8() -> None:
     env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group("4"), _test_group("1")])
+    env.stack.push_all([_test_group32("4"), _test_group32("1")])
 
     mstore8 = _test_parse_instruction(MSTORE8, env, dummy_output_oracle)
 
