@@ -7,9 +7,6 @@ from tests.test_utils.test_utils import (
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
-    FlowNode,
-    FlowNodeWithResult,
-    FlowWithResult,
     mem_range,
     mem_write,
     noop,
@@ -21,15 +18,21 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     stack_set,
     to_size,
 )
+from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import (
+    FlowNode,
+    FlowNodeWithResult,
+    FlowWithResult,
+)
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import ReturnDataAccess, StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 
 
-@dataclass
 class _TestFlowNode(FlowNodeWithResult):
-    value: StorageByteGroup
+    def __init__(self, value: StorageByteGroup) -> None:
+        super().__init__(())
+        self.value = value
 
     def _get_result(
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -43,8 +46,8 @@ class _TestFlowNode(FlowNodeWithResult):
 
 def _test_node(value: StorageByteGroup | str) -> FlowNode:
     if isinstance(value, StorageByteGroup):
-        return _TestFlowNode(arguments=(), value=value)
-    return _TestFlowNode(arguments=(), value=_test_group(value))
+        return _TestFlowNode(value=value)
+    return _TestFlowNode(value=_test_group(value))
 
 
 def test_noop():
