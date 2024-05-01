@@ -8,12 +8,12 @@ from traces_analyzer.parser.events_parser import TraceEvent
 
 def test_tod_source_analyzer():
     instructions_one = [
-        make_instruction(PUSH0),
+        make_instruction(PUSH0, stack_after=["0x1"]),
         make_instruction(SLOAD, pc=2, stack=_test_stack(["0x1"]), stack_after=["0x1234"]),
         make_instruction(POP, pc=3, stack=_test_stack(["0x1234"])),
     ]
     instructions_two = [
-        make_instruction(PUSH0),
+        make_instruction(PUSH0, stack_after=["0x1"]),
         make_instruction(SLOAD, pc=2, stack=_test_stack(["0x1"]), stack_after=["0x5678"]),
         make_instruction(POP, pc=3, stack=_test_stack(["0x5678"])),
     ]

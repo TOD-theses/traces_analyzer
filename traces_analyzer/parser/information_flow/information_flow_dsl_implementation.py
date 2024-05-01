@@ -229,6 +229,20 @@ def _stack_arg_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, o
     )
 
 
+@node_with_results
+def _stack_peek_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+    index = args[0].result.get_hexstring().as_int()
+    result = env.stack.peek(index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(
+            stack=[StackAccess(index, result)],
+        ),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
 @node_with_writes
 def _stack_push_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
     return StorageWrites(stack_pushes=[StackPush(args[0].result)])

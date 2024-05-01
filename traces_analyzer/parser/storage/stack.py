@@ -33,6 +33,12 @@ class Stack:
         self._stack.pop()
         return result
 
+    def set(self, index: int, value: StorageByteGroup):
+        if len(value) != 64:
+            padding = StorageByteGroup.deprecated_from_hexstring(HexString("0" * (64 - len(value.get_hexstring()))))
+            value = padding + value
+        self._stack[-index - 1] = value
+
     def clear(self):
         self._stack = []
 

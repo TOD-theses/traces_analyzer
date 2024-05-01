@@ -12,14 +12,21 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     _return_data_size_node,
     _return_data_write_node,
     _stack_arg_node,
+    _stack_peek_node,
     _stack_push_node,
     _stack_set_node,
     _to_size_node,
 )
 
 
-def stack_arg(index: FlowNodeWithResult | int) -> FlowNodeWithResult:
+def stack_arg(index: int) -> FlowNodeWithResult:
+    """Get stack value and pop"""
     return _stack_arg_node(index)
+
+
+def stack_peek(index: int) -> FlowNodeWithResult:
+    """Get stack value without pop"""
+    return _stack_peek_node(index)
 
 
 def stack_push(value: FlowNodeWithResult | str) -> WritingFlowNode:

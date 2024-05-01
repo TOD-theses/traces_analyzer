@@ -168,8 +168,6 @@ def test_instruction_opcode_matches_class():
 
 
 _instruction_stack_io_counts = [
-    (STOP, 0, 0),
-    (KECCAK256, 2, 1),
     (ADDRESS, 0, 1),
     (BALANCE, 1, 1),
     (ORIGIN, 0, 1),
@@ -183,8 +181,6 @@ _instruction_stack_io_counts = [
     (GASPRICE, 0, 1),
     (EXTCODESIZE, 1, 1),
     (EXTCODECOPY, 4, 0),
-    #  (RETURNDATASIZE, 0, 1),
-    #  (RETURNDATACOPY, 3, 0),
     (EXTCODEHASH, 1, 1),
     (BLOCKHASH, 1, 1),
     (COINBASE, 0, 1),
@@ -197,10 +193,6 @@ _instruction_stack_io_counts = [
     (BASEFEE, 0, 1),
     (BLOBHASH, 1, 1),
     (BLOBBASEFEE, 0, 1),
-    (POP, 1, 0),
-    # (MLOAD, 1, 1),
-    # (MSTORE, 2, 0),
-    # (MSTORE8, 2, 0),
     (SLOAD, 1, 1),
     (SSTORE, 2, 0),
     (JUMP, 1, 0),
@@ -211,70 +203,12 @@ _instruction_stack_io_counts = [
     (JUMPDEST, 0, 0),
     (TLOAD, 1, 1),
     (TSTORE, 2, 0),
-    # (MCOPY, 3, 0),
-    (PUSH1, 0, 1),
-    (PUSH2, 0, 1),
-    (PUSH3, 0, 1),
-    (PUSH4, 0, 1),
-    (PUSH5, 0, 1),
-    (PUSH6, 0, 1),
-    (PUSH7, 0, 1),
-    (PUSH8, 0, 1),
-    (PUSH9, 0, 1),
-    (PUSH10, 0, 1),
-    (PUSH11, 0, 1),
-    (PUSH12, 0, 1),
-    (PUSH13, 0, 1),
-    (PUSH14, 0, 1),
-    (PUSH15, 0, 1),
-    (PUSH16, 0, 1),
-    (DUP1, 1, 1),
-    (DUP2, 2, 1),
-    (DUP3, 3, 1),
-    (DUP4, 4, 1),
-    (DUP5, 5, 1),
-    (DUP6, 6, 1),
-    (DUP7, 7, 1),
-    (DUP8, 8, 1),
-    (DUP9, 9, 1),
-    (DUP10, 10, 1),
-    (DUP11, 11, 1),
-    (DUP12, 12, 1),
-    (DUP13, 13, 1),
-    (DUP14, 14, 1),
-    (DUP15, 15, 1),
-    (DUP16, 16, 1),
-    (SWAP1, 2, 2),
-    (SWAP2, 3, 3),
-    (SWAP3, 4, 4),
-    (SWAP4, 5, 5),
-    (SWAP5, 6, 6),
-    (SWAP6, 7, 7),
-    (SWAP7, 8, 8),
-    (SWAP8, 9, 9),
-    (SWAP9, 10, 10),
-    (SWAP10, 11, 11),
-    (SWAP11, 12, 12),
-    (SWAP12, 13, 13),
-    (SWAP13, 14, 14),
-    (SWAP14, 15, 15),
-    (SWAP15, 16, 16),
-    (SWAP16, 17, 17),
-    (LOG0, 2, 0),
-    (LOG1, 3, 0),
-    (LOG2, 4, 0),
-    (LOG3, 5, 0),
-    (LOG4, 6, 0),
     (CREATE, 3, 1),
     (CALL, 7, 0),
     (CALLCODE, 7, 0),
-    # (RETURN, 2, 0),
     (DELEGATECALL, 6, 0),
     (CREATE2, 4, 1),
     (STATICCALL, 6, 0),
-    # (REVERT, 2, 0),
-    (INVALID, 0, 0),
-    (SELFDESTRUCT, 1, 0),
 ]
 
 
@@ -285,24 +219,15 @@ def test_stack_io():
 
 
 _instruction_memory_args = [
-    (KECCAK256, 0, 1, None, None),
     (CALLDATACOPY, None, None, 0, 2),
     (CODECOPY, None, None, 0, 2),
     (EXTCODECOPY, None, None, 1, 3),
-    # (RETURNDATACOPY, None, None, 0, 2),
-    # (MLOAD, 0, None, None, None),
-    # (MSTORE, None, None, 0, None),
-    # (MSTORE8, None, None, 0, None),
-    # (MCOPY, 1, 2, 0, 2),
-    *[(log, 0, 1, None, None) for log in [LOG0, LOG1, LOG2, LOG3, LOG4]],
     (CREATE, 1, 2, None, None),
     (CALL, 3, 4, None, None),
     (CALLCODE, 3, 4, None, None),
-    # (RETURN, 0, 1, None, None),
     (DELEGATECALL, 2, 3, None, None),
     (CREATE2, 1, 2, None, None),
     (STATICCALL, 2, 3, None, None),
-    # (REVERT, 0, 1, None, None),
 ]
 
 
@@ -349,6 +274,24 @@ stack_calculation_instructions = [
     (SHL, 2, 1),
     (SHR, 2, 1),
     (SAR, 2, 1),
+    (PUSH0, 0, 1),
+    (PUSH1, 0, 1),
+    (PUSH2, 0, 1),
+    (PUSH3, 0, 1),
+    (PUSH4, 0, 1),
+    (PUSH5, 0, 1),
+    (PUSH6, 0, 1),
+    (PUSH7, 0, 1),
+    (PUSH8, 0, 1),
+    (PUSH9, 0, 1),
+    (PUSH10, 0, 1),
+    (PUSH11, 0, 1),
+    (PUSH12, 0, 1),
+    (PUSH13, 0, 1),
+    (PUSH14, 0, 1),
+    (PUSH15, 0, 1),
+    (PUSH16, 0, 1),
+    (POP, 1, 0),
 ]
 
 
@@ -374,6 +317,124 @@ def test_stack_calculations_io_count() -> None:
         for i in range(stack_outputs_n):
             assert writes.stack_pushes[i].value.get_hexstring() == HexString(str(i)).as_size(32)
             assert writes.stack_pushes[i].value.depends_on_instruction_indexes() == {3}
+
+
+DUP_N = [DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16]
+
+
+def test_dupn() -> None:
+    for n, dup_type in enumerate(DUP_N):
+        env = mock_env(
+            step_index=3,
+            stack_contents=[_test_group(HexString(str(i)).as_size(32), i) for i in range(n + 1)],
+        )
+
+        dupn = _test_parse_instruction(dup_type, env, _test_oracle())
+
+        accesses = dupn.get_accesses()
+        writes = dupn.get_writes()
+        assert len(accesses.stack) == 1
+        assert accesses.stack[0].index == n
+
+        assert len(writes.stack_pushes) == 1
+        assert writes.stack_pushes[0].value.get_hexstring() == HexString(str(n)).as_size(32)
+        assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {n}
+
+
+SWAP_N = [
+    SWAP1,
+    SWAP2,
+    SWAP3,
+    SWAP4,
+    SWAP5,
+    SWAP6,
+    SWAP7,
+    SWAP8,
+    SWAP9,
+    SWAP10,
+    SWAP11,
+    SWAP12,
+    SWAP13,
+    SWAP14,
+    SWAP15,
+    SWAP16,
+]
+
+
+def test_swapn() -> None:
+    for n, swap_type in enumerate(SWAP_N):
+        n += 1
+        env = mock_env(
+            step_index=3,
+            stack_contents=[_test_group(HexString(str(i)).as_size(32), i) for i in range(n + 1)],
+        )
+
+        swapn = _test_parse_instruction(swap_type, env, _test_oracle())
+
+        accesses = swapn.get_accesses()
+        writes = swapn.get_writes()
+        assert len(accesses.stack) == 2
+        assert accesses.stack[0].index == n
+        assert accesses.stack[1].index == 0
+
+        assert len(writes.stack_sets) == 2
+        assert writes.stack_sets[0].index == 0
+        assert writes.stack_sets[0].value.get_hexstring() == HexString(str(n)).as_size(32)
+        assert writes.stack_sets[0].value.depends_on_instruction_indexes() == {n}
+        assert writes.stack_sets[1].index == n
+        assert writes.stack_sets[1].value.get_hexstring() == HexString(str(0)).as_size(32)
+        assert writes.stack_sets[1].value.depends_on_instruction_indexes() == {0}
+
+
+LOG_N = [LOG0, LOG1, LOG2, LOG3, LOG4]
+
+
+def test_logn() -> None:
+    for n, log_type in enumerate(LOG_N):
+        env = mock_env(
+            step_index=3,
+            stack_contents=([_test_group("2"), _test_group("4")] + [_test_group(HexString(str(i)).as_size(32), i) for i in range(n)]),  # type: ignore
+            memory_content="001122334455667788",
+        )
+
+        log = _test_parse_instruction(log_type, env, _test_oracle())
+
+        accesses = log.get_accesses()
+        assert len(accesses.stack) == 2 + n
+        assert accesses.stack[0].index == 0
+        assert accesses.stack[0].value.get_hexstring() == HexString("2").as_size(32)
+        assert accesses.stack[1].index == 1
+        assert accesses.stack[1].value.get_hexstring() == HexString("4").as_size(32)
+        for i in range(n):
+            assert accesses.stack[2 + i].index == 2 + i
+            assert accesses.stack[2 + i].value.get_hexstring() == HexString(str(i)).as_size(32)
+
+def test_keccak256() -> None:
+    env = mock_env(
+        step_index=3,
+        stack_contents=[_test_group32("2", 1),_test_group32( "4", 2)],
+        memory_content="001122334455667788",
+    )
+    oracle = _test_oracle(stack=[HexString("aaaa").as_size(32)])
+
+    keccak256 = _test_parse_instruction(KECCAK256, env, oracle)
+
+    accesses = keccak256.get_accesses()
+    writes = keccak256.get_writes()
+    assert len(writes.stack_pops) == 2
+    assert len(accesses.stack) == 2
+    assert accesses.stack[0].index == 0
+    assert accesses.stack[0].value.get_hexstring() == HexString("2").as_size(32)
+    assert accesses.stack[0].value.depends_on_instruction_indexes() == {1}
+    assert accesses.stack[1].index == 1
+    assert accesses.stack[1].value.get_hexstring() == HexString("4").as_size(32)
+    assert accesses.stack[1].value.depends_on_instruction_indexes() == {2}
+
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring() == HexString("aaaa").as_size(32)
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {3}
+
+
 
 
 def test_mload() -> None:

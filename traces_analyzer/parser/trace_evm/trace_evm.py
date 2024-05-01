@@ -69,9 +69,8 @@ class TraceEVM:
             self.env.stack.pop()
         for stack_push in storage_writes.stack_pushes:
             self.env.stack.push(stack_push.value)
-        # TODO
-        # for stack_set in storage_writes.stack_sets:
-        # self.env.stack.set(stack_set.index, stack_set.value)
+        for stack_set in storage_writes.stack_sets:
+            self.env.stack.set(stack_set.index, stack_set.value)
         for mem_write in storage_writes.memory:
             self.env.memory.set(mem_write.offset, mem_write.value, self.env.current_step_index)
         if storage_writes.return_data:

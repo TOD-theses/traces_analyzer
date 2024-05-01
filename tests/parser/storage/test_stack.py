@@ -35,6 +35,16 @@ def test_stack_push_all():
     assert stack.peek(1).get_hexstring() == HexString("5678").as_size(32)
 
 
+def test_stack_set():
+    stack = _test_stack(["0x1", "0x2", "0x3", "0x4"])
+
+    stack.set(2, _test_group("11223344", 1234))
+
+    assert stack.peek(2).get_hexstring() == HexString("11223344").as_size(32)
+    # TODO: consider a better approach to remove the -1 here
+    assert stack.peek(2).depends_on_instruction_indexes() == {-1, 1234}
+
+
 def test_stack_pop():
     stack = _test_stack(["0x1", "0x2"])
 

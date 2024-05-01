@@ -16,7 +16,9 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     return_data_size,
     return_data_write,
     stack_arg,
+    stack_peek,
     stack_push,
+    stack_set,
     to_size,
 )
 from traces_analyzer.parser.information_flow.information_flow_spec import FlowSpec
@@ -179,11 +181,6 @@ class CALLCODE(CallInstruction):
 
 
 def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
-    """
-    TODO:
-    - pass list of InstructionIOFlow
-    """
-
     @dataclass(frozen=True, repr=False, eq=False)
     class SimpleInstruction(Instruction):
         io_specification = io_spec
@@ -199,7 +196,7 @@ def _make_flow(io_flow_spec: FlowSpec = noop()):
     return FlowInstruction
 
 
-STOP = _make_simple()
+STOP = _make_flow()
 
 ADD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 MUL = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
@@ -228,24 +225,13 @@ SHL = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_a
 SHR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 SAR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 
-# flow([stack_range(2), mem_range_from_stack(0, 1)] -> stack_index(0))
-KECCAK256 = _make_simple(
-    InstructionIOSpec(stack_input_count=2, stack_output_count=1, memory_input_offset_arg=0, memory_input_size_arg=1)
-)
-# flow([] -> stack_index(0))
+KECCAK256 = _make_flow(combine(stack_push(oracle_stack_peek(0)), mem_range(stack_arg(0), stack_arg(1))))
 ADDRESS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# flow([stack_range(1), balance_from_stack(0)] -> stack_index(0))
-# _from_flows([stack.push(balance.at(stack.arg(0)))])
 BALANCE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 ORIGIN = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# flow([msg_sender] -> [stack_index(0)])
 CALLER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# flow([call_value] -> [stack_index(0)])
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-# flow([stack_range(1), call_data_from_stack(0)] -> [stack_index(0)])
-# _from_flows([stack.push(calldata.slice(stack.arg(0), const(1)))])
 CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-# flow([call_data] -> [stack_index(0)])
 CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 
 
@@ -340,8 +326,8 @@ SELFBALANCE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_c
 BASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 BLOBHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 BLOBBASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-POP = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=0))
 
+POP = _make_flow(stack_arg(0))
 
 MLOAD = _make_flow(stack_push(mem_range(stack_arg(0), 32)))
 MSTORE = _make_flow(mem_write(stack_arg(0), stack_arg(1)))
@@ -361,76 +347,82 @@ TSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
 
 MCOPY = _make_flow(mem_write(stack_arg(0), mem_range(stack_arg(1), stack_arg(2))))
 
-PUSH0 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH1 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH2 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH3 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH4 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH5 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH6 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH7 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH8 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH9 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH10 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH11 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH12 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH13 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH14 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH15 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH16 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH17 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH18 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH19 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH20 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH21 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH22 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH23 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH24 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH25 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH26 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH27 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH28 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH29 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH30 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH31 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PUSH32 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-DUP1 = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-DUP2 = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-DUP3 = _make_simple(InstructionIOSpec(stack_input_count=3, stack_output_count=1))
-DUP4 = _make_simple(InstructionIOSpec(stack_input_count=4, stack_output_count=1))
-DUP5 = _make_simple(InstructionIOSpec(stack_input_count=5, stack_output_count=1))
-DUP6 = _make_simple(InstructionIOSpec(stack_input_count=6, stack_output_count=1))
-DUP7 = _make_simple(InstructionIOSpec(stack_input_count=7, stack_output_count=1))
-DUP8 = _make_simple(InstructionIOSpec(stack_input_count=8, stack_output_count=1))
-DUP9 = _make_simple(InstructionIOSpec(stack_input_count=9, stack_output_count=1))
-DUP10 = _make_simple(InstructionIOSpec(stack_input_count=10, stack_output_count=1))
-DUP11 = _make_simple(InstructionIOSpec(stack_input_count=11, stack_output_count=1))
-DUP12 = _make_simple(InstructionIOSpec(stack_input_count=12, stack_output_count=1))
-DUP13 = _make_simple(InstructionIOSpec(stack_input_count=13, stack_output_count=1))
-DUP14 = _make_simple(InstructionIOSpec(stack_input_count=14, stack_output_count=1))
-DUP15 = _make_simple(InstructionIOSpec(stack_input_count=15, stack_output_count=1))
-DUP16 = _make_simple(InstructionIOSpec(stack_input_count=16, stack_output_count=1))
-SWAP1 = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=2))
-SWAP2 = _make_simple(InstructionIOSpec(stack_input_count=3, stack_output_count=3))
-SWAP3 = _make_simple(InstructionIOSpec(stack_input_count=4, stack_output_count=4))
-SWAP4 = _make_simple(InstructionIOSpec(stack_input_count=5, stack_output_count=5))
-SWAP5 = _make_simple(InstructionIOSpec(stack_input_count=6, stack_output_count=6))
-SWAP6 = _make_simple(InstructionIOSpec(stack_input_count=7, stack_output_count=7))
-SWAP7 = _make_simple(InstructionIOSpec(stack_input_count=8, stack_output_count=8))
-SWAP8 = _make_simple(InstructionIOSpec(stack_input_count=9, stack_output_count=9))
-SWAP9 = _make_simple(InstructionIOSpec(stack_input_count=10, stack_output_count=10))
-SWAP10 = _make_simple(InstructionIOSpec(stack_input_count=11, stack_output_count=11))
-SWAP11 = _make_simple(InstructionIOSpec(stack_input_count=12, stack_output_count=12))
-SWAP12 = _make_simple(InstructionIOSpec(stack_input_count=13, stack_output_count=13))
-SWAP13 = _make_simple(InstructionIOSpec(stack_input_count=14, stack_output_count=14))
-SWAP14 = _make_simple(InstructionIOSpec(stack_input_count=15, stack_output_count=15))
-SWAP15 = _make_simple(InstructionIOSpec(stack_input_count=16, stack_output_count=16))
-SWAP16 = _make_simple(InstructionIOSpec(stack_input_count=17, stack_output_count=17))
-LOG0 = _make_simple(InstructionIOSpec(stack_input_count=2, memory_input_offset_arg=0, memory_input_size_arg=1))
-LOG1 = _make_simple(InstructionIOSpec(stack_input_count=3, memory_input_offset_arg=0, memory_input_size_arg=1))
-LOG2 = _make_simple(InstructionIOSpec(stack_input_count=4, memory_input_offset_arg=0, memory_input_size_arg=1))
-LOG3 = _make_simple(InstructionIOSpec(stack_input_count=5, memory_input_offset_arg=0, memory_input_size_arg=1))
-LOG4 = _make_simple(InstructionIOSpec(stack_input_count=6, memory_input_offset_arg=0, memory_input_size_arg=1))
+PUSH0 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH1 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH2 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH3 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH4 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH5 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH6 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH7 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH8 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH9 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH10 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH11 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH12 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH13 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH14 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH15 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH16 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH17 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH18 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH19 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH20 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH21 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH22 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH23 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH24 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH25 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH26 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH27 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH28 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH29 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH30 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH31 = _make_flow(stack_push(oracle_stack_peek(0)))
+PUSH32 = _make_flow(stack_push(oracle_stack_peek(0)))
+
+DUP1 = _make_flow(combine(stack_push(stack_peek(0))))
+DUP2 = _make_flow(combine(stack_push(stack_peek(1))))
+DUP3 = _make_flow(combine(stack_push(stack_peek(2))))
+DUP4 = _make_flow(combine(stack_push(stack_peek(3))))
+DUP5 = _make_flow(combine(stack_push(stack_peek(4))))
+DUP6 = _make_flow(combine(stack_push(stack_peek(5))))
+DUP7 = _make_flow(combine(stack_push(stack_peek(6))))
+DUP8 = _make_flow(combine(stack_push(stack_peek(7))))
+DUP9 = _make_flow(combine(stack_push(stack_peek(8))))
+DUP10 = _make_flow(combine(stack_push(stack_peek(9))))
+DUP11 = _make_flow(combine(stack_push(stack_peek(10))))
+DUP12 = _make_flow(combine(stack_push(stack_peek(11))))
+DUP13 = _make_flow(combine(stack_push(stack_peek(12))))
+DUP14 = _make_flow(combine(stack_push(stack_peek(13))))
+DUP15 = _make_flow(combine(stack_push(stack_peek(14))))
+DUP16 = _make_flow(combine(stack_push(stack_peek(15))))
+
+SWAP1 = _make_flow(combine(stack_set(0, stack_peek(1)), stack_set(1, stack_peek(0))))
+SWAP2 = _make_flow(combine(stack_set(0, stack_peek(2)), stack_set(2, stack_peek(0))))
+SWAP3 = _make_flow(combine(stack_set(0, stack_peek(3)), stack_set(3, stack_peek(0))))
+SWAP4 = _make_flow(combine(stack_set(0, stack_peek(4)), stack_set(4, stack_peek(0))))
+SWAP5 = _make_flow(combine(stack_set(0, stack_peek(5)), stack_set(5, stack_peek(0))))
+SWAP6 = _make_flow(combine(stack_set(0, stack_peek(6)), stack_set(6, stack_peek(0))))
+SWAP7 = _make_flow(combine(stack_set(0, stack_peek(7)), stack_set(7, stack_peek(0))))
+SWAP8 = _make_flow(combine(stack_set(0, stack_peek(8)), stack_set(8, stack_peek(0))))
+SWAP9 = _make_flow(combine(stack_set(0, stack_peek(9)), stack_set(9, stack_peek(0))))
+SWAP10 = _make_flow(combine(stack_set(0, stack_peek(10)), stack_set(10, stack_peek(0))))
+SWAP11 = _make_flow(combine(stack_set(0, stack_peek(11)), stack_set(11, stack_peek(0))))
+SWAP12 = _make_flow(combine(stack_set(0, stack_peek(12)), stack_set(12, stack_peek(0))))
+SWAP13 = _make_flow(combine(stack_set(0, stack_peek(13)), stack_set(13, stack_peek(0))))
+SWAP14 = _make_flow(combine(stack_set(0, stack_peek(14)), stack_set(14, stack_peek(0))))
+SWAP15 = _make_flow(combine(stack_set(0, stack_peek(15)), stack_set(15, stack_peek(0))))
+SWAP16 = _make_flow(combine(stack_set(0, stack_peek(16)), stack_set(16, stack_peek(0))))
+
+LOG0 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1))))
+LOG1 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2)))
+LOG2 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3)))
+LOG3 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3), stack_arg(4)))
+LOG4 = _make_flow(
+    combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3), stack_arg(4), stack_arg(5))
+)
+
 
 
 @dataclass(frozen=True, repr=False, eq=False)
@@ -456,8 +448,9 @@ class CREATE2(Instruction):
 RETURN = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))
 REVERT = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))
 
-INVALID = _make_simple()
-SELFDESTRUCT = _make_simple(InstructionIOSpec(stack_input_count=1))
+INVALID = _make_flow()
+# TODO: model balance flow
+SELFDESTRUCT = _make_flow(stack_arg(1))
 
 _INSTRUCTIONS: Mapping[int, type[Instruction]] = {
     0x00: STOP,

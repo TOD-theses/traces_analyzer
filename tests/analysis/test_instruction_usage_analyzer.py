@@ -13,12 +13,12 @@ def test_instruction_usage_analyzer():
     child_code_address = child_context.code_address
 
     trace = [
-        make_instruction(PUSH0),
+        make_instruction(PUSH0, stack_after=["0x1"]),
         make_instruction(STOP),
         make_instruction(JUMPDEST),
-        make_instruction(PUSH0, call_context=child_context),
-        make_instruction(POP, stack=_test_stack(["0x0"]), call_context=child_context),
+        make_instruction(PUSH0, stack_after=["0x0", "0x0"], call_context=child_context),
         make_instruction(POP, stack=_test_stack(["0x0", "0x0"]), call_context=child_context),
+        make_instruction(POP, stack=_test_stack(["0x0"]), call_context=child_context),
     ]
 
     feature_extractor = InstructionUsagesFeatureExtractor()

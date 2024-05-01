@@ -16,6 +16,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     return_data_size,
     return_data_write,
     stack_arg,
+    stack_peek,
     stack_push,
     stack_set,
     to_size,
@@ -66,7 +67,7 @@ def test_combine():
     env = mock_env()
 
 
-def test_stack_arg_const():
+def test_stack_arg():
     env = mock_env(stack_contents=[_test_group32("10", 1234)])
 
     flow = stack_arg(0).compute(env, _test_oracle())
@@ -81,13 +82,19 @@ def test_stack_arg_const():
     assert flow.result == flow.accesses.stack[0].value
 
 
-def test_stack_arg_node():
+def test_stack_peek():
     env = mock_env(stack_contents=[_test_group32("10", 1234)])
 
-    flow = stack_arg(_test_node("00")).compute(env, _test_oracle())
+    flow = stack_peek(0).compute(env, _test_oracle())
 
-    assert flow.result.get_hexstring() == HexString("10").as_size(32)
-    assert flow.result.depends_on_instruction_indexes() == {1234}
+    assert len(flow.accesses.stack) == 1
+    assert flow.accesses.stack[0].index == 0
+    assert flow.accesses.stack[0].value.get_hexstring() == "10".rjust(64, "0")
+    assert flow.accesses.stack[0].value.depends_on_instruction_indexes() == {1234}
+
+    assert len(flow.writes.stack_pops) == 0
+
+    assert flow.result == flow.accesses.stack[0].value
 
 
 def test_oracle_stack_peek():
