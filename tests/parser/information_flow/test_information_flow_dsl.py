@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_group, _test_group32
+from tests.test_utils.test_utils import _test_child, _test_group, _test_group32, _test_root
+from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     FlowNode,
@@ -241,8 +242,13 @@ def test_return_data_write():
 
 
 def test_return_data_size():
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.current_call_context.return_data = _test_group("11" * 40, 1234)
+    root = _test_root()
+    sub_context = _test_child()
+    sub_context.return_data = _test_group("11" * 40, 1234)
+
+    env = ParsingEnvironment(root)
+    env.on_call_enter(sub_context)
+    env.on_call_exit(root)
 
     flow = return_data_size().compute(env, dummy_output_oracle)
 

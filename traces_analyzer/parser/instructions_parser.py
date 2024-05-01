@@ -9,7 +9,7 @@ from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CallInstruction, get_instruction_class
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
+from traces_analyzer.parser.storage.storage_writes import StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -97,7 +97,9 @@ class TracerEVM:
         self.env.current_step_index += 1
         self._update_storages(instruction, output_oracle)
         self._update_call_context(instruction, output_oracle)
-        self._apply_stack_oracle(output_oracle)
+        # for those, where we did not model the stack wrties, simply overwrite it with the oracle
+        if not instruction.implemented_flow():
+            self._apply_stack_oracle(instruction, output_oracle)
 
         if self._should_verify_storages:
             self._verify_storage(instruction, output_oracle)
@@ -105,6 +107,7 @@ class TracerEVM:
         return instruction
 
     def _update_storages(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+        # NOTE: memory expansion on access is done by the io flow parsing. Maybe it should also be moved here.
         self._apply_storage_writes(instruction.get_writes(), instruction, output_oracle)
         if isinstance(instruction, CallInstruction):
             self._apply_storage_writes(
@@ -117,26 +120,29 @@ class TracerEVM:
 
         if next_call_context.depth > self.env.current_call_context.depth:
             self.env.on_call_enter(next_call_context)
+            self._apply_stack_oracle(instruction, output_oracle)
         elif next_call_context.depth < self.env.current_call_context.depth:
             self.env.on_call_exit(next_call_context)
+            self._apply_stack_oracle(instruction, output_oracle)
             call = current_call_context.initiating_instruction
             if call is not None:
                 return_writes = call.get_return_writes(current_call_context)
                 self._apply_storage_writes(return_writes, call, output_oracle)
 
-    def _apply_stack_oracle(self, output_oracle: InstructionOutputOracle):
-        # at least currently, we always overwrite the stack with the oracle
-        # in the future, we should use the instructions stack outputs instead (pops and pushes)
+    def _apply_stack_oracle(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
         self.env.stack.clear()
         self.env.stack.push_all([StorageByteGroup.from_hexstring(val, -1) for val in reversed(output_oracle.stack)])
-
-    def _apply_storage_accesses(self, storage_accesses: StorageAccesses):
-        for mem_access in storage_accesses.memory:
-            self.env.memory.check_expansion(mem_access.offset, len(mem_access.value), self.env.current_step_index)
 
     def _apply_storage_writes(
         self, storage_writes: StorageWrites, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
+        for _ in storage_writes.stack_pops:
+            self.env.stack.pop()
+        for stack_push in storage_writes.stack_pushes:
+            self.env.stack.push(stack_push.value)
+        # TODO
+        # for stack_set in storage_writes.stack_sets:
+        # self.env.stack.set(stack_set.index, stack_set.value)
         for mem_write in storage_writes.memory:
             self.env.memory.set(mem_write.offset, mem_write.value, self.env.current_step_index)
         if storage_writes.return_data:
@@ -179,11 +185,11 @@ def parse_instruction(
     name = opcode_to_name(opcode) or "UNKNOWN"
 
     cls = get_instruction_class(opcode) or Instruction
-    if cls.io_specification:
+    if cls.implemented_flow():
+        io, flow = cls.parse_flow(env, output_oracle)
+    else:
         io = cls.parse_io(env, output_oracle)
         flow = None
-    else:
-        io, flow = cls.parse_flow(env, output_oracle)
 
     return cls(
         opcode,

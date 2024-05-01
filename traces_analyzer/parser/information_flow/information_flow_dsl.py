@@ -277,8 +277,13 @@ class ReturnDataSizeNode(FlowNodeWithResult):
     def _get_result(
         self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> FlowWithResult:
-        return_data = env.current_call_context.return_data
-        size = len(return_data)
+        if not env.last_executed_sub_context:
+            # Return 0 if called without a sub context (and thus no return data is available)
+            return_data = StorageByteGroup.from_hexstring(HexString("0").as_size(32), env.current_step_index)
+            size = 0
+        else:
+            return_data = env.last_executed_sub_context.return_data
+            size = len(return_data)
 
         return FlowWithResult(
             accesses=StorageAccesses(return_data=ReturnDataAccess(0, size, return_data)),

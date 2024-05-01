@@ -1,6 +1,6 @@
 from typing import TypeVar, cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_group, _test_group32
+from tests.test_utils.test_utils import _test_child, _test_group, _test_group32, _test_root
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
@@ -463,9 +463,13 @@ def test_revert() -> None:
 
 
 def test_returndatasize() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
+    root = _test_root()
+    sub_context = _test_child()
+    env = ParsingEnvironment(root)
+    env.on_call_enter(sub_context)
+    env.on_call_exit(root)
     env.current_step_index = 2
-    env.current_call_context.return_data = _test_group("112233445566", 1)
+    sub_context.return_data = _test_group("112233445566", 1)
 
     returndatasize = _test_parse_instruction(RETURNDATASIZE, env, dummy_output_oracle)
 

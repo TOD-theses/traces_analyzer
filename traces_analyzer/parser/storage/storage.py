@@ -3,6 +3,8 @@ from typing import Callable, Generic, TypeVar
 
 from typing_extensions import override
 
+from traces_analyzer.parser.environment.call_context import CallContext
+
 
 class Storage(ABC):
     """
@@ -13,10 +15,10 @@ class Storage(ABC):
     - calldata, call value, return data => current or previous call context as a key
     """
 
-    def on_call_enter(self):
+    def on_call_enter(self, current_call_context: CallContext, next_call_context: CallContext):
         pass
 
-    def on_call_exit(self):
+    def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
         pass
 
 
@@ -33,13 +35,13 @@ class ContextSpecificStorage(Storage, Generic[StorageContent]):
         self._content_stack: list[StorageContent] = [content_factory()]
 
     @override
-    def on_call_enter(self):
-        super().on_call_enter()
+    def on_call_enter(self, current_call_context: CallContext, next_call_context: CallContext):
+        super().on_call_enter(current_call_context, next_call_context)
         self._content_stack.append(self._factory())
 
     @override
-    def on_call_exit(self):
-        super().on_call_exit()
+    def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
+        super().on_call_exit(current_call_context, next_call_context)
         self._content_stack.pop()
 
     def current(self) -> StorageContent:

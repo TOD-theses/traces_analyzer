@@ -1,6 +1,6 @@
 from typing import Callable
 import pytest
-from tests.test_utils.test_utils import _test_addr
+from tests.test_utils.test_utils import _test_addr, _test_root, _test_child, _test_child_of
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.call_context_manager import (
     ExpectedDepthChange,
@@ -23,15 +23,6 @@ from traces_analyzer.parser.instructions.instructions import (
     STOP,
 )
 from traces_analyzer.utils.hexstring import HexString
-
-get_root = lambda: CallContext(
-    None, HexString(""), 1, _test_addr("0xsender"), _test_addr("0xcode"), _test_addr("0xstorage")
-)
-get_child_of: Callable[[CallContext, HexString], CallContext] = lambda parent, address: CallContext(
-    parent, HexString(""), parent.depth + 1, parent.code_address, address, address
-)
-get_child = lambda: get_child_of(get_root(), _test_addr("0xchild"))
-get_grandchild = lambda: get_child_of(get_child(), _test_addr("0xgrandchild"))
 
 get_add: Callable[[CallContext], Instruction] = lambda call_context: ADD(
     ADD.opcode, "ADD", 1, 1, call_context, (1, 2), (3), None, None
@@ -133,7 +124,7 @@ get_selfdestruct: Callable[[CallContext], Instruction] = lambda call_context: SE
 
 
 def test_call_context_manager_does_not_update_on_add():
-    root = get_root()
+    root = _test_root()
     add = get_add(root)
 
     next_call_context = update_call_context(root, add, root.depth)
@@ -144,7 +135,7 @@ def test_call_context_manager_does_not_update_on_add():
 
 def test_call_context_managers_does_not_enter_without_depth_change():
     """For instance when the call only sends ether, we don't want to dont enter a new call context"""
-    root = get_root()
+    root = _test_root()
     call = get_call(root, "0xtarget")
 
     next_call_context = update_call_context(root, call, root.depth)
@@ -154,10 +145,10 @@ def test_call_context_managers_does_not_enter_without_depth_change():
 
 # TODO: are there other instructions that create a new call context? eg CREATE?
 @pytest.mark.parametrize(
-    "call", [get_call(get_root(), _test_addr("0xtarget")), get_staticcall(get_root(), _test_addr("0xtarget"))]
+    "call", [get_call(_test_root(), _test_addr("0xtarget")), get_staticcall(_test_root(), _test_addr("0xtarget"))]
 )
 def test_call_context_manager_enters_with_code_and_storage(call):
-    root = get_root()
+    root = _test_root()
 
     next_call_context = update_call_context(root, call, root.depth + 1)
 
@@ -170,10 +161,11 @@ def test_call_context_manager_enters_with_code_and_storage(call):
 
 
 @pytest.mark.parametrize(
-    "call", [get_delegate_call(get_root(), _test_addr("0xtarget")), get_callcode(get_root(), _test_addr("0xtarget"))]
+    "call",
+    [get_delegate_call(_test_root(), _test_addr("0xtarget")), get_callcode(_test_root(), _test_addr("0xtarget"))],
 )
 def test_call_context_manager_enters_only_with_code_address(call):
-    root = get_root()
+    root = _test_root()
 
     next_call_context = update_call_context(root, call, root.depth + 1)
 
@@ -185,9 +177,9 @@ def test_call_context_manager_enters_only_with_code_address(call):
     assert not next_call_context.is_contract_initialization
 
 
-@pytest.mark.parametrize("create", [get_create(get_root()), get_create2(get_root())])
+@pytest.mark.parametrize("create", [get_create(_test_root()), get_create2(_test_root())])
 def test_call_context_manager_enters_on_contract_creation(create):
-    root = get_root()
+    root = _test_root()
 
     next_call_context = update_call_context(root, create, root.depth + 1)
 
@@ -201,7 +193,7 @@ def test_call_context_manager_enters_on_contract_creation(create):
 
 
 def test_call_context_manager_throws_on_stop_without_depth_change():
-    child = get_child()
+    child = _test_child()
     stop = get_stop(child)
 
     with pytest.raises(ExpectedDepthChange):
@@ -209,7 +201,7 @@ def test_call_context_manager_throws_on_stop_without_depth_change():
 
 
 def test_call_context_manager_throws_on_too_large_depth_change():
-    child = get_child()
+    child = _test_child()
     stop = get_stop(child)
 
     with pytest.raises(UnexpectedDepthChange):
@@ -217,17 +209,17 @@ def test_call_context_manager_throws_on_too_large_depth_change():
 
 
 def test_call_context_manager_throws_when_attempting_to_stop_at_root():
-    root = get_root()
+    root = _test_root()
     stop = get_stop(root)
 
     with pytest.raises(UnexpectedDepthChange):
         update_call_context(root, stop, root.depth - 1)
 
 
-@pytest.mark.parametrize("ret", [get_stop(get_child()), get_return(get_child()), get_selfdestruct(get_child())])
+@pytest.mark.parametrize("ret", [get_stop(_test_child()), get_return(_test_child()), get_selfdestruct(_test_child())])
 def test_call_context_manager_returns_normal(ret):
-    root = get_root()
-    child = get_child()
+    root = _test_root()
+    child = _test_child()
 
     next_call_context = update_call_context(child, ret, child.depth - 1)
 
@@ -237,7 +229,7 @@ def test_call_context_manager_returns_normal(ret):
 
 
 def test_call_context_manager_does_not_return_at_root():
-    root = get_root()
+    root = _test_root()
     ret = get_return(root)
 
     next_call_context = update_call_context(root, ret, None)
@@ -246,8 +238,8 @@ def test_call_context_manager_does_not_return_at_root():
 
 
 def test_call_context_manager_reverts():
-    root = get_root()
-    child = get_child()
+    root = _test_root()
+    child = _test_child()
     revert = get_revert(child)
 
     next_call_context = update_call_context(child, revert, child.depth - 1)
@@ -258,8 +250,8 @@ def test_call_context_manager_reverts():
 
 
 def test_call_context_manager_makes_exceptional_halt():
-    root = get_root()
-    child = get_child()
+    root = _test_root()
+    child = _test_child()
     add = get_add(child)
 
     next_call_context = update_call_context(child, add, child.depth - 1)
@@ -270,11 +262,11 @@ def test_call_context_manager_makes_exceptional_halt():
 
 
 def test_build_call_tree():
-    root = get_root()
-    first = get_child_of(root, _test_addr("0xfirst"))
-    first_nested = get_child_of(first, _test_addr("0xfirst_nested"))
-    second = get_child_of(root, _test_addr("0xsecond"))
-    third = get_child_of(root, _test_addr("0xthird"))
+    root = _test_root()
+    first = _test_child_of(root, _test_addr("0xfirst"))
+    first_nested = _test_child_of(first, _test_addr("0xfirst_nested"))
+    second = _test_child_of(root, _test_addr("0xsecond"))
+    third = _test_child_of(root, _test_addr("0xthird"))
 
     instructions = [
         get_add(root),

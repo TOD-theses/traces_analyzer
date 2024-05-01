@@ -41,6 +41,10 @@ class Instruction:
         return {}
 
     @classmethod
+    def implemented_flow(cls) -> bool:
+        return cls.io_specification is None
+
+    @classmethod
     def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
         return cls._parse_from_io_spec(cast(InstructionIOSpec, cls.io_specification), env, output_oracle)
 
