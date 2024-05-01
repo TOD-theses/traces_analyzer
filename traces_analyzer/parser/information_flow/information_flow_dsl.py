@@ -1,10 +1,13 @@
 from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import (
+    CombineNode,
+    FlowNode,
     FlowNodeWithResult,
     FlowSpec,
     NoopNode,
     WritingFlowNode,
     _mem_range_node,
     _mem_write_node,
+    _oracle_stack_peek_node,
     _return_data_range_node,
     _return_data_size_node,
     _return_data_write_node,
@@ -25,6 +28,10 @@ def stack_push(value: FlowNodeWithResult | str) -> WritingFlowNode:
 
 def stack_set(index: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
     return _stack_set_node(index, value)
+
+
+def oracle_stack_peek(index: int) -> FlowNodeWithResult:
+    return _oracle_stack_peek_node(index)
 
 
 def mem_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) -> FlowNodeWithResult:
@@ -53,3 +60,7 @@ def return_data_size() -> FlowNodeWithResult:
 
 def noop() -> FlowSpec:
     return NoopNode()
+
+
+def combine(*inputs: FlowNode) -> FlowSpec:
+    return CombineNode(inputs)

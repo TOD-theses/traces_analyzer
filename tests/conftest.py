@@ -64,7 +64,6 @@ def make_instruction(
     io_spec = cls.io_specification
 
     io = parse_instruction_io(
-        # TODO
         io_spec,  # type: ignore
         stack,
         memory,

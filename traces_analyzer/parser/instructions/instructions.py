@@ -7,8 +7,11 @@ from typing_extensions import override
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
+    combine,
     mem_range,
     mem_write,
+    noop,
+    oracle_stack_peek,
     return_data_range,
     return_data_size,
     return_data_write,
@@ -16,6 +19,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     stack_push,
     to_size,
 )
+from traces_analyzer.parser.information_flow.information_flow_spec import FlowSpec
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
@@ -41,7 +45,7 @@ class CallInstruction(Instruction, ABC):
         pass
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class CALL(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=7,
@@ -75,7 +79,7 @@ class CALL(CallInstruction):
         )
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class STATICCALL(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=6,
@@ -107,7 +111,7 @@ class STATICCALL(CallInstruction):
         )
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class DELEGATECALL(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=6,
@@ -141,7 +145,7 @@ class DELEGATECALL(CallInstruction):
         )
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class CALLCODE(CallInstruction):
     io_specification = InstructionIOSpec(
         stack_input_count=7,
@@ -180,41 +184,50 @@ def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
     - pass list of InstructionIOFlow
     """
 
-    @dataclass(frozen=True, repr=False)
+    @dataclass(frozen=True, repr=False, eq=False)
     class SimpleInstruction(Instruction):
         io_specification = io_spec
 
     return SimpleInstruction
 
 
+def _make_flow(io_flow_spec: FlowSpec = noop()):
+    @dataclass(frozen=True, repr=False, eq=False)
+    class FlowInstruction(Instruction):
+        flow_spec = io_flow_spec
+
+    return FlowInstruction
+
+
 STOP = _make_simple()
-# flow([stack_range(2)] -> stack_index(0))
-# _from_flows([stack.push(combine(stack.arg(0), stack.arg(1)))])
-ADD = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-MUL = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SUB = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-DIV = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SDIV = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-MOD = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SMOD = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-ADDMOD = _make_simple(InstructionIOSpec(stack_input_count=3, stack_output_count=1))
-MULMOD = _make_simple(InstructionIOSpec(stack_input_count=3, stack_output_count=1))
-EXP = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SIGNEXTEND = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-LT = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-GT = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SLT = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SGT = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-EQ = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-ISZERO = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-AND = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-OR = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-XOR = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-NOT = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-BYTE = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SHL = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SHR = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
-SAR = _make_simple(InstructionIOSpec(stack_input_count=2, stack_output_count=1))
+
+ADD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+MUL = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SUB = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+DIV = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SDIV = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+
+MOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SMOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+ADDMOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2)))
+MULMOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2)))
+EXP = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SIGNEXTEND = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+LT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+GT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SLT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SGT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+EQ = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+ISZERO = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+AND = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+OR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+XOR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+NOT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+BYTE = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SHL = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SHR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SAR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+
 # flow([stack_range(2), mem_range_from_stack(0, 1)] -> stack_index(0))
 KECCAK256 = _make_simple(
     InstructionIOSpec(stack_input_count=2, stack_output_count=1, memory_input_offset_arg=0, memory_input_size_arg=1)
@@ -236,7 +249,7 @@ CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_
 CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class CALLDATACOPY(Instruction):
     io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
 
@@ -260,7 +273,7 @@ class CALLDATACOPY(Instruction):
 CODESIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class CODECOPY(Instruction):
     io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
 
@@ -284,7 +297,7 @@ class CODECOPY(Instruction):
         )
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class EXTCODECOPY(Instruction):
     io_specification = InstructionIOSpec(stack_input_count=4, memory_output_offset_arg=1, memory_output_size_arg=3)
 
@@ -311,15 +324,8 @@ class EXTCODECOPY(Instruction):
 GASPRICE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 EXTCODESIZE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 
-
-@dataclass(frozen=True, repr=False)
-class RETURNDATASIZE(Instruction):
-    flow_spec = stack_push(return_data_size())
-
-
-@dataclass(frozen=True, repr=False)
-class RETURNDATACOPY(Instruction):
-    flow_spec = mem_write(stack_arg(0), return_data_range(stack_arg(1), stack_arg(2)))
+RETURNDATASIZE = _make_flow(stack_push(return_data_size()))
+RETURNDATACOPY = _make_flow(mem_write(stack_arg(0), return_data_range(stack_arg(1), stack_arg(2))))
 
 
 EXTCODEHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
@@ -337,19 +343,9 @@ BLOBBASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_c
 POP = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=0))
 
 
-@dataclass(frozen=True, repr=False)
-class MLOAD(Instruction):
-    flow_spec = stack_push(mem_range(stack_arg(0), 32))
-
-
-@dataclass(frozen=True, repr=False)
-class MSTORE(Instruction):
-    flow_spec = mem_write(stack_arg(0), stack_arg(1))
-
-
-@dataclass(frozen=True, repr=False)
-class MSTORE8(Instruction):
-    flow_spec = mem_write(stack_arg(0), to_size(stack_arg(1), 1))
+MLOAD = _make_flow(stack_push(mem_range(stack_arg(0), 32)))
+MSTORE = _make_flow(mem_write(stack_arg(0), stack_arg(1)))
+MSTORE8 = _make_flow(mem_write(stack_arg(0), to_size(stack_arg(1), 1)))
 
 
 SLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
@@ -363,11 +359,7 @@ JUMPDEST = _make_simple()
 TLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 TSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
 
-
-@dataclass(frozen=True, repr=False)
-class MCOPY(Instruction):
-    flow_spec = mem_write(stack_arg(0), mem_range(stack_arg(1), stack_arg(2)))
-
+MCOPY = _make_flow(mem_write(stack_arg(0), mem_range(stack_arg(1), stack_arg(2))))
 
 PUSH0 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 PUSH1 = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
@@ -441,7 +433,7 @@ LOG3 = _make_simple(InstructionIOSpec(stack_input_count=5, memory_input_offset_a
 LOG4 = _make_simple(InstructionIOSpec(stack_input_count=6, memory_input_offset_arg=0, memory_input_size_arg=1))
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class CREATE(Instruction):
     io_specification = InstructionIOSpec(
         stack_input_count=3, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2
@@ -451,7 +443,7 @@ class CREATE(Instruction):
         return StorageWrites()
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class CREATE2(Instruction):
     io_specification = InstructionIOSpec(
         stack_input_count=4, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2
@@ -461,15 +453,8 @@ class CREATE2(Instruction):
         return StorageWrites()
 
 
-@dataclass(frozen=True, repr=False)
-class RETURN(Instruction):
-    flow_spec = return_data_write(mem_range(stack_arg(0), stack_arg(1)))
-
-
-@dataclass(frozen=True, repr=False)
-class REVERT(Instruction):
-    flow_spec = return_data_write(mem_range(stack_arg(0), stack_arg(1)))
-
+RETURN = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))
+REVERT = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))
 
 INVALID = _make_simple()
 SELFDESTRUCT = _make_simple(InstructionIOSpec(stack_input_count=1))

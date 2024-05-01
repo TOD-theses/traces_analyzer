@@ -12,7 +12,7 @@ from traces_analyzer.parser.storage.storage_writes import StorageAccesses, Stora
 from traces_analyzer.utils.hexstring import HexString
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True, repr=False, eq=False)
 class Instruction:
     opcode: int
     name: str
@@ -89,6 +89,17 @@ class Instruction:
 
         io = InstructionIO(tuple(stack_inputs), tuple(stack_outputs), mem_input, mem_output)
         return io, flow
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Instruction)
+            and self.opcode == other.opcode
+            and self.program_counter == other.program_counter
+            and self.stack_inputs == other.stack_inputs
+            and self.stack_outputs == other.stack_outputs
+            and self.memory_input == other.memory_input
+            and self.memory_output == other.memory_output
+        )
 
     def __str__(self) -> str:
         return (

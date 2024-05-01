@@ -7,9 +7,11 @@ from tests.test_utils.test_utils import (
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
+    combine,
     mem_range,
     mem_write,
     noop,
+    oracle_stack_peek,
     return_data_range,
     return_data_size,
     return_data_write,
@@ -59,6 +61,11 @@ def test_noop():
     assert flow.writes == StorageWrites()
 
 
+def test_combine():
+    # TODO: test this
+    env = mock_env()
+
+
 def test_stack_arg_const():
     env = mock_env(stack_contents=[_test_group32("10", 1234)])
 
@@ -80,6 +87,16 @@ def test_stack_arg_node():
     flow = stack_arg(_test_node("00")).compute(env, _test_oracle())
 
     assert flow.result.get_hexstring() == HexString("10").as_size(32)
+    assert flow.result.depends_on_instruction_indexes() == {1234}
+
+
+def test_oracle_stack_peek():
+    env = mock_env(step_index=1234)
+    oracle = _test_oracle(stack=["10", "20"])
+
+    flow = oracle_stack_peek(1).compute(env, oracle)
+
+    assert flow.result.get_hexstring() == HexString("20").as_size(32)
     assert flow.result.depends_on_instruction_indexes() == {1234}
 
 

@@ -141,6 +141,20 @@ class ConstNode(FlowNodeWithResult):
         )
 
 
+class CombineNode(FlowSpec):
+    def __init__(self, arguments: tuple[FlowNode, ...]) -> None:
+        super().__init__()
+        self.arguments = arguments
+
+    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+        args = tuple(arg.compute(env, output_oracle) for arg in self.arguments)
+
+        return Flow(
+            accesses=FlowNode._merge_accesses([arg.accesses for arg in args]),
+            writes=FlowNode._merge_writes([arg.writes for arg in args]),
+        )
+
+
 class CallbackNodeWithResult(FlowNodeWithResult):
     def __init__(
         self,
@@ -225,6 +239,23 @@ def _stack_set_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, o
     index = args[0].result.get_hexstring().as_int()
     return StorageWrites(
         stack_sets=[StackSet(index, args[1].result)],
+    )
+
+
+@node_with_results
+def _oracle_stack_peek_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    index = args[0].result.get_hexstring().as_int()
+    value = output_oracle.stack[index]
+    if not len(value) == 64:
+        value = value.as_size(32)
+    result = StorageByteGroup.from_hexstring(value, env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(),
+        writes=StorageWrites(),
+        result=result,
     )
 
 

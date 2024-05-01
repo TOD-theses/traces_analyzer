@@ -27,7 +27,7 @@ def test_events_parser():
 
     assert events[2].op == 82
     assert events[2].pc == 4
-    assert events[2].stack == [HexString("80").as_size(32), HexString("40").as_size(32)]
+    assert events[2].stack == [HexString("40").as_size(32), HexString("80").as_size(32)]
     assert events[2].memory == ""
     assert events[2].depth == 1
 

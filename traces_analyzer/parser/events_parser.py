@@ -25,7 +25,7 @@ def parse_events(lines: Iterable[str]) -> Iterable[TraceEvent]:
         yield TraceEvent(
             pc=obj["pc"],
             op=obj["op"],
-            stack=[HexString(val).as_size(32) for val in obj["stack"]],
+            stack=[HexString(val).as_size(32) for val in reversed(obj["stack"])],
             memory=memory,
             depth=obj["depth"],
         )

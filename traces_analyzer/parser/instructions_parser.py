@@ -3,16 +3,12 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.environment.call_context_manager import CallTree, build_call_tree, update_call_context
+from traces_analyzer.parser.environment.call_context_manager import CallTree, build_call_tree
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import CallInstruction, get_instruction_class
-from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import StorageWrites
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 from traces_analyzer.utils.hexstring import HexString
-from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 @dataclass
@@ -47,7 +43,6 @@ def _create_root_call_context(sender: HexString, to: HexString, calldata: HexStr
         code_address=to,
         storage_address=to,
     )
-
 
 
 def _parse_instructions(

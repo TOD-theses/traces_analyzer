@@ -17,7 +17,7 @@ def test_parse_instructions_io_empty():
 def test_parse_instructions_io_stack():
     io_spec = InstructionIOSpec(stack_input_count=2, stack_output_count=1)
 
-    io = parse_instruction_io(io_spec, _test_stack(["0x1", "0x2", "0x3"]), _test_mem(""), ["0x33", "0x22", "0x11"], "")
+    io = parse_instruction_io(io_spec, _test_stack(["0x1", "0x2", "0x3"]), _test_mem(""), ["0x11", "0x22", "0x33"], "")
 
     assert io.inputs_stack == (HexString("0x1").as_size(32), HexString("0x2").as_size(32))
     assert io.outputs_stack == ("0x11",)

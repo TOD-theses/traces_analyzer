@@ -169,31 +169,6 @@ def test_instruction_opcode_matches_class():
 
 _instruction_stack_io_counts = [
     (STOP, 0, 0),
-    (ADD, 2, 1),
-    (MUL, 2, 1),
-    (SUB, 2, 1),
-    (DIV, 2, 1),
-    (SDIV, 2, 1),
-    (MOD, 2, 1),
-    (SMOD, 2, 1),
-    (ADDMOD, 3, 1),
-    (MULMOD, 3, 1),
-    (EXP, 2, 1),
-    (SIGNEXTEND, 2, 1),
-    (LT, 2, 1),
-    (GT, 2, 1),
-    (SLT, 2, 1),
-    (SGT, 2, 1),
-    (EQ, 2, 1),
-    (ISZERO, 1, 1),
-    (AND, 2, 1),
-    (OR, 2, 1),
-    (XOR, 2, 1),
-    (NOT, 1, 1),
-    (BYTE, 2, 1),
-    (SHL, 2, 1),
-    (SHR, 2, 1),
-    (SAR, 2, 1),
     (KECCAK256, 2, 1),
     (ADDRESS, 0, 1),
     (BALANCE, 1, 1),
@@ -346,6 +321,59 @@ def _test_parse_instruction(
     instr: type[InstructionType], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
 ) -> InstructionType:
     return cast(InstructionType, parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle))
+
+
+stack_calculation_instructions = [
+    (ADD, 2, 1),
+    (MUL, 2, 1),
+    (SUB, 2, 1),
+    (DIV, 2, 1),
+    (SDIV, 2, 1),
+    (MOD, 2, 1),
+    (SMOD, 2, 1),
+    (ADDMOD, 3, 1),
+    (MULMOD, 3, 1),
+    (EXP, 2, 1),
+    (SIGNEXTEND, 2, 1),
+    (LT, 2, 1),
+    (GT, 2, 1),
+    (SLT, 2, 1),
+    (SGT, 2, 1),
+    (EQ, 2, 1),
+    (ISZERO, 1, 1),
+    (AND, 2, 1),
+    (OR, 2, 1),
+    (XOR, 2, 1),
+    (NOT, 1, 1),
+    (BYTE, 2, 1),
+    (SHL, 2, 1),
+    (SHR, 2, 1),
+    (SAR, 2, 1),
+]
+
+
+def test_stack_calculations_io_count() -> None:
+    for instr_type, stack_inputs_n, stack_outputs_n in stack_calculation_instructions:
+        env = mock_env(
+            step_index=3,
+            stack_contents=[str(i) for i in range(stack_inputs_n)],
+        )
+        oracle = _test_oracle(stack=[str(i) for i in range(stack_outputs_n)])
+
+        instr = _test_parse_instruction(instr_type, env, oracle)
+
+        accesses = instr.get_accesses()
+        writes = instr.get_writes()
+        assert len(accesses.stack) == stack_inputs_n
+        assert len(writes.stack_pops) == stack_inputs_n
+        for i in range(stack_inputs_n):
+            assert accesses.stack[i].index == i
+            assert accesses.stack[i].value.get_hexstring() == HexString(str(i)).as_size(32)
+
+        assert len(writes.stack_pushes) == stack_outputs_n
+        for i in range(stack_outputs_n):
+            assert writes.stack_pushes[i].value.get_hexstring() == HexString(str(i)).as_size(32)
+            assert writes.stack_pushes[i].value.depends_on_instruction_indexes() == {3}
 
 
 def test_mload() -> None:

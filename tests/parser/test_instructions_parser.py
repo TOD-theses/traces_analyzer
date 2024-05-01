@@ -59,7 +59,7 @@ def test_call_inputs_memory_parsing():
 
 def test_parser_builds_call_tree():
     call_target = HexString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").as_address()
-    stack = [HexString(val) for val in ["0x0", "0x4bb", "0x24", "0xb", "0x0", call_target, "0x940f"]]
+    stack = [HexString(val) for val in ["0x940f", call_target, "0x0", "0xb", "0x24", "0x4bb", "0x0"]]
     memory = HexString(
         "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
     )

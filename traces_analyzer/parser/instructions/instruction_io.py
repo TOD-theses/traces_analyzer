@@ -61,7 +61,7 @@ def parse_next_stack_arg(stack: Sequence[HexString], last_n_args: int) -> tuple[
     if last_n_args == 0:
         return tuple()
 
-    return tuple(reversed(stack[-last_n_args:]))
+    return tuple(stack[:last_n_args])
 
 
 def parse_memory_via_stack_args(

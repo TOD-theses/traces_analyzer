@@ -1,7 +1,5 @@
-
-
 from dataclasses import dataclass
-from traces_analyzer.parser.environment.call_context import CallContext
+
 from traces_analyzer.parser.environment.call_context_manager import update_call_context
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.instructions.instruction import Instruction
@@ -15,6 +13,7 @@ from traces_analyzer.utils.mnemonics import opcode_to_name
 class InstructionMetadata:
     opcode: int
     pc: int
+
 
 class TraceEVM:
     def __init__(self, env: ParsingEnvironment, verify_storages: bool) -> None:
@@ -61,7 +60,7 @@ class TraceEVM:
 
     def _apply_stack_oracle(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
         self.env.stack.clear()
-        self.env.stack.push_all([StorageByteGroup.from_hexstring(val, -1) for val in reversed(output_oracle.stack)])
+        self.env.stack.push_all([StorageByteGroup.from_hexstring(val, -1) for val in output_oracle.stack])
 
     def _apply_storage_writes(
         self, storage_writes: StorageWrites, instruction: Instruction, output_oracle: InstructionOutputOracle
@@ -89,7 +88,7 @@ class TraceEVM:
             return
 
         memory = self.env.memory.get_all().get_hexstring().strip("0")
-        oracle_memory = output_oracle.memory.strip("0")
+        oracle_memory = output_oracle.memory.without_prefix().strip("0")
 
         if memory != oracle_memory:
             raise Exception(
@@ -97,7 +96,7 @@ class TraceEVM:
                 f"Environment: {memory}\n"
                 f"Oracle:      {oracle_memory}"
             )
-        stack = [x.get_hexstring().as_size(32) for x in reversed(self.env.stack.get_all())]
+        stack = [x.get_hexstring() for x in self.env.stack.get_all()]
         oracle_stack = [x.as_size(32) for x in output_oracle.stack]
 
         if stack != oracle_stack:
