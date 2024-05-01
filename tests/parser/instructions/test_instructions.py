@@ -1,13 +1,9 @@
 from typing import TypeVar, cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_child, _test_group, _test_group32, _test_root
+from tests.test_utils.test_utils import _test_child, _test_group, _test_group32, _test_oracle, _test_root, mock_env
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
-from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import MemoryAccess
-from traces_analyzer.utils.hexstring import HexString
 
 
 _opcodes_to_instruction = [
@@ -351,22 +347,20 @@ def _test_parse_instruction(
     return cast(InstructionType, parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle))
 
 
-dummy_output_oracle = InstructionOutputOracle([], HexString(""), None)
-
-
 def test_mload() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.current_step_index = 3
-    env.stack.push(_test_group("4"))
-    env.memory.set(0x4, _test_group("11223344", 2), 2)
+    env = mock_env(
+        step_index=3,
+        stack_contents=["2"],
+        memory_content=_test_group("000011223344", 2),
+    )
 
-    # load memory[4:36]
-    mload = _test_parse_instruction(MLOAD, env, dummy_output_oracle)
+    # load memory[2:34]
+    mload = _test_parse_instruction(MLOAD, env, _test_oracle())
 
     padded_value = "11223344" + (28) * 2 * "0"
     accesses = mload.get_accesses()
     assert len(accesses.memory) == 1
-    assert accesses.memory[0].offset == 0x4
+    assert accesses.memory[0].offset == 0x2
     assert accesses.memory[0].value.get_hexstring() == padded_value
     # the access outside of memory range is padded by the current instruction (3)
     assert accesses.memory[0].value.depends_on_instruction_indexes() == {2, 3}
@@ -374,15 +368,9 @@ def test_mload() -> None:
 
 
 def test_mstore() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all(
-        [
-            _test_group("4"),
-            _test_group32("11223344", 1),
-        ]
-    )
+    env = mock_env(stack_contents=["4", _test_group32("11223344", 1)])
 
-    mstore = _test_parse_instruction(MSTORE, env, dummy_output_oracle)
+    mstore = _test_parse_instruction(MSTORE, env, _test_oracle())
 
     writes = mstore.get_writes()
     assert len(writes.memory) == 1
@@ -392,10 +380,9 @@ def test_mstore() -> None:
 
 
 def test_mstore8() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group32("4"), _test_group32("1", 1)])
+    env = mock_env(stack_contents=["4", _test_group32("1", 1)])
 
-    mstore8 = _test_parse_instruction(MSTORE8, env, dummy_output_oracle)
+    mstore8 = _test_parse_instruction(MSTORE8, env, _test_oracle())
 
     writes = mstore8.get_writes()
     assert len(writes.memory) == 1
@@ -405,12 +392,13 @@ def test_mstore8() -> None:
 
 
 def test_mcopy() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.current_step_index = 2
-    env.stack.push_all([_test_group("20"), _test_group("3"), _test_group("4")])
-    env.memory.set(0x4, _test_group("11223344", 1), 1)
+    env = mock_env(
+        step_index=2,
+        stack_contents=["20", "3", "4"],
+        memory_content=_test_group("0000000011223344", 1),
+    )
 
-    mcopy = _test_parse_instruction(MCOPY, env, dummy_output_oracle)
+    mcopy = _test_parse_instruction(MCOPY, env, _test_oracle())
 
     accesses = mcopy.get_accesses()
     assert len(accesses.memory) == 1
@@ -426,11 +414,12 @@ def test_mcopy() -> None:
 
 
 def test_return() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group("2"), _test_group("4")])
-    env.memory.set(0, _test_group("1122334455667788", 1), -1)
+    env = mock_env(
+        stack_contents=["2", "4"],
+        memory_content=_test_group("1122334455667788", 1),
+    )
 
-    return_instr = _test_parse_instruction(RETURN, env, dummy_output_oracle)
+    return_instr = _test_parse_instruction(RETURN, env, _test_oracle())
 
     accesses = return_instr.get_accesses()
     assert len(accesses.memory) == 1
@@ -445,11 +434,12 @@ def test_return() -> None:
 
 
 def test_revert() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group("2"), _test_group("4")])
-    env.memory.set(0, _test_group("1122334455667788", 1), -1)
+    env = mock_env(
+        stack_contents=["2", "4"],
+        memory_content=_test_group("1122334455667788", 1),
+    )
 
-    revert = _test_parse_instruction(REVERT, env, dummy_output_oracle)
+    revert = _test_parse_instruction(REVERT, env, _test_oracle())
 
     accesses = revert.get_accesses()
     assert len(accesses.memory) == 1
@@ -463,15 +453,10 @@ def test_revert() -> None:
 
 
 def test_returndatasize() -> None:
-    root = _test_root()
-    sub_context = _test_child()
-    env = ParsingEnvironment(root)
-    env.on_call_enter(sub_context)
-    env.on_call_exit(root)
-    env.current_step_index = 2
-    sub_context.return_data = _test_group("112233445566", 1)
+    env = mock_env(step_index=2)
+    env.last_executed_sub_context.return_data = _test_group("112233445566", 1)
 
-    returndatasize = _test_parse_instruction(RETURNDATASIZE, env, dummy_output_oracle)
+    returndatasize = _test_parse_instruction(RETURNDATASIZE, env, _test_oracle())
 
     accesses = returndatasize.get_accesses()
     assert accesses.return_data
@@ -487,11 +472,13 @@ def test_returndatasize() -> None:
 
 
 def test_returndatacopy() -> None:
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group("123"), _test_group("2"), _test_group("4")])
-    env.current_call_context.return_data = _test_group("1122334455667788", 1234)
+    env = mock_env(
+        stack_contents=["123", "2", "4"],
+    )
+    # TODO: this should use the sub contexts return data
+    env.current_call_context.return_data = _test_group("11223344556688", 1234)
 
-    returndatasize = _test_parse_instruction(RETURNDATACOPY, env, dummy_output_oracle)
+    returndatasize = _test_parse_instruction(RETURNDATACOPY, env, _test_oracle())
 
     accesses = returndatasize.get_accesses()
     assert accesses.return_data

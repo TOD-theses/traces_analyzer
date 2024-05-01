@@ -1,9 +1,13 @@
 from typing import Callable
+from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
+
+TestVal = str | HexString | StorageByteGroup
 
 
 def _test_addr(name: str) -> HexString:
@@ -16,13 +20,23 @@ def _test_stack(items: list[str]) -> Stack:
     return stack
 
 
-def _test_group(hexstring: str | HexString, step_index=-1) -> StorageByteGroup:
+def _test_hexstring(val: str | HexString):
+    if isinstance(val, HexString):
+        return val
+    return HexString(val)
+
+
+def _test_group(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
+    if isinstance(hexstring, StorageByteGroup):
+        return hexstring
     if isinstance(hexstring, str):
         hexstring = HexString(hexstring)
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
 
-def _test_group32(hexstring: str | HexString, step_index=-1) -> StorageByteGroup:
+def _test_group32(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
+    if isinstance(hexstring, StorageByteGroup):
+        return hexstring
     if isinstance(hexstring, str):
         hexstring = HexString(hexstring)
     if len(hexstring) < 32:
@@ -51,3 +65,27 @@ def _test_child():
 
 def _test_grandchild():
     return _test_child_of(_test_child(), _test_addr("0xgrandchild"))
+
+
+def mock_env(
+    step_index=-1,
+    current_call_context=_test_root(),
+    last_executed_sub_context=_test_child(),
+    stack_contents: list[TestVal] | None = None,
+    memory_content: TestVal | None = None,
+):
+    env = MagicMock(spec=ParsingEnvironment)
+    env.current_step_index = step_index
+    env.current_call_context = current_call_context
+    env.last_executed_sub_context = last_executed_sub_context
+    if stack_contents:
+        env.stack = Stack()
+        env.stack.push_all([_test_group32(val) for val in stack_contents])
+    if memory_content:
+        env.memory = Memory()
+        env.memory.set(0, _test_group(memory_content), step_index)
+    return env
+
+
+def _test_oracle(stack: list[str | HexString] = [], memory: str | HexString = "", depth=-1) -> InstructionOutputOracle:
+    return InstructionOutputOracle([_test_hexstring(x) for x in stack], _test_hexstring(memory), depth)

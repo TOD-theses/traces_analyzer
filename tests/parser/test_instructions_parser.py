@@ -1,5 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_addr, _test_group
+from tests.test_utils.test_utils import _test_addr, _test_group, _test_oracle, mock_env
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instructions import (
@@ -30,10 +30,6 @@ def get_root_call_context():
     )
 
 
-def get_sample_env():
-    return ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-
-
 def get_parsing_info(verify_storages=True):
     return TransactionParsingInfo(
         _test_addr("0xsender"), _test_addr("0xto"), "calldata", verify_storages=verify_storages
@@ -49,22 +45,13 @@ def test_parser_empty_events():
 
 
 def test_call_inputs_memory_parsing():
-    stack = [
-        HexString(val)
-        for val in ["0x0", "0x4bb", "0x24", "0xb", "0x0", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "0x940f"]
-    ]
-    memory = HexString(
-        "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    env = mock_env(
+        stack_contents=["0x940f", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "0x0", "0xb", "0x24", "0x4bb", "0x0"],
+        memory_content="00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     )
-
-    env = ParsingEnvironment(TEST_ROOT_CALLCONTEXT)
-    env.stack.push_all([_test_group(value) for value in reversed(stack)])
-    env.memory.set(0, _test_group(memory), -1)
-
     instruction_metadata = InstructionMetadata(CALL.opcode, 0x1234)
-    output_oracle = InstructionOutputOracle([], "", None)
 
-    call_instruction = parse_instruction(env, instruction_metadata, output_oracle)
+    call_instruction = parse_instruction(env, instruction_metadata, _test_oracle())
 
     assert isinstance(call_instruction, CALL)
     assert call_instruction.memory_input == "2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000"
