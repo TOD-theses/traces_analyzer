@@ -95,8 +95,8 @@ class TraceEVM:
                 f"Environment: {memory}\n"
                 f"Oracle:      {oracle_memory}"
             )
-        stack = [x.get_hexstring() for x in self.env.stack.get_all()]
-        oracle_stack = [x.as_size(32) for x in output_oracle.stack]
+        stack = [x.get_hexstring().as_int() for x in self.env.stack.get_all()]
+        oracle_stack = [x.as_int() for x in output_oracle.stack]
 
         if stack != oracle_stack:
             raise Exception(

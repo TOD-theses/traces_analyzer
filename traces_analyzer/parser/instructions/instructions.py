@@ -424,7 +424,6 @@ LOG4 = _make_flow(
 )
 
 
-
 @dataclass(frozen=True, repr=False, eq=False)
 class CREATE(Instruction):
     io_specification = InstructionIOSpec(

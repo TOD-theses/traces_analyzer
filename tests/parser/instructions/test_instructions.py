@@ -409,10 +409,11 @@ def test_logn() -> None:
             assert accesses.stack[2 + i].index == 2 + i
             assert accesses.stack[2 + i].value.get_hexstring() == HexString(str(i)).as_size(32)
 
+
 def test_keccak256() -> None:
     env = mock_env(
         step_index=3,
-        stack_contents=[_test_group32("2", 1),_test_group32( "4", 2)],
+        stack_contents=[_test_group32("2", 1), _test_group32("4", 2)],
         memory_content="001122334455667788",
     )
     oracle = _test_oracle(stack=[HexString("aaaa").as_size(32)])
@@ -433,8 +434,6 @@ def test_keccak256() -> None:
     assert len(writes.stack_pushes) == 1
     assert writes.stack_pushes[0].value.get_hexstring() == HexString("aaaa").as_size(32)
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {3}
-
-
 
 
 def test_mload() -> None:
