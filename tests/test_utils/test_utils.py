@@ -87,5 +87,5 @@ def mock_env(
     return env
 
 
-def _test_oracle(stack: list[str | HexString] = [], memory: str | HexString = "", depth=-1) -> InstructionOutputOracle:
+def _test_oracle(stack: list[str | HexString] = [], memory: str | HexString = "", depth=1) -> InstructionOutputOracle:
     return InstructionOutputOracle([_test_hexstring(x) for x in stack], _test_hexstring(memory), depth)

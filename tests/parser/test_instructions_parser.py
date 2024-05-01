@@ -11,11 +11,11 @@ from traces_analyzer.parser.instructions.instructions import (
 from traces_analyzer.parser.instructions_parser import (
     InstructionMetadata,
     TransactionParsingInfo,
-    parse_instruction,
     parse_instructions,
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
+from traces_analyzer.parser.trace_evm.trace_evm import parse_instruction
 from traces_analyzer.utils.hexstring import HexString
 
 

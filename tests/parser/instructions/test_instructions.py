@@ -3,7 +3,8 @@ from tests.conftest import TEST_ROOT_CALLCONTEXT
 from tests.test_utils.test_utils import _test_child, _test_group, _test_group32, _test_oracle, _test_root, mock_env
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
-from traces_analyzer.parser.instructions_parser import InstructionMetadata, parse_instruction
+from traces_analyzer.parser.instructions_parser import InstructionMetadata
+from traces_analyzer.parser.trace_evm.trace_evm import parse_instruction
 
 
 _opcodes_to_instruction = [
