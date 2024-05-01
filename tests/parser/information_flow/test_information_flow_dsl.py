@@ -211,9 +211,8 @@ def test_to_size_decrease():
 
 
 def test_return_data_range_noop():
-    # TODO: this should use the subcontext
     env = mock_env()
-    env.current_call_context.return_data = _test_group("1234", 1)
+    env.last_executed_sub_context.return_data = _test_group("1234", 1)
 
     flow = return_data_range(_test_node("2"), _test_node("0")).compute(env, _test_oracle())
 
@@ -223,7 +222,7 @@ def test_return_data_range_noop():
 
 def test_return_data_range_if_not_set():
     env = mock_env()
-    env.current_call_context.return_data = _test_group("")
+    env.last_executed_sub_context.return_data = _test_group("", 1234)
 
     flow = return_data_range(_test_node("2"), _test_node("4")).compute(env, _test_oracle())
 
@@ -234,7 +233,7 @@ def test_return_data_range_if_not_set():
 
 def test_return_data_range():
     env = mock_env()
-    env.current_call_context.return_data = _test_group("11223344556677889900", 1234)
+    env.last_executed_sub_context.return_data = _test_group("11223344556677889900", 1234)
 
     flow = return_data_range(_test_node("2"), _test_node("4")).compute(env, _test_oracle())
 

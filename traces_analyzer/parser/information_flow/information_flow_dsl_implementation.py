@@ -311,7 +311,10 @@ def _return_data_range_node(
             writes=StorageWrites(),
             result=StorageByteGroup(),
         )
-    return_data = env.current_call_context.return_data
+    if not env.last_executed_sub_context:
+        return_data = StorageByteGroup()
+    else:
+        return_data = env.last_executed_sub_context.return_data
     if len(return_data) < offset + size:
         # should revert
         result = StorageByteGroup()

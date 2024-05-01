@@ -504,8 +504,7 @@ def test_returndatacopy() -> None:
     env = mock_env(
         stack_contents=["123", "2", "4"],
     )
-    # TODO: this should use the sub contexts return data
-    env.current_call_context.return_data = _test_group("11223344556688", 1234)
+    env.last_executed_sub_context.return_data = _test_group("1122334455667788", 1234)
 
     returndatasize = _test_parse_instruction(RETURNDATACOPY, env, _test_oracle())
 
