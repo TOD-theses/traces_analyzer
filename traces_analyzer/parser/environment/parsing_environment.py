@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.storage.balances import Balances, BalancesStorage
 from traces_analyzer.parser.storage.last_executed_sub_context import LastExecutedSubContextStorage
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
@@ -14,6 +15,7 @@ class ParsingEnvironment:
         self.current_step_index = 0
         self._stack_storage = ContextSpecificStorage(Stack)
         self._memory_storage = ContextSpecificStorage(Memory)
+        self._balances_storage = BalancesStorage()
         self._last_executed_sub_context = LastExecutedSubContextStorage()
 
     def on_call_enter(self, next_call_context: CallContext):
@@ -27,7 +29,7 @@ class ParsingEnvironment:
         self.current_call_context = next_call_context
 
     def _storages(self) -> list[Storage]:
-        return [self._last_executed_sub_context, self._stack_storage, self._memory_storage]
+        return [self._last_executed_sub_context, self._stack_storage, self._memory_storage, self._balances_storage]
 
     @property
     def stack(self) -> Stack:
@@ -36,6 +38,10 @@ class ParsingEnvironment:
     @property
     def memory(self) -> Memory:
         return self._memory_storage.current()
+
+    @property
+    def balances(self) -> Balances:
+        return self._balances_storage.current()
 
     @property
     def last_executed_sub_context(self) -> CallContext | None:

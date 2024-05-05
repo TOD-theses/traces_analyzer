@@ -1,5 +1,5 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_addr, _test_group, _test_oracle, mock_env
+from tests.test_utils.test_utils import _test_hash_addr, _test_group, _test_oracle, mock_env
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.parser.instructions.instructions import (
@@ -32,7 +32,7 @@ def get_root_call_context():
 
 def get_parsing_info(verify_storages=True):
     return TransactionParsingInfo(
-        _test_addr("0xsender"), _test_addr("0xto"), "calldata", verify_storages=verify_storages
+        _test_hash_addr("0xsender"), _test_hash_addr("0xto"), "calldata", verify_storages=verify_storages
     )
 
 
@@ -70,15 +70,15 @@ def test_parser_builds_call_tree():
         TraceEvent(pc=3, op=JUMPDEST.opcode, stack=[], memory="", depth=2),
     ]
     parsing_info = TransactionParsingInfo(
-        sender=_test_addr("0xsender"),
-        to=_test_addr("0xto"),
+        sender=_test_hash_addr("0xsender"),
+        to=_test_hash_addr("0xto"),
         calldata="calldata",
         verify_storages=False,
     )
 
     result = parse_instructions(parsing_info, events)
 
-    assert result.call_tree.call_context.code_address == _test_addr("0xto")
+    assert result.call_tree.call_context.code_address == _test_hash_addr("0xto")
     assert len(result.call_tree.children) == 1
     assert result.call_tree.children[0].call_context.code_address == call_target
 

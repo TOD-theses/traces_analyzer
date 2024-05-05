@@ -3,11 +3,14 @@ from tests.test_utils.test_utils import (
     _test_group,
     _test_group32,
     _test_oracle,
+    _test_root,
     mock_env,
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
+    balance_of,
     combine,
+    current_storage_address,
     mem_range,
     mem_write,
     noop,
@@ -47,10 +50,8 @@ class _TestFlowNode(FlowNodeWithResult):
         )
 
 
-def _test_node(value: StorageByteGroup | str) -> FlowNode:
-    if isinstance(value, StorageByteGroup):
-        return _TestFlowNode(value=value)
-    return _TestFlowNode(value=_test_group(value))
+def _test_node(value: StorageByteGroup | HexString | str, step_index=-1) -> FlowNode:
+    return _TestFlowNode(value=_test_group(value, step_index))
 
 
 def test_noop():
@@ -185,6 +186,28 @@ def test_mem_write_const():
     assert flow.writes.memory[0].offset == 2
     assert flow.writes.memory[0].value.get_hexstring() == "22334455"
     assert flow.writes.memory[0].value.depends_on_instruction_indexes() == {1234}
+
+
+def test_current_address():
+    call_context = _test_root()
+    env = mock_env(step_index=1234, current_call_context=call_context)
+
+    flow = current_storage_address().compute(env, _test_oracle())
+
+    assert flow.result.get_hexstring() == call_context.storage_address
+    assert flow.result.depends_on_instruction_indexes() == {1234}
+    assert len(flow.result) == 20
+
+
+def test_balance_of_known_address():
+    env = mock_env(balances={"abcd": 1234})
+
+    flow = balance_of(_test_node(HexString("abcd").as_address(), 2)).compute(env, _test_oracle())
+
+    assert len(flow.accesses.balance) == 1
+    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {2}
+    assert flow.accesses.balance[0].last_modified_step_index == 1234
 
 
 def test_to_size_noop():

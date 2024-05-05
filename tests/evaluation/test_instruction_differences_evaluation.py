@@ -1,6 +1,6 @@
 import json
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_addr
+from tests.test_utils.test_utils import _test_hash_addr
 from traces_analyzer.features.extractors.instruction_differences import (
     MemoryInputChange,
     StackInputChange,
@@ -17,7 +17,7 @@ def test_instruction_differences_evaluation():
     call_context = TEST_ROOT_CALLCONTEXT
     input_changes = [
         InstructionInputChange(
-            address=_test_addr("0xtest"),
+            address=_test_hash_addr("0xtest"),
             program_counter=5,
             opcode=CALL.opcode,
             instruction_one=CALL(
@@ -56,7 +56,15 @@ def test_instruction_differences_evaluation():
             program_counter=10,
             step_index=0,
             call_context=CallContext(
-                None, "", 1, _test_addr("0xsender"), _test_addr("0xtest"), _test_addr("0xtest"), False, None, False
+                None,
+                "",
+                1,
+                _test_hash_addr("0xsender"),
+                _test_hash_addr("0xtest"),
+                _test_hash_addr("0xtest"),
+                False,
+                None,
+                False,
             ),
             stack_inputs=(HexString("0xkey"),),
             stack_outputs=(HexString("0xval"),),
@@ -78,7 +86,7 @@ def test_instruction_differences_evaluation():
             "input_changes": [
                 {
                     "location": {
-                        "address": _test_addr("0xtest").with_prefix(),
+                        "address": _test_hash_addr("0xtest").with_prefix(),
                         "pc": 5,
                     },
                     "instruction": {
@@ -116,7 +124,7 @@ def test_instruction_differences_evaluation():
                 "only_in_first_trace": [
                     {
                         "location": {
-                            "address": _test_addr("0xtest").with_prefix(),
+                            "address": _test_hash_addr("0xtest").with_prefix(),
                             "pc": 10,
                         },
                         "instruction": {"opcode": SLOAD.opcode, "stack_inputs": ("0xkey",)},

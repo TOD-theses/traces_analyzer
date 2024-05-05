@@ -1,6 +1,14 @@
 from typing import TypeVar, cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_child, _test_group, _test_group32, _test_oracle, _test_root, mock_env
+from tests.test_utils.test_utils import (
+    _test_addr,
+    _test_child,
+    _test_group,
+    _test_group32,
+    _test_oracle,
+    _test_root,
+    mock_env,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata
@@ -169,7 +177,6 @@ def test_instruction_opcode_matches_class():
 
 _instruction_stack_io_counts = [
     (ADDRESS, 0, 1),
-    (BALANCE, 1, 1),
     (ORIGIN, 0, 1),
     (CALLER, 0, 1),
     (CALLVALUE, 0, 1),
@@ -189,7 +196,6 @@ _instruction_stack_io_counts = [
     (PREVRANDAO, 0, 1),
     (GASLIMIT, 0, 1),
     (CHAINID, 0, 1),
-    (SELFBALANCE, 0, 1),
     (BASEFEE, 0, 1),
     (BLOBHASH, 1, 1),
     (BLOBBASEFEE, 0, 1),
@@ -439,8 +445,9 @@ def test_keccak256() -> None:
 def test_mload() -> None:
     env = mock_env(
         step_index=3,
+        storage_step_index=2,
         stack_contents=["2"],
-        memory_content=_test_group("000011223344", 2),
+        memory_content="000011223344",
     )
 
     # load memory[2:34]
@@ -500,6 +507,59 @@ def test_mcopy() -> None:
     assert writes.memory[0].offset == 0x20
     assert writes.memory[0].value.get_hexstring() == "00112233"
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_balance() -> None:
+    env = mock_env(
+        storage_step_index=1,
+        step_index=2,
+        stack_contents=["abcd"],
+        balances={"abcd": 12},
+    )
+    oracle = _test_oracle(stack=["123456"])
+
+    balance = _test_parse_instruction(BALANCE, env, oracle)
+
+    accesses = balance.get_accesses()
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == _test_addr("abcd")
+    assert accesses.balance[0].address.depends_on_instruction_indexes() == {1}
+    assert accesses.balance[0].last_modified_step_index == 12
+
+    assert len(accesses.stack) == 1
+    assert accesses.stack[0].index == 0
+    assert accesses.stack[0].value.get_hexstring() == HexString("abcd").as_size(32)
+    assert accesses.stack[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = balance.get_writes()
+    assert len(writes.stack_pops) == 1
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_int() == 0x123456
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
+
+
+def test_selfbalance() -> None:
+    call_context = _test_root()
+    storage_addr = call_context.storage_address
+    env = mock_env(
+        step_index=2,
+        storage_step_index=1,
+        balances={storage_addr: 12},
+    )
+    oracle = _test_oracle(stack=["123456"])
+
+    balance = _test_parse_instruction(SELFBALANCE, env, oracle)
+
+    accesses = balance.get_accesses()
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == storage_addr
+    assert accesses.balance[0].address.depends_on_instruction_indexes() == {2}
+    assert accesses.balance[0].last_modified_step_index == 12
+
+    writes = balance.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_int() == 0x123456
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
 
 def test_return() -> None:

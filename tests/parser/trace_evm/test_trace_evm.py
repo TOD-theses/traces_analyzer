@@ -6,8 +6,9 @@ from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, Trac
 def test_trace_evm_mload():
     env = mock_env(
         step_index=3,
+        storage_step_index=2,
         stack_contents=["2"],
-        memory_content=_test_group("000011223344", 2),
+        memory_content="000011223344",
     )
     evm = TraceEVM(env, verify_storages=False)
     mload_metadata = InstructionMetadata(MLOAD.opcode, 1)

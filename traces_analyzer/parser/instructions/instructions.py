@@ -7,7 +7,9 @@ from typing_extensions import override
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
+    balance_of,
     combine,
+    current_storage_address,
     mem_range,
     mem_write,
     noop,
@@ -227,7 +229,7 @@ SAR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_a
 
 KECCAK256 = _make_flow(combine(stack_push(oracle_stack_peek(0)), mem_range(stack_arg(0), stack_arg(1))))
 ADDRESS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-BALANCE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
+BALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(to_size(stack_arg(0), 20))))
 ORIGIN = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 CALLER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
@@ -322,7 +324,7 @@ NUMBER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=
 PREVRANDAO = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 GASLIMIT = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 CHAINID = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-SELFBALANCE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+SELFBALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(current_storage_address())))
 BASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 BLOBHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 BLOBBASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))

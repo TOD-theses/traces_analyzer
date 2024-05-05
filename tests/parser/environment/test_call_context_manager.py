@@ -1,6 +1,6 @@
 from typing import Callable
 import pytest
-from tests.test_utils.test_utils import _test_addr, _test_root, _test_child, _test_child_of
+from tests.test_utils.test_utils import _test_hash_addr, _test_root, _test_child, _test_child_of
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.call_context_manager import (
     ExpectedDepthChange,
@@ -145,7 +145,8 @@ def test_call_context_managers_does_not_enter_without_depth_change():
 
 # TODO: are there other instructions that create a new call context? eg CREATE?
 @pytest.mark.parametrize(
-    "call", [get_call(_test_root(), _test_addr("0xtarget")), get_staticcall(_test_root(), _test_addr("0xtarget"))]
+    "call",
+    [get_call(_test_root(), _test_hash_addr("0xtarget")), get_staticcall(_test_root(), _test_hash_addr("0xtarget"))],
 )
 def test_call_context_manager_enters_with_code_and_storage(call):
     root = _test_root()
@@ -154,15 +155,18 @@ def test_call_context_manager_enters_with_code_and_storage(call):
 
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
-    assert next_call_context.code_address == _test_addr("0xtarget")
-    assert next_call_context.storage_address == _test_addr("0xtarget")
+    assert next_call_context.code_address == _test_hash_addr("0xtarget")
+    assert next_call_context.storage_address == _test_hash_addr("0xtarget")
     assert next_call_context.calldata == "11111111"
     assert not next_call_context.is_contract_initialization
 
 
 @pytest.mark.parametrize(
     "call",
-    [get_delegate_call(_test_root(), _test_addr("0xtarget")), get_callcode(_test_root(), _test_addr("0xtarget"))],
+    [
+        get_delegate_call(_test_root(), _test_hash_addr("0xtarget")),
+        get_callcode(_test_root(), _test_hash_addr("0xtarget")),
+    ],
 )
 def test_call_context_manager_enters_only_with_code_address(call):
     root = _test_root()
@@ -171,7 +175,7 @@ def test_call_context_manager_enters_only_with_code_address(call):
 
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
-    assert next_call_context.code_address == _test_addr("0xtarget")
+    assert next_call_context.code_address == _test_hash_addr("0xtarget")
     assert next_call_context.storage_address == root.storage_address
     assert next_call_context.calldata == "11111111"
     assert not next_call_context.is_contract_initialization
@@ -263,10 +267,10 @@ def test_call_context_manager_makes_exceptional_halt():
 
 def test_build_call_tree():
     root = _test_root()
-    first = _test_child_of(root, _test_addr("0xfirst"))
-    first_nested = _test_child_of(first, _test_addr("0xfirst_nested"))
-    second = _test_child_of(root, _test_addr("0xsecond"))
-    third = _test_child_of(root, _test_addr("0xthird"))
+    first = _test_child_of(root, _test_hash_addr("0xfirst"))
+    first_nested = _test_child_of(first, _test_hash_addr("0xfirst_nested"))
+    second = _test_child_of(root, _test_hash_addr("0xsecond"))
+    third = _test_child_of(root, _test_hash_addr("0xthird"))
 
     instructions = [
         get_add(root),
@@ -288,7 +292,7 @@ def test_build_call_tree():
     first_nested = first.children[0]
 
     # correct addresses
-    assert first.call_context.code_address == _test_addr("0xfirst")
-    assert first_nested.call_context.code_address == _test_addr("0xfirst_nested")
-    assert second.call_context.code_address == _test_addr("0xsecond")
-    assert third.call_context.code_address == _test_addr("0xthird")
+    assert first.call_context.code_address == _test_hash_addr("0xfirst")
+    assert first_nested.call_context.code_address == _test_hash_addr("0xfirst_nested")
+    assert second.call_context.code_address == _test_hash_addr("0xsecond")
+    assert third.call_context.code_address == _test_hash_addr("0xthird")

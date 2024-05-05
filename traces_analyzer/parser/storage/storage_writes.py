@@ -62,6 +62,12 @@ class ReturnDataAccess(StorageAccess):
 
 
 @dataclass
+class BalanceAccess(StorageAccess):
+    address: StorageByteGroup
+    last_modified_step_index: int
+
+
+@dataclass
 class StorageWrites:
     stack_sets: Sequence[StackSet] = ()
     stack_pops: Sequence[StackPop] = ()
@@ -74,4 +80,5 @@ class StorageWrites:
 class StorageAccesses:
     stack: Sequence[StackAccess] = ()
     memory: Sequence[MemoryAccess] = ()
+    balance: Sequence[BalanceAccess] = ()
     return_data: ReturnDataAccess | None = None

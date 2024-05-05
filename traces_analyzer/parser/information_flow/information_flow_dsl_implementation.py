@@ -7,6 +7,7 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow, FlowSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
+    BalanceAccess,
     MemoryAccess,
     MemoryWrite,
     ReturnDataAccess,
@@ -45,17 +46,20 @@ class FlowNode(FlowSpec):
 
     @staticmethod
     def _merge_accesses(accesses: list[StorageAccesses]) -> StorageAccesses:
-        memory_accesss: list[MemoryAccess] = []
+        memory_accesses: list[MemoryAccess] = []
         stack_accesses: list[StackAccess] = []
+        balance_accesses: list[BalanceAccess] = []
         return_data_access: ReturnDataAccess | None = None
         for access in accesses:
-            memory_accesss.extend(access.memory)
+            memory_accesses.extend(access.memory)
             stack_accesses.extend(access.stack)
+            balance_accesses.extend(access.balance)
             return_data_access = return_data_access or access.return_data
 
         return StorageAccesses(
             stack=stack_accesses,
-            memory=memory_accesss,
+            memory=memory_accesses,
+            balance=balance_accesses,
             return_data=return_data_access,
         )
 
@@ -310,6 +314,33 @@ def _to_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, out
         accesses=StorageAccesses(),
         writes=StorageWrites(),
         result=value,
+    )
+
+
+@node_with_results
+def _current_storage_address_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> FlowWithResult:
+    address = StorageByteGroup.from_hexstring(env.current_call_context.storage_address, env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(),
+        writes=StorageWrites(),
+        result=address,
+    )
+
+
+@node_with_results
+def _balance_of_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> FlowWithResult:
+    addr = args[0].result[-20:]
+    last_modified_at_step_index = env.balances.last_modified_at_step_index(addr.get_hexstring())
+
+    return FlowWithResult(
+        accesses=StorageAccesses(balance=(BalanceAccess(addr, last_modified_at_step_index),)),
+        writes=StorageWrites(),
+        result=StorageByteGroup(),
     )
 
 

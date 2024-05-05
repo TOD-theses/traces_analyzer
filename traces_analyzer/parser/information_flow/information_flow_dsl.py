@@ -5,6 +5,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     FlowSpec,
     NoopNode,
     WritingFlowNode,
+    _balance_of_node,
+    _current_storage_address_node,
     _mem_range_node,
     _mem_write_node,
     _oracle_stack_peek_node,
@@ -51,6 +53,14 @@ def mem_write(offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str)
 
 def to_size(value: FlowNodeWithResult, bytes_size: int) -> FlowNodeWithResult:
     return _to_size_node(value, bytes_size)
+
+
+def current_storage_address() -> FlowNodeWithResult:
+    return _current_storage_address_node()
+
+
+def balance_of(value: FlowNodeWithResult) -> FlowNodeWithResult:
+    return _balance_of_node(value)
 
 
 def return_data_range(offset: FlowNodeWithResult, size: FlowNodeWithResult) -> FlowNodeWithResult:
