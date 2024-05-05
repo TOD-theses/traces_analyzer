@@ -54,3 +54,19 @@ def test_storage_byte_group_depends_on_instruction_indexes():
     group += StorageByteGroup.from_hexstring(HexString("ef"), 3)
 
     assert group.depends_on_instruction_indexes() == {1, 2, 3}
+
+
+def test_storage_byte_group_split_by_dependencies():
+    group = StorageByteGroup.from_hexstring(HexString("abcd"), 1)
+    group += StorageByteGroup.from_hexstring(HexString("11"), 2)
+    group += StorageByteGroup.from_hexstring(HexString("ef"), 1)
+
+    groups = list(group.split_by_dependencies())
+
+    assert len(groups) == 3
+    assert groups[0].get_hexstring() == "abcd"
+    assert groups[1].get_hexstring() == "11"
+    assert groups[2].get_hexstring() == "ef"
+    assert groups[0].depends_on_instruction_indexes() == {1}
+    assert groups[1].depends_on_instruction_indexes() == {2}
+    assert groups[2].depends_on_instruction_indexes() == {1}

@@ -5,6 +5,7 @@ from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 from typing import Iterable
 
+from networkx import ancestors
 from tqdm import tqdm
 
 from traces_analyzer.evaluation.evaluation import Evaluation
@@ -20,6 +21,7 @@ from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import parse_events
+from traces_analyzer.parser.information_flow.information_flow_graph import build_information_flow_graph
 from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
 from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
 from traces_analyzer.utils.hexstring import HexString
@@ -132,6 +134,10 @@ def compare_traces(
         potential_sink_instruction_indexes = [all_instructions.index(instr) for instr in potential_sink_instructions]
         sink_instruction_index = min(potential_sink_instruction_indexes)
         sink_instruction = all_instructions[sink_instruction_index]
+
+        information_flow_graph = build_information_flow_graph(all_instructions)
+        print(information_flow_graph)
+        print(list(ancestors(information_flow_graph, sink_instruction.step_index)))
 
         source_to_sink_contexts: list[CallContext] = []
 

@@ -110,3 +110,19 @@ def mock_env(
 
 def _test_oracle(stack: list[str | HexString] = [], memory: str | HexString = "", depth=1) -> InstructionOutputOracle:
     return InstructionOutputOracle([_test_hexstring(x) for x in stack], _test_hexstring(memory), depth)
+
+
+class _TestCounter:
+    """Utility to increment a counter inline and attribute a name to each counter value."""
+
+    def __init__(self, start: int) -> None:
+        self.counter = start - 1
+        self._lookup: dict[str, int] = {}
+
+    def next(self, name: str) -> int:
+        self.counter += 1
+        self._lookup[name] = self.counter
+        return self.counter
+
+    def lookup(self, name: str) -> int:
+        return self._lookup[name]

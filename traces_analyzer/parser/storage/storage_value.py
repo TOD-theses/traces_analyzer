@@ -28,6 +28,22 @@ class StorageByteGroup(UserList[StorageByte]):
     def depends_on_instruction_indexes(self) -> set[int]:
         return set(byte._created_at_step_index for byte in self)
 
+    def split_by_dependencies(self) -> list["StorageByteGroup"]:
+        if not (size := len(self)):
+            return []
+        groups: list["StorageByteGroup"] = []
+        current_start_index = 0
+        current_step_index = self[0]._created_at_step_index
+        for i in range(size):
+            if self[i]._created_at_step_index != current_step_index:
+                groups.append(self[current_start_index:i])
+                current_start_index = i
+                current_step_index = self[i]._created_at_step_index
+        if current_start_index < size:
+            groups.append(self[current_start_index:])
+
+        return groups
+
     @staticmethod
     def from_hexstring(hexstring: HexString, creation_step_index: int):
         storage_bytes = [StorageByte(b.encode("utf-8"), creation_step_index) for b in hexstring.iter_bytes()]
