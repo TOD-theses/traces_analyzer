@@ -8,10 +8,13 @@ from traces_analyzer.parser.information_flow.information_flow_spec import Flow, 
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
     BalanceAccess,
+    BalanceTransferWrite,
+    CalldataWrite,
     MemoryAccess,
     MemoryWrite,
     ReturnDataAccess,
     ReturnWrite,
+    SelfdestructWrite,
     StackAccess,
     StackPop,
     StackPush,
@@ -44,48 +47,6 @@ class FlowNode(FlowSpec):
     def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
         pass
 
-    @staticmethod
-    def _merge_accesses(accesses: list[StorageAccesses]) -> StorageAccesses:
-        memory_accesses: list[MemoryAccess] = []
-        stack_accesses: list[StackAccess] = []
-        balance_accesses: list[BalanceAccess] = []
-        return_data_access: ReturnDataAccess | None = None
-        for access in accesses:
-            memory_accesses.extend(access.memory)
-            stack_accesses.extend(access.stack)
-            balance_accesses.extend(access.balance)
-            return_data_access = return_data_access or access.return_data
-
-        return StorageAccesses(
-            stack=stack_accesses,
-            memory=memory_accesses,
-            balance=balance_accesses,
-            return_data=return_data_access,
-        )
-
-    @staticmethod
-    def _merge_writes(writes: list[StorageWrites]) -> StorageWrites:
-        mem_writes: list[MemoryWrite] = []
-        return_data_write: ReturnWrite | None = None
-        stack_sets: list[StackSet] = []
-        stack_pops: list[StackPop] = []
-        stack_pushes: list[StackPush] = []
-
-        for write in writes:
-            stack_sets.extend(write.stack_sets)
-            stack_pops.extend(write.stack_pops)
-            stack_pushes.extend(write.stack_pushes)
-            mem_writes.extend(write.memory)
-            return_data_write = return_data_write or write.return_data
-
-        return StorageWrites(
-            stack_sets=stack_sets,
-            stack_pops=stack_pops,
-            stack_pushes=stack_pushes,
-            memory=mem_writes,
-            return_data=return_data_write,
-        )
-
 
 class FlowNodeWithResult(FlowNode):
     def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> FlowWithResult:
@@ -97,8 +58,8 @@ class FlowNodeWithResult(FlowNode):
         writes = [arg.writes for arg in args] + [flow_step.writes]
 
         return FlowWithResult(
-            accesses=self._merge_accesses(accesses),
-            writes=self._merge_writes(writes),
+            accesses=StorageAccesses.merge(accesses),
+            writes=StorageWrites.merge(writes),
             result=flow_step.result,
         )
 
@@ -119,8 +80,8 @@ class WritingFlowNode(FlowNode):
         writes = [arg.writes for arg in args] + [flow_writes]
 
         return Flow(
-            accesses=self._merge_accesses(accesses),
-            writes=self._merge_writes(writes),
+            accesses=StorageAccesses.merge(accesses),
+            writes=StorageWrites.merge(writes),
         )
 
     @abstractmethod
@@ -154,8 +115,8 @@ class CombineNode(FlowSpec):
         args = tuple(arg.compute(env, output_oracle) for arg in self.arguments)
 
         return Flow(
-            accesses=FlowNode._merge_accesses([arg.accesses for arg in args]),
-            writes=FlowNode._merge_writes([arg.writes for arg in args]),
+            accesses=StorageAccesses.merge([arg.accesses for arg in args]),
+            writes=StorageWrites.merge([arg.writes for arg in args]),
         )
 
 
@@ -345,6 +306,41 @@ def _balance_of_node(
 
 
 @node_with_results
+def _balance_transfer_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> FlowWithResult:
+    from_addr = args[0].result[-20:]
+    to_addr = args[1].result[-20:]
+    value = args[2].result
+    from_addr_last_modified = env.balances.last_modified_at_step_index(from_addr.get_hexstring())
+
+    env.balances.modified_at_step_index(to_addr.get_hexstring(), env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(balance=(BalanceAccess(from_addr, from_addr_last_modified),)),
+        writes=StorageWrites(balance_transfers=(BalanceTransferWrite(from_addr, to_addr, value),)),
+        result=StorageByteGroup(),
+    )
+
+
+@node_with_results
+def _selfdestruct_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> FlowWithResult:
+    from_addr = args[0].result[-20:]
+    to_addr = args[1].result[-20:]
+    from_addr_last_modified = env.balances.last_modified_at_step_index(from_addr.get_hexstring())
+
+    env.balances.modified_at_step_index(to_addr.get_hexstring(), env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(balance=(BalanceAccess(from_addr, from_addr_last_modified),)),
+        writes=StorageWrites(selfdestruct=(SelfdestructWrite(from_addr, to_addr),)),
+        result=StorageByteGroup(),
+    )
+
+
+@node_with_results
 def _return_data_range_node(
     args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
 ) -> FlowWithResult:
@@ -370,6 +366,15 @@ def _return_data_range_node(
         accesses=StorageAccesses(return_data=ReturnDataAccess(offset, size, result)),
         writes=StorageWrites(),
         result=result,
+    )
+
+
+@node_with_writes
+def _calldata_write_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> StorageWrites:
+    return StorageWrites(
+        calldata=CalldataWrite(args[0].result),
     )
 
 

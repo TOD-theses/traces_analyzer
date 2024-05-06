@@ -5,6 +5,7 @@ from tests.test_utils.test_utils import (
     _test_child,
     _test_group,
     _test_group32,
+    _test_hash_addr,
     _test_oracle,
     _test_root,
     mock_env,
@@ -209,12 +210,6 @@ _instruction_stack_io_counts = [
     (JUMPDEST, 0, 0),
     (TLOAD, 1, 1),
     (TSTORE, 2, 0),
-    (CREATE, 3, 1),
-    (CALL, 7, 0),
-    (CALLCODE, 7, 0),
-    (DELEGATECALL, 6, 0),
-    (CREATE2, 4, 1),
-    (STATICCALL, 6, 0),
 ]
 
 
@@ -228,12 +223,6 @@ _instruction_memory_args = [
     (CALLDATACOPY, None, None, 0, 2),
     (CODECOPY, None, None, 0, 2),
     (EXTCODECOPY, None, None, 1, 3),
-    (CREATE, 1, 2, None, None),
-    (CALL, 3, 4, None, None),
-    (CALLCODE, 3, 4, None, None),
-    (DELEGATECALL, 2, 3, None, None),
-    (CREATE2, 1, 2, None, None),
-    (STATICCALL, 2, 3, None, None),
 ]
 
 
@@ -640,3 +629,252 @@ def test_returndatacopy() -> None:
     assert writes.memory[0].offset == 0x123
     assert writes.memory[0].value.get_hexstring() == "33445566"
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
+
+
+# TODO: update call enter tests
+# TODO: add call (immediate) exists tests
+def test_call_enter() -> None:
+    call_context = _test_root()
+    env = mock_env(
+        storage_step_index=1,
+        step_index=2,
+        stack_contents=[
+            "1234",
+            _test_hash_addr("call target"),
+            "10",
+            "2",
+            "4",
+            "20",
+            "8",
+        ],
+        memory_content="1122334455667788",
+        balances={call_context.storage_address: 1},
+        current_call_context=call_context,
+    )
+
+    call = _test_parse_instruction(CALL, env, _test_oracle())
+
+    accesses = call.get_accesses()
+    assert len(accesses.stack) == 7
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x2
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == call_context.storage_address
+    assert accesses.balance[0].last_modified_step_index == 1
+
+    writes = call.get_writes()
+    assert writes.calldata
+    assert writes.calldata.value.get_hexstring() == "33445566"
+    assert writes.calldata.value.depends_on_instruction_indexes() == {1}
+    assert len(writes.balance_transfers) == 1
+    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
+    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].address_to.get_hexstring() == _test_hash_addr("call target")
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {1}
+    assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x10
+    assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
+
+
+# TODO: update staticcall enter tests
+# TODO: add staticcall (immediate) exists tests
+def test_staticcall_enter() -> None:
+    env = mock_env(
+        storage_step_index=1,
+        stack_contents=[
+            "1234",
+            _test_hash_addr("call target"),
+            "2",
+            "4",
+            "20",
+            "8",
+        ],
+        memory_content="1122334455667788",
+    )
+
+    staticcall = _test_parse_instruction(STATICCALL, env, _test_oracle())
+
+    accesses = staticcall.get_accesses()
+    assert len(accesses.stack) == 6
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x2
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = staticcall.get_writes()
+    assert writes.calldata
+    assert writes.calldata.value.get_hexstring() == "33445566"
+    assert writes.calldata.value.depends_on_instruction_indexes() == {1}
+
+
+# TODO: update callcode enter tests
+# TODO: add callcode (immediate) exists tests
+def test_callcode_enter() -> None:
+    call_context = _test_root()
+    env = mock_env(
+        storage_step_index=1,
+        step_index=2,
+        stack_contents=[
+            "1234",
+            _test_hash_addr("call target"),
+            "10",
+            "2",
+            "4",
+            "20",
+            "8",
+        ],
+        memory_content="1122334455667788",
+        balances={call_context.storage_address: 1},
+        current_call_context=call_context,
+    )
+
+    callcode = _test_parse_instruction(CALLCODE, env, _test_oracle())
+
+    accesses = callcode.get_accesses()
+    assert len(accesses.stack) == 7
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x2
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == call_context.storage_address
+    assert accesses.balance[0].last_modified_step_index == 1
+
+    writes = callcode.get_writes()
+    assert writes.calldata
+    assert writes.calldata.value.get_hexstring() == "33445566"
+    assert writes.calldata.value.depends_on_instruction_indexes() == {1}
+    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
+    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].address_to.get_hexstring() == _test_hash_addr("call target")
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {1}
+    assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x10
+    assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
+
+
+# TODO: update delegatecall enter tests
+# TODO: add delegatecall (immediate) exists tests
+def test_delegatecall_enter() -> None:
+    env = mock_env(
+        storage_step_index=1,
+        stack_contents=[
+            "1234",
+            _test_hash_addr("call target"),
+            "2",
+            "4",
+            "20",
+            "8",
+        ],
+        memory_content="1122334455667788",
+    )
+
+    delegatecall = _test_parse_instruction(DELEGATECALL, env, _test_oracle())
+
+    accesses = delegatecall.get_accesses()
+    assert len(accesses.stack) == 6
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x2
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = delegatecall.get_writes()
+    assert writes.calldata
+    assert writes.calldata.value.get_hexstring() == "33445566"
+    assert writes.calldata.value.depends_on_instruction_indexes() == {1}
+
+
+def test_create() -> None:
+    call_context = _test_root()
+    env = mock_env(
+        storage_step_index=1,
+        step_index=2,
+        stack_contents=[
+            "1000",
+            "2",
+            "4",
+        ],
+        memory_content="1122334455667788",
+        balances={call_context.storage_address: 1},
+        current_call_context=call_context,
+    )
+
+    create = _test_parse_instruction(CREATE, env, _test_oracle())
+
+    accesses = create.get_accesses()
+    assert len(accesses.stack) == 3
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x2
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == call_context.storage_address
+    assert accesses.balance[0].last_modified_step_index == 1
+
+    writes = create.get_writes()
+    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
+    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
+    # NOTE: we don't compute the created address properly, so we don't test it here
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
+    assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_create2() -> None:
+    call_context = _test_root()
+    env = mock_env(
+        storage_step_index=1,
+        step_index=2,
+        stack_contents=["1000", "2", "4", "5a1d5a1d5a1d"],
+        memory_content="1122334455667788",
+        balances={call_context.storage_address: 1},
+        current_call_context=call_context,
+    )
+
+    create2 = _test_parse_instruction(CREATE2, env, _test_oracle())
+
+    accesses = create2.get_accesses()
+    assert len(accesses.stack) == 4
+    assert len(accesses.memory) == 1
+    assert accesses.memory[0].offset == 0x2
+    assert accesses.memory[0].value.get_hexstring() == "33445566"
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1}
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == call_context.storage_address
+    assert accesses.balance[0].last_modified_step_index == 1
+
+    writes = create2.get_writes()
+    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
+    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
+    # NOTE: we don't compute the created address properly, so we don't test it here
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
+    assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_selfdestruct() -> None:
+    call_context = _test_root()
+    env = mock_env(
+        storage_step_index=1,
+        step_index=2,
+        stack_contents=[
+            _test_hash_addr("recipient"),
+        ],
+        balances={call_context.storage_address: 1},
+        current_call_context=call_context,
+    )
+
+    selfdestruct = _test_parse_instruction(SELFDESTRUCT, env, _test_oracle())
+
+    accesses = selfdestruct.get_accesses()
+    assert len(accesses.stack) == 1
+    assert len(accesses.balance) == 1
+    assert accesses.balance[0].address.get_hexstring() == call_context.storage_address
+    assert accesses.balance[0].last_modified_step_index == 1
+
+    writes = selfdestruct.get_writes()
+    assert len(writes.selfdestruct) == 1
+    assert writes.selfdestruct[0].address_from.get_hexstring() == call_context.storage_address
+    assert writes.selfdestruct[0].address_from.depends_on_instruction_indexes() == {2}
+    assert writes.selfdestruct[0].address_to.get_hexstring() == _test_hash_addr("recipient")
+    assert writes.selfdestruct[0].address_to.depends_on_instruction_indexes() == {1}

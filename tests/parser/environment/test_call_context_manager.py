@@ -1,6 +1,6 @@
 from typing import Callable
 import pytest
-from tests.test_utils.test_utils import _test_hash_addr, _test_root, _test_child, _test_child_of
+from tests.test_utils.test_utils import _test_group, _test_hash_addr, _test_root, _test_child, _test_child_of
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.call_context_manager import (
     ExpectedDepthChange,
@@ -8,6 +8,7 @@ from traces_analyzer.parser.environment.call_context_manager import (
     build_call_tree,
     update_call_context,
 )
+from traces_analyzer.parser.information_flow.information_flow_spec import Flow
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import (
     ADD,
@@ -22,7 +23,13 @@ from traces_analyzer.parser.instructions.instructions import (
     STATICCALL,
     STOP,
 )
+from traces_analyzer.parser.storage.storage_writes import CalldataWrite, StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
+
+
+def flow_with_calldata() -> Flow:
+    return Flow(accesses=StorageAccesses(), writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))))
+
 
 get_add: Callable[[CallContext], Instruction] = lambda call_context: ADD(
     ADD.opcode, "ADD", 1, 1, call_context, (1, 2), (3), None, None
@@ -45,6 +52,7 @@ get_call: Callable[[CallContext, HexString], Instruction] = lambda call_context,
     (),
     HexString("11111111"),
     None,
+    flow_with_calldata(),
 )
 get_staticcall: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: STATICCALL(
     STATICCALL.opcode,
@@ -56,6 +64,7 @@ get_staticcall: Callable[[CallContext, HexString], Instruction] = lambda call_co
     (),
     HexString("11111111"),
     None,
+    flow_with_calldata(),
 )
 get_delegate_call: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: DELEGATECALL(
     DELEGATECALL.opcode,
@@ -67,6 +76,7 @@ get_delegate_call: Callable[[CallContext, HexString], Instruction] = lambda call
     (),
     HexString("11111111"),
     None,
+    flow_with_calldata(),
 )
 get_callcode: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: CALLCODE(
     CALLCODE.opcode,
@@ -86,6 +96,7 @@ get_callcode: Callable[[CallContext, HexString], Instruction] = lambda call_cont
     (),
     HexString("11111111"),
     None,
+    flow_with_calldata(),
 )
 get_create: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
     CREATE.opcode,
@@ -157,7 +168,7 @@ def test_call_context_manager_enters_with_code_and_storage(call):
     assert next_call_context.msg_sender == root.code_address
     assert next_call_context.code_address == _test_hash_addr("0xtarget")
     assert next_call_context.storage_address == _test_hash_addr("0xtarget")
-    assert next_call_context.calldata == "11111111"
+    assert next_call_context.calldata.get_hexstring() == "11111111"
     assert not next_call_context.is_contract_initialization
 
 
@@ -177,7 +188,7 @@ def test_call_context_manager_enters_only_with_code_address(call):
     assert next_call_context.msg_sender == root.code_address
     assert next_call_context.code_address == _test_hash_addr("0xtarget")
     assert next_call_context.storage_address == root.storage_address
-    assert next_call_context.calldata == "11111111"
+    assert next_call_context.calldata.get_hexstring() == "11111111"
     assert not next_call_context.is_contract_initialization
 
 
@@ -192,7 +203,7 @@ def test_call_context_manager_enters_on_contract_creation(create):
     # NOTE: the manager DOES NOT compute the correct addresses for the created contracts
     # TODO: should we bother to compute the correct addresses (also depending on CREATE/CREATE2)?
     assert next_call_context.code_address == next_call_context.storage_address
-    assert next_call_context.calldata == "11111111"
+    assert next_call_context.calldata.get_hexstring() == ""
     assert next_call_context.is_contract_initialization
 
 

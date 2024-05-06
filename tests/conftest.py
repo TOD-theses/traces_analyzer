@@ -40,7 +40,7 @@ def go_to_tmpdir(request):
 
 
 TEST_ROOT_CALLCONTEXT = CallContext(
-    None, HexString(""), 1, HexString("0"), HexString("0"), HexString("0"), None, _test_group(""), False, None
+    None, _test_group(""), 1, HexString("0"), HexString("0"), HexString("0"), None, _test_group(""), False, None
 )
 
 

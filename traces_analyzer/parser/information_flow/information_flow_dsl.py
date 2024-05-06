@@ -6,6 +6,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     NoopNode,
     WritingFlowNode,
     _balance_of_node,
+    _balance_transfer_node,
+    _calldata_write_node,
     _current_storage_address_node,
     _mem_range_node,
     _mem_write_node,
@@ -13,6 +15,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     _return_data_range_node,
     _return_data_size_node,
     _return_data_write_node,
+    _selfdestruct_node,
     _stack_arg_node,
     _stack_peek_node,
     _stack_push_node,
@@ -63,7 +66,21 @@ def balance_of(value: FlowNodeWithResult) -> FlowNodeWithResult:
     return _balance_of_node(value)
 
 
-def return_data_range(offset: FlowNodeWithResult, size: FlowNodeWithResult) -> FlowNodeWithResult:
+def balance_transfer(
+    from_addr: FlowNodeWithResult, to_addr: FlowNodeWithResult | str, value: FlowNodeWithResult
+) -> WritingFlowNode:
+    return _balance_transfer_node(from_addr, to_addr, value)
+
+
+def selfdestruct(from_addr: FlowNodeWithResult, to_addr: FlowNodeWithResult) -> WritingFlowNode:
+    return _selfdestruct_node(from_addr, to_addr)
+
+
+def calldata_write(value: FlowNodeWithResult) -> WritingFlowNode:
+    return _calldata_write_node(value)
+
+
+def return_data_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult) -> FlowNodeWithResult:
     return _return_data_range_node(offset, size)
 
 

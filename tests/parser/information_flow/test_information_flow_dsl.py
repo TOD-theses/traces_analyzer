@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from tests.test_utils.test_utils import (
+    _test_addr,
     _test_group,
     _test_group32,
+    _test_hash_addr,
     _test_oracle,
     _test_root,
     mock_env,
@@ -9,6 +11,9 @@ from tests.test_utils.test_utils import (
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
+    balance_transfer,
+    selfdestruct,
+    calldata_write,
     combine,
     current_storage_address,
     mem_range,
@@ -18,6 +23,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     return_data_range,
     return_data_size,
     return_data_write,
+    selfdestruct,
     stack_arg,
     stack_peek,
     stack_push,
@@ -210,6 +216,57 @@ def test_balance_of_known_address():
     assert flow.accesses.balance[0].last_modified_step_index == 1234
 
 
+def test_balance_of_unknown_address():
+    env = mock_env(balances={})
+
+    flow = balance_of(_test_node(HexString("abcd").as_address(), 2)).compute(env, _test_oracle())
+
+    assert len(flow.accesses.balance) == 1
+    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {2}
+    assert flow.accesses.balance[0].last_modified_step_index == -1
+
+
+def test_balance_transfer():
+    env = mock_env(balances={"abcd": 4}, step_index=1234)
+    from_node = _test_node(_test_addr("abcd"), 1)
+    to_node = _test_node(_test_addr("cdef"), 2)
+    value_node = _test_node("1000", 3)
+
+    flow = balance_transfer(from_node, to_node, value_node).compute(env, _test_oracle())
+
+    assert len(flow.accesses.balance) == 1
+    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {1}
+    assert flow.accesses.balance[0].last_modified_step_index == 4
+
+    assert len(flow.writes.balance_transfers) == 1
+    assert flow.writes.balance_transfers[0].address_from.get_hexstring() == _test_addr("abcd")
+    assert flow.writes.balance_transfers[0].address_to.get_hexstring() == _test_addr("cdef")
+    assert flow.writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
+
+    assert env.balances.last_modified_at_step_index(HexString("cdef").as_address()) == 1234
+
+
+def test_selfdestruct():
+    env = mock_env(balances={"abcd": 4}, step_index=1234)
+    from_node = _test_node(_test_addr("abcd"), 1)
+    to_node = _test_node(_test_addr("cdef"), 2)
+
+    flow = selfdestruct(from_node, to_node).compute(env, _test_oracle())
+
+    assert len(flow.accesses.balance) == 1
+    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {1}
+    assert flow.accesses.balance[0].last_modified_step_index == 4
+
+    assert len(flow.writes.selfdestruct) == 1
+    assert flow.writes.selfdestruct[0].address_from.get_hexstring() == _test_addr("abcd")
+    assert flow.writes.selfdestruct[0].address_to.get_hexstring() == _test_addr("cdef")
+
+    assert env.balances.last_modified_at_step_index(HexString("cdef").as_address()) == 1234
+
+
 def test_to_size_noop():
     env = mock_env()
     input = _test_node(_test_group("11223344", 1234))
@@ -271,6 +328,16 @@ def test_return_data_range():
     assert flow.result == _test_group("33445566")
     assert flow.accesses.return_data == ReturnDataAccess(2, 4, _test_group("33445566"))
     assert flow.accesses.return_data.value.depends_on_instruction_indexes() == {1234}
+
+
+def test_calldata_write():
+    env = mock_env()
+    input = _test_node(_test_group("11223344", 1234))
+
+    flow = calldata_write(input).compute(env, _test_oracle())
+
+    assert flow.writes.calldata.value.get_hexstring() == "11223344"
+    assert flow.writes.calldata.value.depends_on_instruction_indexes() == {1234}
 
 
 def test_return_data_write():

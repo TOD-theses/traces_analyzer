@@ -8,6 +8,8 @@ from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
+    balance_transfer,
+    calldata_write,
     combine,
     current_storage_address,
     mem_range,
@@ -17,6 +19,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     return_data_range,
     return_data_size,
     return_data_write,
+    selfdestruct,
     stack_arg,
     stack_peek,
     stack_push,
@@ -34,12 +37,14 @@ CallDataNew = TypedDict(
     "CallDataNew",
     {
         "address": HexString,
-        "input": HexString,
+        "input": StorageByteGroup,
     },
 )
 
 
 class CallInstruction(Instruction, ABC):
+    # after_exit_flow = noop()
+
     @abstractmethod
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
         pass
@@ -51,16 +56,31 @@ class CallInstruction(Instruction, ABC):
 
 @dataclass(frozen=True, repr=False, eq=False)
 class CALL(CallInstruction):
-    io_specification = InstructionIOSpec(
-        stack_input_count=7,
-        memory_input_offset_arg=3,
-        memory_input_size_arg=4,
+    """
+    TODO:
+    - after_exit_flow_spec:
+        - mem_write(stack_arg(5), return_data_range(0, stack_arg(6))))
+        - stack_push(stack_peek(0))
+    For precompiled contracts I need to use a memory oracle (immediate returns)
+    """
+
+    flow_spec = combine(
+        stack_arg(0),
+        balance_transfer(current_storage_address(), stack_arg(1), stack_arg(2)),
+        calldata_write(mem_range(stack_peek(3), stack_peek(4))),
+        stack_arg(5),
+        stack_arg(6),
     )
+    # after_exit_flow = combine(
+    #     stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2), stack_arg(3), stack_arg(4),
+    #     mem_write(stack_arg(5), return_data_range(0, stack_arg(6))))
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input is not None, f"Tried to get CALL data but contains no memory: {self}"
-        return {"address": self.stack_inputs[1], "input": self.memory_input}
+        assert (
+            self.flow and self.flow.writes.calldata is not None
+        ), f"Tried to get CALL data but contains no write for it: {self.flow}"
+        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
         offset = self.stack_inputs[5].as_int()
@@ -85,16 +105,17 @@ class CALL(CallInstruction):
 
 @dataclass(frozen=True, repr=False, eq=False)
 class STATICCALL(CallInstruction):
-    io_specification = InstructionIOSpec(
-        stack_input_count=6,
-        memory_input_offset_arg=2,
-        memory_input_size_arg=3,
+    flow_spec = combine(
+        stack_arg(0), stack_arg(1), calldata_write(mem_range(stack_arg(2), stack_arg(3))), stack_arg(4), stack_arg(5)
     )
+    after_exit_flow = stack_push(oracle_stack_peek(0))
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input is not None, f"Tried to get STATICCALL data but contains no memory: {self}"
-        return {"address": self.stack_inputs[1], "input": self.memory_input}
+        assert (
+            self.flow and self.flow.writes.calldata is not None
+        ), f"Tried to get STATICCALL data but contains no memory: {self.flow}"
+        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
         offset = self.stack_inputs[4].as_int()
@@ -117,16 +138,17 @@ class STATICCALL(CallInstruction):
 
 @dataclass(frozen=True, repr=False, eq=False)
 class DELEGATECALL(CallInstruction):
-    io_specification = InstructionIOSpec(
-        stack_input_count=6,
-        memory_input_offset_arg=2,
-        memory_input_size_arg=3,
+    flow_spec = combine(
+        stack_arg(0), stack_arg(1), calldata_write(mem_range(stack_arg(2), stack_arg(3))), stack_arg(4), stack_arg(5)
     )
+    after_exit_flow = stack_push(oracle_stack_peek(0))
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input is not None, f"Tried to get DELEGATECALL data but contains no memory: {self}"
-        return {"address": self.stack_inputs[1], "input": self.memory_input}
+        assert (
+            self.flow and self.flow.writes.calldata is not None
+        ), f"Tried to get DELEGATECALL data but contains no memory: {self.flow}"
+        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
 
     @override
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
@@ -151,16 +173,21 @@ class DELEGATECALL(CallInstruction):
 
 @dataclass(frozen=True, repr=False, eq=False)
 class CALLCODE(CallInstruction):
-    io_specification = InstructionIOSpec(
-        stack_input_count=7,
-        memory_input_offset_arg=3,
-        memory_input_size_arg=4,
+    flow_spec = combine(
+        stack_arg(0),
+        balance_transfer(current_storage_address(), stack_arg(1), stack_arg(2)),
+        calldata_write(mem_range(stack_arg(3), stack_arg(4))),
+        stack_arg(5),
+        stack_arg(6),
     )
+    after_exit_flow = stack_push(oracle_stack_peek(0))
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.memory_input is not None, f"Tried to get CALLCODE data but contains no memory: {self}"
-        return {"address": self.stack_inputs[1], "input": self.memory_input}
+        assert (
+            self.flow and self.flow.writes.calldata is not None
+        ), f"Tried to get CALLCODE data but contains no memory: {self.flow}"
+        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
         offset = self.stack_inputs[5].as_int()
@@ -428,8 +455,10 @@ LOG4 = _make_flow(
 
 @dataclass(frozen=True, repr=False, eq=False)
 class CREATE(Instruction):
-    io_specification = InstructionIOSpec(
-        stack_input_count=3, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2
+    # NOTE: we don't use the correct creation address here,
+    # but we probably should sync it with how we compute it later on
+    flow_spec = combine(
+        balance_transfer(current_storage_address(), "abcd1234" * 8, stack_arg(0)), mem_range(stack_arg(1), stack_arg(2))
     )
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
@@ -438,8 +467,12 @@ class CREATE(Instruction):
 
 @dataclass(frozen=True, repr=False, eq=False)
 class CREATE2(Instruction):
-    io_specification = InstructionIOSpec(
-        stack_input_count=4, stack_output_count=1, memory_input_offset_arg=1, memory_input_size_arg=2
+    # NOTE: we don't use the correct creation address here,
+    # but we probably should sync it with how we compute it later on
+    flow_spec = combine(
+        balance_transfer(current_storage_address(), "abcd1234" * 8, stack_arg(0)),
+        mem_range(stack_arg(1), stack_arg(2)),
+        stack_arg(3),
     )
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
@@ -450,8 +483,7 @@ RETURN = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))
 REVERT = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))
 
 INVALID = _make_flow()
-# TODO: model balance flow
-SELFDESTRUCT = _make_flow(stack_arg(1))
+SELFDESTRUCT = _make_flow(selfdestruct(current_storage_address(), stack_arg(0)))
 
 _INSTRUCTIONS: Mapping[int, type[Instruction]] = {
     0x00: STOP,

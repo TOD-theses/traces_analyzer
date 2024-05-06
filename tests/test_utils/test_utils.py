@@ -75,7 +75,7 @@ def _test_root():
 
 
 def _test_child_of(parent: CallContext, address: HexString):
-    return CallContext(parent, HexString(""), parent.depth + 1, parent.code_address, address, address)
+    return CallContext(parent, _test_group(""), parent.depth + 1, parent.code_address, address, address)
 
 
 def _test_child():
@@ -99,11 +99,11 @@ def mock_env(
     env.current_step_index = step_index
     env.current_call_context = current_call_context
     env.last_executed_sub_context = last_executed_sub_context
-    if stack_contents:
+    if stack_contents is not None:
         env.stack = _test_stack(stack_contents, storage_step_index)
-    if memory_content:
+    if memory_content is not None:
         env.memory = _test_mem(memory_content, storage_step_index)
-    if balances:
+    if balances is not None:
         env.balances = _test_balances(balances)
     return env
 

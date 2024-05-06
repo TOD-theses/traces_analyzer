@@ -129,25 +129,26 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path):
 
     # TODO: calldata parsing from metadata file
     # assert call_tree_normal.call_context.calldata == "000000000000000000000000000000000000000000000000000000069c35828a"
-    assert weth9_call.call_context.calldata == "d0e30db0"
+    assert weth9_call.call_context.calldata.get_hexstring() == "d0e30db0"
     assert (
-        weth9_transfer.call_context.calldata
+        weth9_transfer.call_context.calldata.get_hexstring()
         == "a9059cbb00000000000000000000000006da0fd433c1a5d7a4faa01111c044910a18455300000000000000000000000000000000000000000000000062884461f1460000"
     )
-    assert uniswap_staticcall.call_context.calldata == "0902f1ac"
+    assert uniswap_staticcall.call_context.calldata.get_hexstring() == "0902f1ac"
     # NOTE: similar to the changed log, the swap call has a different amount1Out and the transfer call has a different _value compared to the etherscan trace
     assert (
-        uniswap_swap.call_context.calldata
+        uniswap_swap.call_context.calldata.get_hexstring()
         == "022c0d9f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000069be06e4a000000000000000000000000822beb1cd1bd7148d07e4107b636fd15118913bc00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000"
     )
     assert (
-        tether_transfer.call_context.calldata
+        tether_transfer.call_context.calldata.get_hexstring()
         == "a9059cbb000000000000000000000000822beb1cd1bd7148d07e4107b636fd15118913bc000000000000000000000000000000000000000000000000000000069be06e4a"
     )
     assert (
-        weth_balance.call_context.calldata == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
+        weth_balance.call_context.calldata.get_hexstring()
+        == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
     )
     assert (
-        tether_balance.call_context.calldata
+        tether_balance.call_context.calldata.get_hexstring()
         == "70a0823100000000000000000000000006da0fd433c1a5d7a4faa01111c044910a184553"
     )

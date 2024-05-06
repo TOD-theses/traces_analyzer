@@ -21,7 +21,7 @@ class HaltType(Enum):
 @dataclass
 class CallContext:
     parent: Self | None = field(repr=False)
-    calldata: HexString
+    calldata: StorageByteGroup
     depth: int
     msg_sender: HexString
     code_address: HexString

@@ -160,7 +160,7 @@ def compare_traces(
         print(f"{source_indent}> {tod_source_instruction}")
         for context in source_to_sink_contexts:
             # print(context)
-            signature = signature_lookup.lookup_by_hex(context.calldata[:8]) or context.calldata[:8]
+            signature = signature_lookup.lookup_by_hex(context.calldata[:8].get_hexstring()) or context.calldata[:8]
             indent = "  " * (context.depth - min_depth)
             print(f"{indent}> {context.code_address}.{signature}")
         print(f"{sink_indent}> {sink_instruction}")

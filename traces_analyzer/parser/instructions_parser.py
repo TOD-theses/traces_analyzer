@@ -6,7 +6,9 @@ from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.call_context_manager import CallTree, build_call_tree
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.events_parser import TraceEvent
+from traces_analyzer.parser.information_flow.information_flow_graph import PRESTATE
 from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 from traces_analyzer.utils.hexstring import HexString
 
@@ -37,7 +39,7 @@ def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Itera
 def _create_root_call_context(sender: HexString, to: HexString, calldata: HexString) -> CallContext:
     return CallContext(
         parent=None,
-        calldata=calldata,
+        calldata=StorageByteGroup.from_hexstring(calldata, PRESTATE),
         depth=1,
         msg_sender=sender,
         code_address=to,

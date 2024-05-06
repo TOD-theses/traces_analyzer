@@ -18,6 +18,7 @@ from traces_analyzer.parser.instructions.instructions import (
     STATICCALL,
     STOP,
 )
+from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
@@ -58,7 +59,7 @@ class CallTree:
 
     def __str__(self) -> str:
         hex_signature = self.call_context.calldata[:8]
-        signature = signature_lookup.lookup_by_hex(hex_signature) or hex_signature
+        signature = signature_lookup.lookup_by_hex(hex_signature.get_hexstring()) or hex_signature
         s = f"> {self.call_context.code_address}.{signature}(...)\n"
         for child in self.children:
             s += "  " + "  ".join(str(child).splitlines(True))
@@ -102,21 +103,21 @@ def update_call_context(
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            calldata=instruction.memory_input or HexString(""),
+            calldata=instruction.get_data()["input"],
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=(instruction.get_data()["address"]),
-            storage_address=(instruction.get_data()["address"]),
+            code_address=instruction.get_data()["address"],
+            storage_address=instruction.get_data()["address"],
         )
     elif enters_call_context_without_storage(instruction, current_call_context.depth, next_depth):
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
             # TODO: use appropriate method instead
-            calldata=instruction.memory_input or HexString(""),
+            calldata=instruction.get_data()["input"],
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=(instruction.get_data()["address"]),
+            code_address=instruction.get_data()["address"],
             storage_address=current_call_context.storage_address,
         )
     elif creates_contract(instruction, current_call_context.depth, next_depth):
@@ -125,7 +126,7 @@ def update_call_context(
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            calldata=instruction.memory_input or HexString(""),
+            calldata=StorageByteGroup(),
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
             code_address=HexString(created_contract_addr),
