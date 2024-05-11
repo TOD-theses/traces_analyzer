@@ -26,7 +26,7 @@ class TraceEVM:
         self.env.current_step_index += 1
         self._update_storages(instruction, output_oracle)
         self._update_call_context(instruction, output_oracle)
-        # for those, where we did not model the stack wrties, simply overwrite it with the oracle
+        # for those, where we did not model the stack writes, simply overwrite it with the oracle
         if not instruction.implemented_flow():
             self._apply_stack_oracle(instruction, output_oracle)
 
@@ -38,10 +38,14 @@ class TraceEVM:
     def _update_storages(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
         # NOTE: memory expansion on access is done by the io flow parsing. Maybe it should also be moved here.
         self._apply_storage_writes(instruction.get_writes(), instruction, output_oracle)
-        if isinstance(instruction, CallInstruction):
+
+        if isinstance(instruction, CallInstruction) and not self._changes_depth(output_oracle):
             self._apply_storage_writes(
-                instruction.get_immediate_return_writes(output_oracle), instruction, output_oracle
+                instruction.get_immediate_return_writes(self.env, output_oracle), instruction, output_oracle
             )
+
+    def _changes_depth(self, output_oracle: InstructionOutputOracle) -> bool:
+        return self.env.current_call_context.depth != output_oracle.depth
 
     def _update_call_context(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
         current_call_context = self.env.current_call_context

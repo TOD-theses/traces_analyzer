@@ -99,26 +99,22 @@ def update_call_context(
     if next_depth is None:
         # do not enter/return a callframe at the end of the trace
         return next_call_context
-    if enters_call_context_normal(instruction, current_call_context.depth, next_depth):
-        next_call_context = CallContext(
-            parent=current_call_context,
-            initiating_instruction=instruction,
-            calldata=instruction.get_data()["input"],
-            depth=current_call_context.depth + 1,
-            msg_sender=current_call_context.code_address,
-            code_address=instruction.get_data()["address"],
-            storage_address=instruction.get_data()["address"],
+
+    if enters_call_context(instruction, current_call_context.depth, next_depth):
+        call_config = instruction.get_data()
+        code_address = call_config["address"]
+        storage_address = (
+            call_config["address"] if call_config["updates_storage_address"] else current_call_context.storage_address
         )
-    elif enters_call_context_without_storage(instruction, current_call_context.depth, next_depth):
+
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            # TODO: use appropriate method instead
             calldata=instruction.get_data()["input"],
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
-            code_address=instruction.get_data()["address"],
-            storage_address=current_call_context.storage_address,
+            code_address=code_address,
+            storage_address=storage_address,
         )
     elif creates_contract(instruction, current_call_context.depth, next_depth):
         # NOTE: we currently do not compute the correct addresses
@@ -134,7 +130,7 @@ def update_call_context(
             is_contract_initialization=True,
         )
     elif makes_normal_halt(instruction, current_call_context.depth, next_depth) or makes_exceptional_halt(
-        current_call_context.depth, next_depth
+        instruction, current_call_context.depth, next_depth
     ):
         if not current_call_context.parent:
             raise UnexpectedDepthChange(
@@ -178,16 +174,10 @@ def update_call_context(
     return next_call_context
 
 
-def enters_call_context_normal(
+def enters_call_context(
     instruction: Instruction, current_depth: int, next_depth: int
-) -> TypeGuard[CALL | STATICCALL]:
-    return current_depth + 1 == next_depth and isinstance(instruction, (CALL, STATICCALL))
-
-
-def enters_call_context_without_storage(
-    instruction: Instruction, current_depth: int, next_depth: int
-) -> TypeGuard[DELEGATECALL | CALLCODE]:
-    return current_depth + 1 == next_depth and isinstance(instruction, (DELEGATECALL, CALLCODE))
+) -> TypeGuard[CALL | STATICCALL | DELEGATECALL | CALLCODE]:
+    return current_depth + 1 == next_depth and isinstance(instruction, (CALL, STATICCALL, DELEGATECALL, CALLCODE))
 
 
 def creates_contract(instruction: Instruction, current_depth: int, next_depth: int) -> TypeGuard[CREATE | CREATE2]:
@@ -198,5 +188,5 @@ def makes_normal_halt(instruction: Instruction, current_depth: int, next_depth: 
     return current_depth - 1 == next_depth and isinstance(instruction, (STOP, REVERT, RETURN, SELFDESTRUCT))
 
 
-def makes_exceptional_halt(current_depth: int, next_depth: int):
-    return current_depth - 1 == next_depth
+def makes_exceptional_halt(instruction: Instruction, current_depth: int, next_depth: int):
+    return current_depth - 1 == next_depth and not isinstance(instruction, (STOP, REVERT, RETURN, SELFDESTRUCT))

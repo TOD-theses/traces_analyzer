@@ -30,27 +30,30 @@ from traces_analyzer.parser.information_flow.information_flow_spec import FlowSp
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import MemoryWrite, StorageWrites
+from traces_analyzer.parser.storage.storage_writes import MemoryWrite, StackPush, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 
 CallDataNew = TypedDict(
     "CallDataNew",
     {
         "address": HexString,
+        "updates_storage_address": bool,
         "input": StorageByteGroup,
     },
 )
 
 
 class CallInstruction(Instruction, ABC):
-    # after_exit_flow = noop()
-
     @abstractmethod
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+        """Writes that occur when a sub-context has exited"""
         pass
 
     @abstractmethod
-    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
+    def get_immediate_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        """Writes that occur on a call to a precompiled contract or an EOA"""
         pass
 
 
@@ -61,7 +64,6 @@ class CALL(CallInstruction):
     - after_exit_flow_spec:
         - mem_write(stack_arg(5), return_data_range(0, stack_arg(6))))
         - stack_push(stack_peek(0))
-    For precompiled contracts I need to use a memory oracle (immediate returns)
     """
 
     flow_spec = combine(
@@ -71,35 +73,41 @@ class CALL(CallInstruction):
         stack_arg(5),
         stack_arg(6),
     )
-    # after_exit_flow = combine(
-    #     stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2), stack_arg(3), stack_arg(4),
-    #     mem_write(stack_arg(5), return_data_range(0, stack_arg(6))))
 
     @override
     def get_data(self) -> CallDataNew:
         assert (
             self.flow and self.flow.writes.calldata is not None
         ), f"Tried to get CALL data but contains no write for it: {self.flow}"
-        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
+        return {
+            "address": self.stack_inputs[1].as_address(),
+            "updates_storage_address": True,
+            "input": self.flow.writes.calldata.value,
+        }
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        offset = self.stack_inputs[5].as_int()
-        size = self.stack_inputs[6].as_int()
-        return_data = child_call_context.return_data
-        # TODO: we should probably add an assert here for return_data is not None
+        assert self.flow
+        _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
         if size == 0:
             return StorageWrites()
+        return_data = child_call_context.return_data
         return_data_slice = return_data[:size]
         return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
-    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
-        """Writes that occur on a call to a precompiled contract or an EOA"""
-        offset = self.stack_inputs[5].as_int()
-        size = self.stack_inputs[6].as_int()
-        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        return_data_slice = return_data[: size * 2]
+    def get_immediate_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert self.flow
+        _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
+        return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
         return StorageWrites(
-            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+            stack_pushes=[StackPush(success)],
+            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
         )
 
 
@@ -108,31 +116,41 @@ class STATICCALL(CallInstruction):
     flow_spec = combine(
         stack_arg(0), stack_arg(1), calldata_write(mem_range(stack_arg(2), stack_arg(3))), stack_arg(4), stack_arg(5)
     )
-    after_exit_flow = stack_push(oracle_stack_peek(0))
 
     @override
     def get_data(self) -> CallDataNew:
         assert (
             self.flow and self.flow.writes.calldata is not None
         ), f"Tried to get STATICCALL data but contains no memory: {self.flow}"
-        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
+        return {
+            "address": self.stack_inputs[1].as_address(),
+            "updates_storage_address": True,
+            "input": self.flow.writes.calldata.value,
+        }
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        offset = self.stack_inputs[4].as_int()
-        size = self.stack_inputs[5].as_int()
-        return_data = child_call_context.return_data
+        assert self.flow
+        _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
         if size == 0:
             return StorageWrites()
+        return_data = child_call_context.return_data
         return_data_slice = return_data[:size]
         return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
-    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
-        offset = self.stack_inputs[4].as_int()
-        size = self.stack_inputs[5].as_int()
-        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        return_data_slice = return_data[: size * 2]
+    def get_immediate_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert self.flow
+        _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
+        return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
         return StorageWrites(
-            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+            stack_pushes=[StackPush(success)],
+            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
         )
 
 
@@ -141,33 +159,43 @@ class DELEGATECALL(CallInstruction):
     flow_spec = combine(
         stack_arg(0), stack_arg(1), calldata_write(mem_range(stack_arg(2), stack_arg(3))), stack_arg(4), stack_arg(5)
     )
-    after_exit_flow = stack_push(oracle_stack_peek(0))
 
     @override
     def get_data(self) -> CallDataNew:
         assert (
             self.flow and self.flow.writes.calldata is not None
         ), f"Tried to get DELEGATECALL data but contains no memory: {self.flow}"
-        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
+        return {
+            "address": self.stack_inputs[1].as_address(),
+            "updates_storage_address": False,
+            "input": self.flow.writes.calldata.value,
+        }
 
     @override
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        offset = self.stack_inputs[4].as_int()
-        size = self.stack_inputs[5].as_int()
-        return_data = child_call_context.return_data
+        assert self.flow
+        _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
         if size == 0:
             return StorageWrites()
+        return_data = child_call_context.return_data
         return_data_slice = return_data[: size * 2]
         return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     @override
-    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
-        offset = self.stack_inputs[4].as_int()
-        size = self.stack_inputs[5].as_int()
-        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        return_data_slice = return_data[: size * 2]
+    def get_immediate_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert self.flow
+        _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
+        return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
         return StorageWrites(
-            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+            stack_pushes=[StackPush(success)],
+            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
         )
 
 
@@ -180,32 +208,42 @@ class CALLCODE(CallInstruction):
         stack_arg(5),
         stack_arg(6),
     )
-    after_exit_flow = stack_push(oracle_stack_peek(0))
 
     @override
     def get_data(self) -> CallDataNew:
         assert (
             self.flow and self.flow.writes.calldata is not None
         ), f"Tried to get CALLCODE data but contains no memory: {self.flow}"
-        return {"address": self.stack_inputs[1], "input": self.flow.writes.calldata.value}
+        return {
+            "address": self.stack_inputs[1].as_address(),
+            "updates_storage_address": False,
+            "input": self.flow.writes.calldata.value,
+        }
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        offset = self.stack_inputs[5].as_int()
-        size = self.stack_inputs[6].as_int()
-        return_data = child_call_context.return_data
+        assert self.flow
+        _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
         if size == 0:
             return StorageWrites()
+        return_data = child_call_context.return_data
         return_data_slice = return_data[:size]
         return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     @override
-    def get_immediate_return_writes(self, output_oracle: InstructionOutputOracle) -> StorageWrites:
-        offset = self.stack_inputs[5].as_int()
-        size = self.stack_inputs[6].as_int()
-        return_data = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        return_data_slice = return_data[: size * 2]
+    def get_immediate_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert self.flow
+        _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
+        offset = offset_access.value.get_hexstring().as_int()
+        size = size_access.value.get_hexstring().as_int()
+        return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
+        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
         return StorageWrites(
-            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(return_data_slice))]
+            stack_pushes=[StackPush(success)],
+            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
         )
 
 

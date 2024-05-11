@@ -1,10 +1,13 @@
+from typing import Iterable
 from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.instructions.instructions import PUSH32
 from traces_analyzer.parser.storage.balances import Balances
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
+from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata
 from traces_analyzer.utils.hexstring import HexString
 
 TestVal = str | HexString | StorageByteGroup
@@ -126,3 +129,15 @@ class _TestCounter:
 
     def lookup(self, name: str) -> int:
         return self._lookup[name]
+
+
+def _test_push_steps(
+    values: Iterable[str], counter: _TestCounter, base_name="push", base_oracle=_test_oracle()
+) -> list[tuple[InstructionMetadata, InstructionOutputOracle]]:
+    pushes: list[tuple[InstructionMetadata, InstructionOutputOracle]] = []
+    oracle_stack = list(base_oracle.stack)
+    for i, val in enumerate(values):
+        oracle_stack.insert(0, val)
+        oracle = _test_oracle(oracle_stack, base_oracle.memory, base_oracle.depth)
+        pushes.append((InstructionMetadata(PUSH32.opcode, counter.next(f"{base_name}_{i}")), oracle))
+    return pushes
