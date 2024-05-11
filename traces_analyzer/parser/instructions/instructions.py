@@ -293,10 +293,10 @@ SHR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_a
 SAR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 
 KECCAK256 = _make_flow(combine(stack_push(oracle_stack_peek(0)), mem_range(stack_arg(0), stack_arg(1))))
-ADDRESS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+ADDRESS = _make_flow(stack_push(current_storage_address()))
 BALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(to_size(stack_arg(0), 20))))
-ORIGIN = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-CALLER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+ORIGIN = _make_flow(stack_push(oracle_stack_peek(0)))
+CALLER = _make_flow(stack_push(oracle_stack_peek(0)))
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
 CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))

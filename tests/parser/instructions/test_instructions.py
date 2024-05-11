@@ -177,9 +177,6 @@ def test_instruction_opcode_matches_class():
 
 
 _instruction_stack_io_counts = [
-    (ADDRESS, 0, 1),
-    (ORIGIN, 0, 1),
-    (CALLER, 0, 1),
     (CALLVALUE, 0, 1),
     (CALLDATALOAD, 1, 1),
     (CALLDATASIZE, 0, 1),
@@ -498,6 +495,21 @@ def test_mcopy() -> None:
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
 
 
+def test_address() -> None:
+    call_context = _test_root()
+    env = mock_env(
+        current_call_context=call_context,
+        step_index=2,
+    )
+
+    address = _test_parse_instruction(ADDRESS, env, _test_oracle())
+
+    writes = address.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_address() == call_context.storage_address
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
+
+
 def test_balance() -> None:
     env = mock_env(
         storage_step_index=1,
@@ -548,6 +560,34 @@ def test_selfbalance() -> None:
     writes = balance.get_writes()
     assert len(writes.stack_pushes) == 1
     assert writes.stack_pushes[0].value.get_hexstring().as_int() == 0x123456
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
+
+
+def test_origin() -> None:
+    env = mock_env(
+        step_index=2,
+    )
+    oracle = _test_oracle(stack=[_test_hash_addr("origin")])
+
+    origin = _test_parse_instruction(ORIGIN, env, oracle)
+
+    writes = origin.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr("origin")
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
+
+
+def test_caller() -> None:
+    env = mock_env(
+        step_index=2,
+    )
+    oracle = _test_oracle(stack=[_test_hash_addr("sender")])
+
+    caller = _test_parse_instruction(CALLER, env, oracle)
+
+    writes = caller.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr("sender")
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
 

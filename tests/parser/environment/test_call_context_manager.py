@@ -165,7 +165,10 @@ def test_call_context_manager_enters_with_code_and_storage(call):
     next_call_context = update_call_context(root, call, root.depth + 1)
 
     assert next_call_context.depth == 2
-    assert next_call_context.msg_sender == root.code_address
+    if isinstance(call, DELEGATECALL):
+        assert next_call_context.msg_sender == root.msg_sender
+    else:
+        assert next_call_context.msg_sender == root.storage_address
     assert next_call_context.code_address == _test_hash_addr("0xtarget")
     assert next_call_context.storage_address == _test_hash_addr("0xtarget")
     assert next_call_context.calldata.get_hexstring() == "11111111"
@@ -185,7 +188,10 @@ def test_call_context_manager_enters_only_with_code_address(call):
     next_call_context = update_call_context(root, call, root.depth + 1)
 
     assert next_call_context.depth == 2
-    assert next_call_context.msg_sender == root.code_address
+    if isinstance(call, DELEGATECALL):
+        assert next_call_context.msg_sender == root.msg_sender
+    else:
+        assert next_call_context.msg_sender == root.storage_address
     assert next_call_context.code_address == _test_hash_addr("0xtarget")
     assert next_call_context.storage_address == root.storage_address
     assert next_call_context.calldata.get_hexstring() == "11111111"

@@ -106,13 +106,16 @@ def update_call_context(
         storage_address = (
             call_config["address"] if call_config["updates_storage_address"] else current_call_context.storage_address
         )
+        caller = current_call_context.storage_address
+        if isinstance(instruction, DELEGATECALL):
+            caller = current_call_context.msg_sender
 
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
             calldata=instruction.get_data()["input"],
             depth=current_call_context.depth + 1,
-            msg_sender=current_call_context.code_address,
+            msg_sender=caller,
             code_address=code_address,
             storage_address=storage_address,
         )

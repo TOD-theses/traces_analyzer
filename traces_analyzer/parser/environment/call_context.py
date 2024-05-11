@@ -36,3 +36,8 @@ class CallContext:
         self.msg_sender = self.msg_sender.as_address()
         self.code_address = self.code_address.as_address()
         self.storage_address = self.storage_address.as_address()
+
+    def get_root(self) -> CallContext:
+        if not self.parent:
+            return self
+        return self.parent.get_root()
