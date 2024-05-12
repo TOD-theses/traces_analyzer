@@ -18,6 +18,7 @@ class TransactionParsingInfo:
     sender: HexString
     to: HexString
     calldata: HexString
+    value: HexString
     verify_storages: bool = True
 
 
@@ -28,7 +29,7 @@ class ParsedTransaction:
 
 
 def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Iterable[TraceEvent]) -> ParsedTransaction:
-    root_call_context = _create_root_call_context(parsing_info.sender, parsing_info.to, parsing_info.calldata)
+    root_call_context = _create_root_call_context(parsing_info.sender, parsing_info.to, parsing_info.calldata, parsing_info.value)
 
     instructions = _parse_instructions(trace_events, root_call_context, parsing_info.verify_storages)
     call_tree = build_call_tree(root_call_context, instructions)
@@ -36,10 +37,11 @@ def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Itera
     return ParsedTransaction(instructions, call_tree)
 
 
-def _create_root_call_context(sender: HexString, to: HexString, calldata: HexString) -> CallContext:
+def _create_root_call_context(sender: HexString, to: HexString, calldata: HexString, value: HexString) -> CallContext:
     return CallContext(
         parent=None,
         calldata=StorageByteGroup.from_hexstring(calldata, PRESTATE),
+        value=StorageByteGroup.from_hexstring(value, PRESTATE),
         depth=1,
         msg_sender=sender,
         code_address=to,

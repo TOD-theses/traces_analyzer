@@ -1,6 +1,6 @@
 import json
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_hash_addr
+from tests.test_utils.test_utils import _test_call_context, _test_hash_addr
 from traces_analyzer.features.extractors.instruction_differences import (
     MemoryInputChange,
     StackInputChange,
@@ -55,16 +55,10 @@ def test_instruction_differences_evaluation():
             name="SLOAD",
             program_counter=10,
             step_index=0,
-            call_context=CallContext(
-                None,
-                "",
-                1,
-                _test_hash_addr("0xsender"),
-                _test_hash_addr("0xtest"),
-                _test_hash_addr("0xtest"),
-                False,
-                None,
-                False,
+            call_context=_test_call_context(
+                msg_sender=_test_hash_addr("0xsender"),
+                storage_address=_test_hash_addr("0xtest"),
+                code_address=_test_hash_addr("0xtest"),
             ),
             stack_inputs=(HexString("0xkey"),),
             stack_outputs=(HexString("0xval"),),

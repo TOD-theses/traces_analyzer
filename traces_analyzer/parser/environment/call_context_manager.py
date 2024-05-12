@@ -113,7 +113,8 @@ def update_call_context(
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
-            calldata=instruction.get_data()["input"],
+            calldata=call_config["input"],
+            value=call_config["value"],
             depth=current_call_context.depth + 1,
             msg_sender=caller,
             code_address=code_address,
@@ -126,6 +127,8 @@ def update_call_context(
             parent=current_call_context,
             initiating_instruction=instruction,
             calldata=StorageByteGroup(),
+            # TODO: correct value
+            value=StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
             code_address=HexString(created_contract_addr),

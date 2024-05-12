@@ -30,9 +30,9 @@ def get_root_call_context():
     )
 
 
-def get_parsing_info(verify_storages=True):
+def get_parsing_info(verify_storages=True) -> TransactionParsingInfo:
     return TransactionParsingInfo(
-        _test_hash_addr("0xsender"), _test_hash_addr("0xto"), HexString("calldata"), verify_storages=verify_storages
+        _test_hash_addr("0xsender"), _test_hash_addr("0xto"), HexString("calldata"), HexString("0x0"), verify_storages=verify_storages
     )
 
 
@@ -40,7 +40,7 @@ def get_dummy_event():
     return TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], depth=1, memory="")
 
 
-def test_parser_empty_events():
+def test_parser_empty_events() -> None:
     assert parse_instructions(get_parsing_info(), []).instructions == []
 
 
@@ -57,9 +57,9 @@ def test_call_inputs_memory_parsing():
     assert call_instruction.memory_input == "2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000"
 
 
-def test_parser_builds_call_tree():
+def test_parser_builds_call_tree() -> None:
     call_target = HexString("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").as_address()
-    stack = [HexString(val) for val in ["0x940f", call_target, "0x0", "0xb", "0x24", "0x4bb", "0x0"]]
+    stack = [HexString(val) for val in ["0x940f", str(call_target), "0x0", "0xb", "0x24", "0x4bb", "0x0"]]
     memory = HexString(
         "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
     )
@@ -67,12 +67,13 @@ def test_parser_builds_call_tree():
     events = [
         TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], memory=memory, depth=1),
         TraceEvent(pc=2, op=CALL.opcode, stack=stack, memory=memory, depth=1),
-        TraceEvent(pc=3, op=JUMPDEST.opcode, stack=[], memory="", depth=2),
+        TraceEvent(pc=3, op=JUMPDEST.opcode, stack=[], memory=None, depth=2),
     ]
     parsing_info = TransactionParsingInfo(
         sender=_test_hash_addr("0xsender"),
         to=_test_hash_addr("0xto"),
         calldata=HexString("calldata"),
+        value=HexString("0x0"),
         verify_storages=False,
     )
 

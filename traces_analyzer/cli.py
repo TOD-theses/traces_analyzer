@@ -60,6 +60,7 @@ def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, verbose: boo
         bundle.tx_victim.caller,
         bundle.tx_victim.to,
         bundle.tx_victim.calldata,
+        bundle.tx_victim.value,
         (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
         verbose,
     )
@@ -68,6 +69,7 @@ def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, verbose: boo
         bundle.tx_attack.caller,
         bundle.tx_attack.to,
         bundle.tx_attack.calldata,
+        bundle.tx_attack.value,
         (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse),
         verbose,
     )
@@ -89,6 +91,7 @@ def compare_traces(
     sender: HexString,
     to: HexString,
     calldata: HexString,
+    value: HexString,
     traces: tuple[Iterable[str], Iterable[str]],
     verbose: bool,
 ) -> list[Evaluation]:
@@ -98,8 +101,8 @@ def compare_traces(
         InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
 
-    transaction_one = parse_instructions(TransactionParsingInfo(sender, to, calldata), parse_events(traces[0]))
-    transaction_two = parse_instructions(TransactionParsingInfo(sender, to, calldata), parse_events(traces[1]))
+    transaction_one = parse_instructions(TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[0]))
+    transaction_two = parse_instructions(TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[1]))
 
     runner = FeatureExtractionRunner(
         RunInfo(

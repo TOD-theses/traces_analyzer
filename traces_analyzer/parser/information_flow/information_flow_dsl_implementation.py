@@ -11,6 +11,7 @@ from traces_analyzer.parser.storage.storage_writes import (
     BalanceTransferWrite,
     CalldataAccess,
     CalldataWrite,
+    CallvalueAccess,
     MemoryAccess,
     MemoryWrite,
     ReturnDataAccess,
@@ -409,6 +410,18 @@ def _calldata_write_node(
 ) -> StorageWrites:
     return StorageWrites(
         calldata=CalldataWrite(args[0].result),
+    )
+
+@node_with_results
+def _callvalue_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+) -> FlowWithResult:
+    value = env.current_call_context.value
+
+    return FlowWithResult(
+        accesses=StorageAccesses(callvalue=(CallvalueAccess(value), )),
+        writes=StorageWrites(),
+        result=value,
     )
 
 

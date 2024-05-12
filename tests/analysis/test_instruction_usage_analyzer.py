@@ -1,21 +1,12 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_hash_addr, _test_stack
+from tests.test_utils.test_utils import _test_child, _test_hash_addr, _test_stack
 from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instructions import JUMPDEST, POP, PUSH0, RETURN, REVERT, STOP
 
 
 def test_instruction_usage_analyzer():
-    child_context = CallContext(
-        TEST_ROOT_CALLCONTEXT,
-        "",
-        2,
-        _test_hash_addr("root"),
-        _test_hash_addr("child"),
-        _test_hash_addr("root"),
-        False,
-        None,
-    )
+    child_context = _test_child()
     root_code_address = TEST_ROOT_CALLCONTEXT.code_address
     child_code_address = child_context.code_address
 

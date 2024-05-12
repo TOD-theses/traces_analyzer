@@ -12,6 +12,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     calldata_range,
     calldata_size,
     calldata_write,
+    callvalue,
     combine,
     current_storage_address,
     mem_range,
@@ -39,6 +40,7 @@ CallDataNew = TypedDict(
     "CallDataNew",
     {
         "address": HexString,
+        "value": StorageByteGroup,
         "updates_storage_address": bool,
         "input": StorageByteGroup,
     },
@@ -46,6 +48,10 @@ CallDataNew = TypedDict(
 
 
 class CallInstruction(Instruction, ABC):
+    @abstractmethod
+    def get_data(self) -> CallDataNew:
+        pass
+
     @abstractmethod
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
         """Writes that occur when a sub-context has exited"""
@@ -83,6 +89,7 @@ class CALL(CallInstruction):
         ), f"Tried to get CALL data but contains no write for it: {self.flow}"
         return {
             "address": self.stack_inputs[1].as_address(),
+            "value": StorageByteGroup.deprecated_from_hexstring(self.stack_inputs[2]),
             "updates_storage_address": True,
             "input": self.flow.writes.calldata.value,
         }
@@ -126,6 +133,7 @@ class STATICCALL(CallInstruction):
         ), f"Tried to get STATICCALL data but contains no memory: {self.flow}"
         return {
             "address": self.stack_inputs[1].as_address(),
+            "value": StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
             "updates_storage_address": True,
             "input": self.flow.writes.calldata.value,
         }
@@ -169,6 +177,8 @@ class DELEGATECALL(CallInstruction):
         ), f"Tried to get DELEGATECALL data but contains no memory: {self.flow}"
         return {
             "address": self.stack_inputs[1].as_address(),
+            # TODO: use value from current call context (probably adding it as input)
+            "value": StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
             "updates_storage_address": False,
             "input": self.flow.writes.calldata.value,
         }
@@ -218,6 +228,7 @@ class CALLCODE(CallInstruction):
         ), f"Tried to get CALLCODE data but contains no memory: {self.flow}"
         return {
             "address": self.stack_inputs[1].as_address(),
+            "value": StorageByteGroup.deprecated_from_hexstring(self.stack_inputs[2]),
             "updates_storage_address": False,
             "input": self.flow.writes.calldata.value,
         }
@@ -299,7 +310,7 @@ ADDRESS = _make_flow(stack_push(current_storage_address()))
 BALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(to_size(stack_arg(0), 20))))
 ORIGIN = _make_flow(stack_push(oracle_stack_peek(0)))
 CALLER = _make_flow(stack_push(oracle_stack_peek(0)))
-CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+CALLVALUE = _make_flow(stack_push(callvalue()))
 CALLDATALOAD = _make_flow(stack_push(calldata_range(stack_arg(0), 32)))
 CALLDATASIZE = _make_flow(stack_push(calldata_size()))
 CALLDATACOPY = _make_flow(mem_write(stack_arg(0), calldata_range(stack_arg(1), stack_arg(2))))

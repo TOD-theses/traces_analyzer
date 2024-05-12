@@ -22,6 +22,7 @@ class HaltType(Enum):
 class CallContext:
     parent: Self | None = field(repr=False)
     calldata: StorageByteGroup
+    value: StorageByteGroup
     depth: int
     # TODO: addresses should be StorageByteGroups
     msg_sender: HexString

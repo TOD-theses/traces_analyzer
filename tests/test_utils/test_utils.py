@@ -75,6 +75,7 @@ def _test_mem(memory: TestVal, step_index=1) -> Memory:
 def _test_call_context(
     parent: CallContext | None = None,
     calldata: TestVal = "",
+    value: TestVal = "0",
     depth: int = 1,
     msg_sender: HexString = _test_hash_addr("0xsender"),
     code_address: HexString = _test_hash_addr("0xcode"),
@@ -88,6 +89,7 @@ def _test_call_context(
     return CallContext(
         parent,
         _test_group(calldata),
+        _test_group(value),
         depth,
         msg_sender,
         code_address,

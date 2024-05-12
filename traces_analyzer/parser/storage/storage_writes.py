@@ -54,6 +54,10 @@ class CalldataAccess(StorageAccess):
     offset: int
     value: StorageByteGroup
 
+@dataclass
+class CallvalueAccess(StorageAccess):
+    value: StorageByteGroup
+
 
 @dataclass
 class CalldataWrite(StorageWrite):
@@ -141,6 +145,7 @@ class StorageAccesses:
     memory: Sequence[MemoryAccess] = ()
     balance: Sequence[BalanceAccess] = ()
     calldata: Sequence[CalldataAccess] = ()
+    callvalue: Sequence[CallvalueAccess] = ()
     return_data: ReturnDataAccess | None = None
 
     def get_dependencies(self) -> Iterable[tuple[int, StorageAccess, StorageByteGroup | None]]:
@@ -160,6 +165,11 @@ class StorageAccesses:
                 step_index = next(iter(group.depends_on_instruction_indexes()))
                 yield (step_index, calldata_access, group)
 
+        for callvalue_access in self.callvalue:
+            for group in callvalue_access.value.split_by_dependencies():
+                step_index = next(iter(group.depends_on_instruction_indexes()))
+                yield (step_index, callvalue_access, group)
+
         for balance_access in self.balance:
             yield (balance_access.last_modified_step_index, balance_access, None)
 
@@ -174,12 +184,14 @@ class StorageAccesses:
         stack_accesses: list[StackAccess] = []
         balance_accesses: list[BalanceAccess] = []
         calldata_accesses: list[CalldataAccess] = []
+        callvalue_accesses: list[CallvalueAccess] = []
         return_data_access: ReturnDataAccess | None = None
         for access in accesses:
             memory_accesses.extend(access.memory)
             stack_accesses.extend(access.stack)
             balance_accesses.extend(access.balance)
             calldata_accesses.extend(access.calldata)
+            callvalue_accesses.extend(access.callvalue)
             return_data_access = return_data_access or access.return_data
 
         return StorageAccesses(
@@ -187,5 +199,6 @@ class StorageAccesses:
             memory=memory_accesses,
             balance=balance_accesses,
             calldata=calldata_accesses,
+            callvalue=callvalue_accesses,
             return_data=return_data_access,
         )

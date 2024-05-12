@@ -10,6 +10,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     _calldata_range_node,
     _calldata_size_node,
     _calldata_write_node,
+    _callvalue_node,
     _current_storage_address_node,
     _mem_range_node,
     _mem_write_node,
@@ -89,6 +90,8 @@ def calldata_write(value: FlowNodeWithResult) -> WritingFlowNode:
 def calldata_size() -> FlowNodeWithResult:
     return _calldata_size_node()
 
+def callvalue() -> FlowNodeWithResult:
+    return _callvalue_node()
 
 def return_data_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult) -> FlowNodeWithResult:
     return _return_data_range_node(offset, size)

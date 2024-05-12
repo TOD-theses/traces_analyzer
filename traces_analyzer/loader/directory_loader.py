@@ -41,6 +41,7 @@ class DirectoryLoader(TraceLoader):
             to=HexString(tx_actual["to"]),
             # TODO: remove get when it is implemented in the metadata
             calldata=HexString(tx_actual.get("calldata", "")),
+            value=HexString(tx_actual.get("value", "")),
             trace_actual=lazy_load_file(self._dir / "actual" / (hash.with_prefix() + ".jsonl")),
             trace_reverse=lazy_load_file(self._dir / "reverse" / (hash.with_prefix() + ".jsonl")),
         )

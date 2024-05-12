@@ -1,6 +1,6 @@
 from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_mem, _test_stack
+from tests.test_utils.test_utils import _test_call_context, _test_child, _test_mem, _test_stack
 from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instructions import CALL, JUMPDEST, LOG1, POP, STOP
@@ -8,16 +8,7 @@ from traces_analyzer.utils.hexstring import HexString
 
 
 def test_instruction_input_analyzer():
-    child_context = CallContext(
-        TEST_ROOT_CALLCONTEXT,
-        HexString(""),
-        2,
-        HexString("0xroot"),
-        HexString("0xchild"),
-        HexString("0xchild"),
-        False,
-        None,
-    )
+    child_context = _test_child()
 
     first_call_value = HexString("0x1000").as_size(32)
     second_call_value = HexString("0x100000").as_size(32)

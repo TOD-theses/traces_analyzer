@@ -178,7 +178,6 @@ def test_instruction_opcode_matches_class():
 
 
 _instruction_stack_io_counts = [
-    (CALLVALUE, 0, 1),
     (CODESIZE, 0, 1),
     (CODECOPY, 3, 0),
     (GASPRICE, 0, 1),
@@ -587,6 +586,21 @@ def test_caller() -> None:
     assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr("sender")
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
+def test_callvalue() -> None:
+    call_context = _test_call_context(value=_test_group32("1234", 1))
+    env = mock_env( current_call_context=call_context,)
+
+    callvalue = _test_parse_instruction(CALLVALUE, env, _test_oracle())
+
+    accesses = callvalue.get_accesses()
+    assert len(accesses.callvalue) == 1
+    assert accesses.callvalue[0].value.get_hexstring().as_int() == 0x1234
+    assert accesses.callvalue[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = callvalue.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_int() == 0x1234
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1}
 
 def test_calldataload() -> None:
     call_context = _test_call_context(calldata=_test_group("0011223344556677", 1))

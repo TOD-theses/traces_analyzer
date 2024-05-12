@@ -12,6 +12,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
     balance_transfer,
     calldata_size,
+    callvalue,
     selfdestruct,
     calldata_range,
     calldata_write,
@@ -366,6 +367,19 @@ def test_calldata_write():
     assert flow.writes.calldata.value.get_hexstring() == "11223344"
     assert flow.writes.calldata.value.depends_on_instruction_indexes() == {1234}
 
+
+def test_callvalue():
+    call_context = _test_call_context(value=_test_group("1234", 1))
+    env = mock_env(current_call_context=call_context)
+
+    flow = callvalue().compute(env, _test_oracle())
+
+    assert len(flow.accesses.callvalue) == 1
+    assert flow.accesses.callvalue[0].value.get_hexstring().as_int() == 0x1234
+    assert flow.accesses.callvalue[0].value.depends_on_instruction_indexes() == {1}
+
+    assert flow.result.get_hexstring().as_int() == 0x1234
+    assert flow.result.depends_on_instruction_indexes() == {1}
 
 def test_return_data_write():
     env = mock_env()

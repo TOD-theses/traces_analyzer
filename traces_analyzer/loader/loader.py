@@ -12,6 +12,7 @@ class TransactionBundle:
     to: HexString
     hash: HexString
     calldata: HexString
+    value: HexString
     trace_actual: Iterable[str]
     trace_reverse: Iterable[str]
 
