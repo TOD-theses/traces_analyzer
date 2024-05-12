@@ -9,6 +9,8 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
     balance_transfer,
+    calldata_range,
+    calldata_size,
     calldata_write,
     combine,
     current_storage_address,
@@ -298,30 +300,9 @@ BALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(to_siz
 ORIGIN = _make_flow(stack_push(oracle_stack_peek(0)))
 CALLER = _make_flow(stack_push(oracle_stack_peek(0)))
 CALLVALUE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-CALLDATALOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-CALLDATASIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-
-
-@dataclass(frozen=True, repr=False, eq=False)
-class CALLDATACOPY(Instruction):
-    io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
-
-    @classmethod
-    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
-        io = super().parse_io(env, output_oracle)
-        offset = io.inputs_stack[0].as_int()
-        size = io.inputs_stack[2].as_int()
-
-        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
-
-    @override
-    def get_writes(self) -> StorageWrites:
-        offset = self.stack_inputs[0].as_int()
-        assert self.memory_output is not None, f"CALLDATACOPY with None memory output: {self}"
-        return StorageWrites(
-            memory=[MemoryWrite(offset, StorageByteGroup.deprecated_from_hexstring(self.memory_output))]
-        )
-
+CALLDATALOAD = _make_flow(stack_push(calldata_range(stack_arg(0), 32)))
+CALLDATASIZE = _make_flow(stack_push(calldata_size()))
+CALLDATACOPY = _make_flow(mem_write(stack_arg(0), calldata_range(stack_arg(1), stack_arg(2))))
 
 CODESIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
 

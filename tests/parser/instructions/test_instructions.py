@@ -2,6 +2,7 @@ from typing import TypeVar, cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT
 from tests.test_utils.test_utils import (
     _test_addr,
+    _test_call_context,
     _test_child,
     _test_group,
     _test_group32,
@@ -178,9 +179,6 @@ def test_instruction_opcode_matches_class():
 
 _instruction_stack_io_counts = [
     (CALLVALUE, 0, 1),
-    (CALLDATALOAD, 1, 1),
-    (CALLDATASIZE, 0, 1),
-    (CALLDATACOPY, 3, 0),
     (CODESIZE, 0, 1),
     (CODECOPY, 3, 0),
     (GASPRICE, 0, 1),
@@ -217,7 +215,6 @@ def test_stack_io():
 
 
 _instruction_memory_args = [
-    (CALLDATACOPY, None, None, 0, 2),
     (CODECOPY, None, None, 0, 2),
     (EXTCODECOPY, None, None, 1, 3),
 ]
@@ -589,6 +586,79 @@ def test_caller() -> None:
     assert len(writes.stack_pushes) == 1
     assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr("sender")
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
+
+
+def test_calldataload() -> None:
+    call_context = _test_call_context(calldata=_test_group("0011223344556677", 1))
+    env = mock_env(
+        current_call_context=call_context,
+        storage_step_index=2,
+        step_index=3,
+        stack_contents=["4"],
+    )
+
+    calldataload = _test_parse_instruction(CALLDATALOAD, env, _test_oracle())
+
+    accesses = calldataload.get_accesses()
+    assert len(accesses.stack) == 1
+    assert accesses.stack[0].index == 0
+    assert accesses.stack[0].value.get_hexstring() == HexString("4").as_size(32)
+    assert accesses.stack[0].value.depends_on_instruction_indexes() == {2}
+    assert len(accesses.calldata) == 1
+    assert accesses.calldata[0].offset == 4
+    assert accesses.calldata[0].value.get_hexstring() == "44556677" + "00" * 28
+    assert accesses.calldata[0].value.depends_on_instruction_indexes() == {1, 3}
+
+    writes = calldataload.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring() == "44556677" + "00" * 28
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1, 3}
+
+
+def test_calldatasize() -> None:
+    call_context = _test_call_context(calldata=_test_group("0011223344556677", 1))
+    env = mock_env(
+        current_call_context=call_context,
+        step_index=2,
+    )
+
+    calldatasize = _test_parse_instruction(CALLDATASIZE, env, _test_oracle())
+
+    accesses = calldatasize.get_accesses()
+    assert len(accesses.calldata) == 1
+    assert accesses.calldata[0].offset == 0
+    assert accesses.calldata[0].value.get_hexstring() == "0011223344556677"
+    assert accesses.calldata[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = calldatasize.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring() == HexString("8").as_size(32)
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
+
+
+def test_calldatacopy() -> None:
+    call_context = _test_call_context(calldata=_test_group("0011223344556677", 1))
+    env = mock_env(
+        current_call_context=call_context,
+        storage_step_index=2,
+        step_index=3,
+        stack_contents=["8", "4", hex(16)],
+    )
+
+    calldatacopy = _test_parse_instruction(CALLDATACOPY, env, _test_oracle())
+
+    accesses = calldatacopy.get_accesses()
+    assert len(accesses.stack) == 3
+    assert len(accesses.calldata) == 1
+    assert accesses.calldata[0].offset == 4
+    assert accesses.calldata[0].value.get_hexstring() == "44556677" + "00" * 12
+    assert accesses.calldata[0].value.depends_on_instruction_indexes() == {1, 3}
+
+    writes = calldatacopy.get_writes()
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 8
+    assert writes.memory[0].value.get_hexstring() == "44556677" + "00" * 12
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1, 3}
 
 
 def test_return() -> None:

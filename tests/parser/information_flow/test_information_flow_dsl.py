@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 from tests.test_utils.test_utils import (
     _test_addr,
+    _test_call_context,
     _test_group,
     _test_group32,
-    _test_hash_addr,
     _test_oracle,
     _test_root,
     mock_env,
@@ -12,9 +11,10 @@ from traces_analyzer.parser.environment.parsing_environment import InstructionOu
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
     balance_transfer,
+    calldata_size,
     selfdestruct,
+    calldata_range,
     calldata_write,
-    combine,
     current_storage_address,
     mem_range,
     mem_write,
@@ -328,6 +328,33 @@ def test_return_data_range():
     assert flow.result == _test_group("33445566")
     assert flow.accesses.return_data == ReturnDataAccess(2, 4, _test_group("33445566"))
     assert flow.accesses.return_data.value.depends_on_instruction_indexes() == {1234}
+
+
+def test_calldata_range():
+    call_context = _test_call_context(calldata=_test_group("0011223344556677", 1))
+    env = mock_env(step_index=3, current_call_context=call_context)
+
+    flow = calldata_range(_test_node("4", 2), 32).compute(env, _test_oracle())
+
+    assert len(flow.accesses.calldata) == 1
+    assert flow.accesses.calldata[0].offset == 4
+    assert flow.accesses.calldata[0].value.get_hexstring() == "44556677" + "00" * 28
+    assert flow.accesses.calldata[0].value.depends_on_instruction_indexes() == {1, 3}
+
+
+def test_calldata_size():
+    call_context = _test_call_context(calldata=_test_group("0011223344556677", 1))
+    env = mock_env(step_index=2, current_call_context=call_context)
+
+    flow = calldata_size().compute(env, _test_oracle())
+
+    assert len(flow.accesses.calldata) == 1
+    assert flow.accesses.calldata[0].offset == 0
+    assert flow.accesses.calldata[0].value.get_hexstring() == "0011223344556677"
+    assert flow.accesses.calldata[0].value.depends_on_instruction_indexes() == {1}
+
+    assert flow.result.get_hexstring().as_int() == 8
+    assert flow.result.depends_on_instruction_indexes() == {2}
 
 
 def test_calldata_write():

@@ -9,6 +9,7 @@ from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
     BalanceAccess,
     BalanceTransferWrite,
+    CalldataAccess,
     CalldataWrite,
     MemoryAccess,
     MemoryWrite,
@@ -369,6 +370,39 @@ def _return_data_range_node(
     )
 
 
+@node_with_results
+def _calldata_range_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    offset = args[0].result.get_hexstring().as_int()
+    size = args[1].result.get_hexstring().as_int()
+    result = env.current_call_context.calldata[offset : offset + size]
+    if len(result) < size:
+        missing_hexstring = HexString("00" * (size - len(result)))
+        result += StorageByteGroup.from_hexstring(missing_hexstring, env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(calldata=(CalldataAccess(offset, result),)),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
+@node_with_results
+def _calldata_size_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    calldata = env.current_call_context.calldata
+    size = HexString.from_int(len(calldata)).as_size(32)
+    result = StorageByteGroup.from_hexstring(size, env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(calldata=(CalldataAccess(0, calldata),)),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
 @node_with_writes
 def _calldata_write_node(
     args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -402,5 +436,5 @@ def _return_data_size_node(
     return FlowWithResult(
         accesses=StorageAccesses(return_data=ReturnDataAccess(0, size, return_data)),
         writes=StorageWrites(),
-        result=StorageByteGroup.from_hexstring(HexString(hex(size)).as_size(32), env.current_step_index),
+        result=StorageByteGroup.from_hexstring(HexString.from_int(size).as_size(32), env.current_step_index),
     )

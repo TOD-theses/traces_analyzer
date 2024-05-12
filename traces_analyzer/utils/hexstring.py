@@ -20,7 +20,7 @@ class HexString(UserString):
 
     def as_size(self, n: int) -> "HexString":
         """Return 0-padded last n bytes"""
-        if not n:
+        if n == 0:
             return self[0:0]
         return self[-2 * n :].rjust(2 * n, "0")
 

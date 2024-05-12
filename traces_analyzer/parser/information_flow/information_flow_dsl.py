@@ -7,6 +7,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     WritingFlowNode,
     _balance_of_node,
     _balance_transfer_node,
+    _calldata_range_node,
+    _calldata_size_node,
     _calldata_write_node,
     _current_storage_address_node,
     _mem_range_node,
@@ -76,8 +78,16 @@ def selfdestruct(from_addr: FlowNodeWithResult, to_addr: FlowNodeWithResult) -> 
     return _selfdestruct_node(from_addr, to_addr)
 
 
+def calldata_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) -> FlowNodeWithResult:
+    return _calldata_range_node(offset, size)
+
+
 def calldata_write(value: FlowNodeWithResult) -> WritingFlowNode:
     return _calldata_write_node(value)
+
+
+def calldata_size() -> FlowNodeWithResult:
+    return _calldata_size_node()
 
 
 def return_data_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult) -> FlowNodeWithResult:

@@ -50,6 +50,12 @@ class MemoryAccess(StorageAccess):
 
 
 @dataclass
+class CalldataAccess(StorageAccess):
+    offset: int
+    value: StorageByteGroup
+
+
+@dataclass
 class CalldataWrite(StorageWrite):
     value: StorageByteGroup
 
@@ -134,6 +140,7 @@ class StorageAccesses:
     stack: Sequence[StackAccess] = ()
     memory: Sequence[MemoryAccess] = ()
     balance: Sequence[BalanceAccess] = ()
+    calldata: Sequence[CalldataAccess] = ()
     return_data: ReturnDataAccess | None = None
 
     def get_dependencies(self) -> Iterable[tuple[int, StorageAccess, StorageByteGroup | None]]:
@@ -148,6 +155,11 @@ class StorageAccesses:
                 step_index = next(iter(group.depends_on_instruction_indexes()))
                 yield (step_index, memory_access, group)
 
+        for calldata_access in self.calldata:
+            for group in calldata_access.value.split_by_dependencies():
+                step_index = next(iter(group.depends_on_instruction_indexes()))
+                yield (step_index, calldata_access, group)
+
         for balance_access in self.balance:
             yield (balance_access.last_modified_step_index, balance_access, None)
 
@@ -161,16 +173,19 @@ class StorageAccesses:
         memory_accesses: list[MemoryAccess] = []
         stack_accesses: list[StackAccess] = []
         balance_accesses: list[BalanceAccess] = []
+        calldata_accesses: list[CalldataAccess] = []
         return_data_access: ReturnDataAccess | None = None
         for access in accesses:
             memory_accesses.extend(access.memory)
             stack_accesses.extend(access.stack)
             balance_accesses.extend(access.balance)
+            calldata_accesses.extend(access.calldata)
             return_data_access = return_data_access or access.return_data
 
         return StorageAccesses(
             stack=stack_accesses,
             memory=memory_accesses,
             balance=balance_accesses,
+            calldata=calldata_accesses,
             return_data=return_data_access,
         )

@@ -23,6 +23,7 @@ class CallContext:
     parent: Self | None = field(repr=False)
     calldata: StorageByteGroup
     depth: int
+    # TODO: addresses should be StorageByteGroups
     msg_sender: HexString
     code_address: HexString
     storage_address: HexString

@@ -1,8 +1,9 @@
 from typing import Iterable
 from unittest.mock import MagicMock
-from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.instructions.instructions import PUSH32
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.instructions.instructions import CREATE, CREATE2, PUSH32, CallInstruction
 from traces_analyzer.parser.storage.balances import Balances
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
@@ -71,14 +72,46 @@ def _test_mem(memory: TestVal, step_index=1) -> Memory:
     return mem
 
 
-def _test_root():
+def _test_call_context(
+    parent: CallContext | None = None,
+    calldata: TestVal = "",
+    depth: int = 1,
+    msg_sender: HexString = _test_hash_addr("0xsender"),
+    code_address: HexString = _test_hash_addr("0xcode"),
+    storage_address: HexString = _test_hash_addr("0xstorage"),
+    initiating_instruction: CallInstruction | CREATE | CREATE2 | None = None,
+    return_data: TestVal = "",
+    reverted: bool = False,
+    halt_type: HaltType | None = None,
+    is_contract_initialization: bool = False,
+):
     return CallContext(
-        None, HexString(""), 1, _test_hash_addr("0xsender"), _test_hash_addr("0xcode"), _test_hash_addr("0xstorage")
+        parent,
+        _test_group(calldata),
+        depth,
+        msg_sender,
+        code_address,
+        storage_address,
+        initiating_instruction,
+        _test_group(return_data),
+        reverted,
+        halt_type,
+        is_contract_initialization,
     )
 
 
+def _test_root():
+    return _test_call_context(depth=1)
+
+
 def _test_child_of(parent: CallContext, address: HexString):
-    return CallContext(parent, _test_group(""), parent.depth + 1, parent.code_address, address, address)
+    return _test_call_context(
+        parent=parent,
+        depth=parent.depth + 1,
+        msg_sender=parent.storage_address,
+        code_address=address,
+        storage_address=address,
+    )
 
 
 def _test_child():
