@@ -13,6 +13,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_transfer,
     calldata_size,
     callvalue,
+    combine,
     selfdestruct,
     calldata_range,
     calldata_write,
@@ -71,8 +72,13 @@ def test_noop():
 
 
 def test_combine():
-    # TODO: test this
-    env = mock_env()
+    env = mock_env(stack_contents=["1", "2"])
+
+    flow = combine(stack_arg(0), stack_arg(1)).compute(env, _test_oracle())
+
+    assert len(flow.accesses.stack) == 2
+    assert flow.accesses.stack[0].index == 0
+    assert flow.accesses.stack[1].index == 1
 
 
 def test_stack_arg():
