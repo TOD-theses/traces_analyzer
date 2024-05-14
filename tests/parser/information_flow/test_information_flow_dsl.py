@@ -387,6 +387,7 @@ def test_callvalue():
     assert flow.result.get_hexstring().as_int() == 0x1234
     assert flow.result.depends_on_instruction_indexes() == {1}
 
+
 def test_return_data_write():
     env = mock_env()
     input = _test_node(_test_group("11223344", 1234))

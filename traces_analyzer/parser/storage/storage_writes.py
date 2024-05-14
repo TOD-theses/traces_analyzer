@@ -54,6 +54,7 @@ class CalldataAccess(StorageAccess):
     offset: int
     value: StorageByteGroup
 
+
 @dataclass
 class CallvalueAccess(StorageAccess):
     value: StorageByteGroup

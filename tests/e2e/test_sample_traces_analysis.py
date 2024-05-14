@@ -20,11 +20,15 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     bundle = directory_loader.load()
 
     transactions_actual = parse_instructions(
-        TransactionParsingInfo(bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata, bundle.tx_attack.value),
+        TransactionParsingInfo(
+            bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata, bundle.tx_attack.value
+        ),
         parse_events(bundle.tx_attack.trace_actual),
     )
     transactions_reverse = parse_instructions(
-        TransactionParsingInfo(bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata, bundle.tx_attack.value),
+        TransactionParsingInfo(
+            bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata, bundle.tx_attack.value
+        ),
         parse_events(bundle.tx_attack.trace_reverse),
     )
 

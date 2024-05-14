@@ -90,8 +90,10 @@ def calldata_write(value: FlowNodeWithResult) -> WritingFlowNode:
 def calldata_size() -> FlowNodeWithResult:
     return _calldata_size_node()
 
+
 def callvalue() -> FlowNodeWithResult:
     return _callvalue_node()
+
 
 def return_data_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult) -> FlowNodeWithResult:
     return _return_data_range_node(offset, size)

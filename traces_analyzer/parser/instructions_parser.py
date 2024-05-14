@@ -29,7 +29,9 @@ class ParsedTransaction:
 
 
 def parse_instructions(parsing_info: TransactionParsingInfo, trace_events: Iterable[TraceEvent]) -> ParsedTransaction:
-    root_call_context = _create_root_call_context(parsing_info.sender, parsing_info.to, parsing_info.calldata, parsing_info.value)
+    root_call_context = _create_root_call_context(
+        parsing_info.sender, parsing_info.to, parsing_info.calldata, parsing_info.value
+    )
 
     instructions = _parse_instructions(trace_events, root_call_context, parsing_info.verify_storages)
     call_tree = build_call_tree(root_call_context, instructions)

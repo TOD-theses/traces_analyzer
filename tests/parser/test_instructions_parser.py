@@ -32,7 +32,11 @@ def get_root_call_context():
 
 def get_parsing_info(verify_storages=True) -> TransactionParsingInfo:
     return TransactionParsingInfo(
-        _test_hash_addr("0xsender"), _test_hash_addr("0xto"), HexString("calldata"), HexString("0x0"), verify_storages=verify_storages
+        _test_hash_addr("0xsender"),
+        _test_hash_addr("0xto"),
+        HexString("calldata"),
+        HexString("0x0"),
+        verify_storages=verify_storages,
     )
 
 
