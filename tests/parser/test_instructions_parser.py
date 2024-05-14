@@ -7,6 +7,7 @@ from traces_analyzer.parser.instructions.instructions import (
     JUMPDEST,
     MSTORE,
     POP,
+    PUSH32,
 )
 from traces_analyzer.parser.instructions_parser import (
     InstructionMetadata,
@@ -68,10 +69,16 @@ def test_parser_builds_call_tree() -> None:
         "00000000000000000000002e1a7d4d000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000"
     )
 
+    pushes = []
+    _stack_buildup: list[HexString] = []
+    for i, val in enumerate(reversed(stack)):
+        pushes.append(TraceEvent(pc=i + 1, op=PUSH32.opcode, stack=list(_stack_buildup), memory=None, depth=1))
+        _stack_buildup = [val] + _stack_buildup
+
     events = [
-        TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], memory=memory, depth=1),
-        TraceEvent(pc=2, op=CALL.opcode, stack=stack, memory=memory, depth=1),
-        TraceEvent(pc=3, op=JUMPDEST.opcode, stack=[], memory=None, depth=2),
+        *pushes,
+        TraceEvent(pc=len(pushes) + 1, op=CALL.opcode, stack=stack, memory=memory, depth=1),
+        TraceEvent(pc=len(pushes) + 2, op=JUMPDEST.opcode, stack=[], memory=None, depth=2),
     ]
     parsing_info = TransactionParsingInfo(
         sender=_test_hash_addr("0xsender"),
@@ -91,8 +98,8 @@ def test_parser_builds_call_tree() -> None:
 def test_parser_sets_step_indexes():
     events = [
         TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], memory=HexString(""), depth=1),
-        TraceEvent(pc=2, op=POP.opcode, stack=[HexString("0x0"), HexString("0x0")], memory=None, depth=1),
-        TraceEvent(pc=3, op=POP.opcode, stack=[HexString("0x0")], memory=None, depth=1),
+        TraceEvent(pc=2, op=JUMPDEST.opcode, stack=[], memory=None, depth=1),
+        TraceEvent(pc=3, op=JUMPDEST.opcode, stack=[], memory=None, depth=1),
     ]
 
     jumpdest, pop_1, pop_2 = parse_instructions(get_parsing_info(verify_storages=False), events).instructions

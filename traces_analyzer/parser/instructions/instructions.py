@@ -260,18 +260,12 @@ class CALLCODE(CallInstruction):
         )
 
 
-def _make_simple(io_spec: InstructionIOSpec = InstructionIOSpec()):
-    @dataclass(frozen=True, repr=False, eq=False)
-    class SimpleInstruction(Instruction):
-        io_specification = io_spec
+def _make_flow(io_flow_spec: FlowSpec | None = None):
+    spec = io_flow_spec or noop()
 
-    return SimpleInstruction
-
-
-def _make_flow(io_flow_spec: FlowSpec = noop()):
     @dataclass(frozen=True, repr=False, eq=False)
     class FlowInstruction(Instruction):
-        flow_spec = io_flow_spec
+        flow_spec = spec
 
     return FlowInstruction
 
@@ -315,7 +309,7 @@ CALLDATALOAD = _make_flow(stack_push(calldata_range(stack_arg(0), 32)))
 CALLDATASIZE = _make_flow(stack_push(calldata_size()))
 CALLDATACOPY = _make_flow(mem_write(stack_arg(0), calldata_range(stack_arg(1), stack_arg(2))))
 
-CODESIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+CODESIZE = _make_flow(combine(stack_push(oracle_stack_peek(0))))
 
 
 @dataclass(frozen=True, repr=False, eq=False)
@@ -366,25 +360,27 @@ class EXTCODECOPY(Instruction):
         )
 
 
-GASPRICE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-EXTCODESIZE = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
+GASPRICE = _make_flow(stack_push(oracle_stack_peek(0)))
+EXTCODESIZE = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
 
 RETURNDATASIZE = _make_flow(stack_push(return_data_size()))
 RETURNDATACOPY = _make_flow(mem_write(stack_arg(0), return_data_range(stack_arg(1), stack_arg(2))))
 
 
-EXTCODEHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-BLOCKHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-COINBASE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-TIMESTAMP = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-NUMBER = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-PREVRANDAO = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-GASLIMIT = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-CHAINID = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+EXTCODEHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+BLOCKHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+COINBASE = _make_flow(stack_push(oracle_stack_peek(0)))
+TIMESTAMP = _make_flow(stack_push(oracle_stack_peek(0)))
+# TODO: what are NUMBER and PREVRANDAO?
+NUMBER = _make_flow(stack_push(oracle_stack_peek(0)))
+PREVRANDAO = _make_flow(stack_push(oracle_stack_peek(0)))
+GASLIMIT = _make_flow(stack_push(oracle_stack_peek(0)))
+CHAINID = _make_flow(stack_push(oracle_stack_peek(0)))
 SELFBALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(current_storage_address())))
-BASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-BLOBHASH = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-BLOBBASEFEE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
+BASEFEE = _make_flow(stack_push(oracle_stack_peek(0)))
+# TODO: what are the BLOB*?
+BLOBHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+BLOBBASEFEE = _make_flow(stack_push(oracle_stack_peek(0)))
 
 POP = _make_flow(stack_arg(0))
 
@@ -392,17 +388,19 @@ MLOAD = _make_flow(stack_push(mem_range(stack_arg(0), 32)))
 MSTORE = _make_flow(mem_write(stack_arg(0), stack_arg(1)))
 MSTORE8 = _make_flow(mem_write(stack_arg(0), to_size(stack_arg(1), 1)))
 
-
-SLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-SSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
-JUMP = _make_simple(InstructionIOSpec(stack_input_count=1))
-JUMPI = _make_simple(InstructionIOSpec(stack_input_count=2))
-PC = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-MSIZE = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-GAS = _make_simple(InstructionIOSpec(stack_input_count=0, stack_output_count=1))
-JUMPDEST = _make_simple()
-TLOAD = _make_simple(InstructionIOSpec(stack_input_count=1, stack_output_count=1))
-TSTORE = _make_simple(InstructionIOSpec(stack_input_count=2))
+# TODO: SLOAD + SSTORE
+SLOAD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+SSTORE = _make_flow(combine(stack_arg(0), stack_arg(1)))
+JUMP = _make_flow(stack_arg(0))
+JUMPI = _make_flow(combine(stack_arg(0), stack_arg(1)))
+PC = _make_flow(stack_push(oracle_stack_peek(0)))
+# TODO: MSIZE
+MSIZE = _make_flow(stack_push(oracle_stack_peek(0)))
+GAS = _make_flow(stack_push(oracle_stack_peek(0)))
+JUMPDEST = _make_flow()
+# TOOD: TLOAD + TSTORE
+TLOAD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
+TSTORE = _make_flow(combine(stack_arg(0), stack_arg(1)))
 
 MCOPY = _make_flow(mem_write(stack_arg(0), mem_range(stack_arg(1), stack_arg(2))))
 

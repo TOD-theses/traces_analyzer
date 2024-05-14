@@ -178,32 +178,8 @@ def test_instruction_opcode_matches_class():
 
 
 _instruction_stack_io_counts = [
-    (CODESIZE, 0, 1),
     (CODECOPY, 3, 0),
-    (GASPRICE, 0, 1),
-    (EXTCODESIZE, 1, 1),
     (EXTCODECOPY, 4, 0),
-    (EXTCODEHASH, 1, 1),
-    (BLOCKHASH, 1, 1),
-    (COINBASE, 0, 1),
-    (TIMESTAMP, 0, 1),
-    (NUMBER, 0, 1),
-    (PREVRANDAO, 0, 1),
-    (GASLIMIT, 0, 1),
-    (CHAINID, 0, 1),
-    (BASEFEE, 0, 1),
-    (BLOBHASH, 1, 1),
-    (BLOBBASEFEE, 0, 1),
-    (SLOAD, 1, 1),
-    (SSTORE, 2, 0),
-    (JUMP, 1, 0),
-    (JUMPI, 2, 0),
-    (PC, 0, 1),
-    (MSIZE, 0, 1),
-    (GAS, 0, 1),
-    (JUMPDEST, 0, 0),
-    (TLOAD, 1, 1),
-    (TSTORE, 2, 0),
 ]
 
 
@@ -236,7 +212,7 @@ def _test_parse_instruction(
     return cast(InstructionType, parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle))
 
 
-stack_calculation_instructions = [
+simple_stack_instructions = [
     (ADD, 2, 1),
     (MUL, 2, 1),
     (SUB, 2, 1),
@@ -280,11 +256,35 @@ stack_calculation_instructions = [
     (PUSH15, 0, 1),
     (PUSH16, 0, 1),
     (POP, 1, 0),
+    (CODESIZE, 0, 1),
+    (EXTCODESIZE, 1, 1),
+    (GASPRICE, 0, 1),
+    (EXTCODEHASH, 1, 1),
+    (BLOCKHASH, 1, 1),
+    (COINBASE, 0, 1),
+    (TIMESTAMP, 0, 1),
+    (NUMBER, 0, 1),
+    (PREVRANDAO, 0, 1),
+    (GASLIMIT, 0, 1),
+    (CHAINID, 0, 1),
+    (BASEFEE, 0, 1),
+    (BLOBHASH, 1, 1),
+    (BLOBBASEFEE, 0, 1),
+    (SLOAD, 1, 1),
+    (SSTORE, 2, 0),
+    (JUMP, 1, 0),
+    (JUMPI, 2, 0),
+    (PC, 0, 1),
+    (MSIZE, 0, 1),
+    (GAS, 0, 1),
+    (JUMPDEST, 0, 0),
+    (TLOAD, 1, 1),
+    (TSTORE, 2, 0),
 ]
 
 
-def test_stack_calculations_io_count() -> None:
-    for instr_type, stack_inputs_n, stack_outputs_n in stack_calculation_instructions:
+def test_simple_stack_instructions() -> None:
+    for instr_type, stack_inputs_n, stack_outputs_n in simple_stack_instructions:
         env = mock_env(
             step_index=3,
             stack_contents=[str(i) for i in range(stack_inputs_n)],
