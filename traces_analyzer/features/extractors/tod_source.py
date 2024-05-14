@@ -30,7 +30,7 @@ class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
             # TODO: simply take previous instruction?
             raise Exception("Instructions from one trace stopped before the TOD source was found")
 
-        if not equal_outputs(instruction_one, instruction_two):
+        if instruction_one.get_writes() != instruction_two.get_writes():
             self._tod_source_instructions = instruction_one, instruction_two
         elif instruction_one != instruction_two:
             self._tod_source_instructions = self._previous_instructions
@@ -45,17 +45,3 @@ class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
             instruction_one=self._tod_source_instructions[0],
             instruction_two=self._tod_source_instructions[1],
         )
-
-
-def equal_inputs(instruction_one: Instruction, instruction_two: Instruction):
-    return (
-        instruction_one.stack_inputs == instruction_two.stack_inputs
-        and instruction_one.memory_input == instruction_two.memory_input
-    )
-
-
-def equal_outputs(instruction_one: Instruction, instruction_two: Instruction):
-    return (
-        instruction_one.stack_outputs == instruction_two.stack_outputs
-        and instruction_one.memory_output == instruction_two.memory_output
-    )

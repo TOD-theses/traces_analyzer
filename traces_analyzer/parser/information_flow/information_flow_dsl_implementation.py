@@ -241,6 +241,25 @@ def _oracle_stack_peek_node(
 
 
 @node_with_results
+def _oracle_mem_range_peek_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    offset = args[0].result.get_hexstring().as_int()
+    size = args[1].result.get_hexstring().as_int()
+    data = output_oracle.memory[offset * 2 : offset * 2 + size * 2]
+    result = StorageByteGroup.from_hexstring(data, env.current_step_index)
+    if len(result) < size:
+        padding = HexString("00" * (size - len(result)))
+        result += StorageByteGroup.from_hexstring(padding, env.current_step_index)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
+@node_with_results
 def _mem_range_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
     offset = args[0].result.get_hexstring().as_int()
     size = args[1].result.get_hexstring().as_int()

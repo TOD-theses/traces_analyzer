@@ -2,6 +2,8 @@ from typing_extensions import override
 
 from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.features.extractors.tod_source import TODSource
+from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.utils.hexstring import HexString
 
 
 class TODSourceEvaluation(Evaluation):
@@ -40,6 +42,17 @@ class TODSourceEvaluation(Evaluation):
 
         return (
             f"{instr_one.name} at {instr_one.call_context.code_address}:{instr_one.program_counter}\n"
-            f"> output first trace:   {instr_one.stack_outputs} | {instr_one.memory_output}\n"
-            f"> output second trace:  {instr_two.stack_outputs} | {instr_two.memory_output}"
+            f"> output first trace:   {prepare_stack_output(instr_one)} | {prepare_mem_output(instr_one)}\n"
+            f"> output second trace:  {prepare_stack_output(instr_two)} | {prepare_mem_output(instr_two)}"
         )
+
+
+def prepare_stack_output(instr: Instruction) -> tuple[HexString, ...]:
+    return tuple(x.value.get_hexstring() for x in instr.get_accesses().stack)
+
+
+def prepare_mem_output(instr: Instruction) -> HexString | None:
+    mem_writes = instr.get_writes().memory
+    if mem_writes:
+        return mem_writes[0].value.get_hexstring()
+    return None

@@ -59,7 +59,10 @@ def test_call_inputs_memory_parsing():
     call_instruction = parse_instruction(env, instruction_metadata, _test_oracle())
 
     assert isinstance(call_instruction, CALL)
-    assert call_instruction.memory_input == "2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000"
+    assert (
+        call_instruction.get_accesses().memory[0].value.get_hexstring()
+        == "2e1a7d4d000000000000000000000000000000000000000000000000016345785d8a0000"
+    )
 
 
 def test_parser_builds_call_tree() -> None:

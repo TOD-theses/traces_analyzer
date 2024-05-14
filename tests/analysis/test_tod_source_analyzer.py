@@ -3,11 +3,10 @@ from tests.conftest import make_instruction
 from tests.test_utils.test_utils import _test_stack
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.parser.instructions.instructions import POP, PUSH0, SLOAD
-from traces_analyzer.parser.events_parser import TraceEvent
 from traces_analyzer.utils.hexstring import HexString
 
 
-def test_tod_source_analyzer():
+def test_tod_source_analyzer() -> None:
     instructions_one = [
         make_instruction(PUSH0, stack_after=["0x1"]),
         make_instruction(SLOAD, pc=2, stack=_test_stack(["0x1"]), stack_after=["0x1234"]),
@@ -30,8 +29,12 @@ def test_tod_source_analyzer():
 
     assert tod_source.instruction_one.program_counter == 0x2
     assert tod_source.instruction_one.opcode == SLOAD.opcode
-    assert tod_source.instruction_one.stack_outputs == (HexString("1234").as_size(32),)
+    assert tod_source.instruction_one.get_writes().stack_pushes[0].value.get_hexstring() == HexString("1234").as_size(
+        32
+    )
 
     assert tod_source.instruction_two.program_counter == 0x2
     assert tod_source.instruction_two.opcode == SLOAD.opcode
-    assert tod_source.instruction_two.stack_outputs == (HexString("5678").as_size(32),)
+    assert tod_source.instruction_two.get_writes().stack_pushes[0].value.get_hexstring() == HexString("5678").as_size(
+        32
+    )

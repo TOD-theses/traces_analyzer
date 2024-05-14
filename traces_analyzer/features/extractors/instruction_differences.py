@@ -7,6 +7,7 @@ from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
 from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_analyzer.parser.storage.storage_writes import StackAccess
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -79,8 +80,12 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
 
 
 def _create_input_change(instruction_one: Instruction, instruction_two: Instruction) -> InstructionInputChange:
-    stack_input_changes = _create_stack_input_changes(instruction_one.stack_inputs, instruction_two.stack_inputs)
-    memory_change = _create_memory_input_change(instruction_one.memory_input, instruction_two.memory_input)
+    stack_input_changes = _create_stack_input_changes(
+        instruction_one.get_accesses().stack, instruction_two.get_accesses().stack
+    )
+    memory_change = _create_memory_input_change(
+        _get_mem_accesses_hexstring(instruction_one), _get_mem_accesses_hexstring(instruction_two)
+    )
 
     return InstructionInputChange(
         address=instruction_one.call_context.code_address,
@@ -94,12 +99,18 @@ def _create_input_change(instruction_one: Instruction, instruction_two: Instruct
 
 
 def _create_stack_input_changes(
-    stack_one: tuple[HexString, ...], stack_two: tuple[HexString, ...]
+    stack_one: Sequence[StackAccess], stack_two: Sequence[StackAccess]
 ) -> list[StackInputChange]:
     changes = []
     for i, (first_input, second_input) in enumerate(zip_longest(stack_one, stack_two)):
         if first_input != second_input:
-            changes.append(StackInputChange(index=i, first_value=first_input, second_value=second_input))
+            changes.append(
+                StackInputChange(
+                    index=i,
+                    first_value=first_input.value.get_hexstring(),
+                    second_value=second_input.value.get_hexstring(),
+                )
+            )
 
     return changes
 
@@ -115,7 +126,16 @@ def _get_location_opcode_key(instruction: Instruction) -> tuple:
 
 
 def _get_location_opcode_inputs_key(instruction: Instruction) -> tuple:
-    return (*_get_location_opcode_key(instruction), instruction.stack_inputs, instruction.memory_input)
+    stack_inputs_tuple = tuple(stack_access.value.get_hexstring() for stack_access in instruction.get_accesses().stack)
+    return (*_get_location_opcode_key(instruction), stack_inputs_tuple, _get_mem_accesses_hexstring(instruction))
+
+
+def _get_mem_accesses_hexstring(instruction: Instruction) -> HexString | None:
+    mem_accesses = instruction.get_accesses().memory
+    assert len(mem_accesses) <= 1
+    if mem_accesses:
+        return mem_accesses[0].value.get_hexstring()
+    return None
 
 
 CommonKey = TypeVar("CommonKey", bound=Hashable)

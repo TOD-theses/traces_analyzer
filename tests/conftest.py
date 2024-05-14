@@ -3,12 +3,9 @@ from pathlib import Path
 import pytest
 import sys
 
-from tests.test_utils.test_utils import _test_call_context, _test_group, _test_mem, _test_oracle, _test_stack, mock_env
-from traces_analyzer.parser.environment.call_context import CallContext
+from tests.test_utils.test_utils import _test_call_context, _test_mem, _test_oracle, _test_stack, mock_env
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instruction_io import parse_instruction_io
-from traces_analyzer.parser.instructions.instructions import JUMPDEST, get_instruction_class
-from traces_analyzer.utils.hexstring import HexString
+from traces_analyzer.parser.instructions.instructions import JUMPDEST
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
@@ -60,45 +57,12 @@ def make_instruction(
     env.stack = stack
     env.memory = memory
     oracle = _test_oracle(stack_after, memory_after)
-    if type.implemented_flow():
-        io, flow = type.parse_flow(env, oracle)
-    else:
-        io, flow = type.parse_io(env, oracle), None
+    flow = type.parse_flow(env, oracle)
     return type(
         type.opcode,
         opcode_to_name(type.opcode) or "UnknownTestInstruction",
         pc,
         step_index,
         call_context,
-        io.inputs_stack,
-        io.outputs_stack,
-        io.input_memory,
-        io.output_memory,
         flow,
-    )
-    stack_after = [HexString(val) for val in stack_after]
-    memory_after = HexString(memory_after)
-
-    name = opcode_to_name(type.opcode) or "UNKNOWN"
-
-    cls = get_instruction_class(type.opcode) or Instruction
-    io_spec = cls.io_specification
-
-    io = parse_instruction_io(
-        io_spec,  # type: ignore
-        stack,
-        memory,
-        stack_after,
-        memory_after,
-    )
-    return cls(
-        type.opcode,
-        name,
-        pc,
-        step_index,
-        call_context,
-        io.inputs_stack,
-        io.outputs_stack,
-        io.input_memory,
-        io.output_memory,
     )

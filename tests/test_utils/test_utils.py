@@ -2,12 +2,20 @@ from typing import Iterable
 from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.information_flow.information_flow_spec import Flow
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CREATE, CREATE2, PUSH32, CallInstruction
 from traces_analyzer.parser.storage.balances import Balances
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
+from traces_analyzer.parser.storage.storage_writes import (
+    MemoryAccess,
+    StackAccess,
+    StackPush,
+    StorageAccesses,
+    StorageWrites,
+)
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata
 from traces_analyzer.utils.hexstring import HexString
 
@@ -176,3 +184,22 @@ def _test_push_steps(
         oracle = _test_oracle(oracle_stack, base_oracle.memory, base_oracle.depth)
         pushes.append((InstructionMetadata(PUSH32.opcode, counter.next(f"{base_name}_{i}")), oracle))
     return pushes
+
+
+def _test_flow(accesses=StorageAccesses(), writes=StorageWrites()) -> Flow:
+    return Flow(
+        accesses=accesses,
+        writes=writes,
+    )
+
+
+def _test_stack_accesses(values: Iterable[TestVal], step_index=-1) -> list[StackAccess]:
+    return [StackAccess(i, _test_group(x, step_index)) for i, x in enumerate(values)]
+
+
+def _test_mem_access(value: TestVal, offset=0, step_index=-1) -> MemoryAccess:
+    return MemoryAccess(offset, _test_group(value, step_index))
+
+
+def _test_stack_pushes(values: Iterable[TestVal], step_index=-1) -> list[StackPush]:
+    return [StackPush(_test_group(x, step_index)) for x in values]

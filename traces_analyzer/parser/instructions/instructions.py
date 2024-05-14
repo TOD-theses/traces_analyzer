@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Mapping, TypedDict
 
 from typing_extensions import override
@@ -18,6 +18,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     mem_range,
     mem_write,
     noop,
+    oracle_mem_range_peek,
     oracle_stack_peek,
     return_data_range,
     return_data_size,
@@ -31,7 +32,6 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
 )
 from traces_analyzer.parser.information_flow.information_flow_spec import FlowSpec
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instruction_io import InstructionIO, InstructionIOSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import MemoryWrite, StackPush, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
@@ -85,17 +85,16 @@ class CALL(CallInstruction):
     @override
     def get_data(self) -> CallDataNew:
         assert (
-            self.flow and self.flow.writes.calldata is not None
+            self.flow.writes.calldata is not None
         ), f"Tried to get CALL data but contains no write for it: {self.flow}"
         return {
-            "address": self.stack_inputs[1].as_address(),
-            "value": StorageByteGroup.deprecated_from_hexstring(self.stack_inputs[2]),
+            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
+            "value": self.flow.accesses.stack[2].value,
             "updates_storage_address": True,
             "input": self.flow.writes.calldata.value,
         }
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        assert self.flow
         _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -108,7 +107,6 @@ class CALL(CallInstruction):
     def get_immediate_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
-        assert self.flow
         _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -129,17 +127,16 @@ class STATICCALL(CallInstruction):
     @override
     def get_data(self) -> CallDataNew:
         assert (
-            self.flow and self.flow.writes.calldata is not None
+            self.flow.writes.calldata is not None
         ), f"Tried to get STATICCALL data but contains no memory: {self.flow}"
         return {
-            "address": self.stack_inputs[1].as_address(),
+            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
             "value": StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
             "updates_storage_address": True,
             "input": self.flow.writes.calldata.value,
         }
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        assert self.flow
         _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -152,7 +149,6 @@ class STATICCALL(CallInstruction):
     def get_immediate_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
-        assert self.flow
         _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -173,10 +169,10 @@ class DELEGATECALL(CallInstruction):
     @override
     def get_data(self) -> CallDataNew:
         assert (
-            self.flow and self.flow.writes.calldata is not None
+            self.flow.writes.calldata is not None
         ), f"Tried to get DELEGATECALL data but contains no memory: {self.flow}"
         return {
-            "address": self.stack_inputs[1].as_address(),
+            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
             # TODO: use value from current call context (probably adding it as input)
             "value": StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
             "updates_storage_address": False,
@@ -185,7 +181,6 @@ class DELEGATECALL(CallInstruction):
 
     @override
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        assert self.flow
         _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -199,7 +194,6 @@ class DELEGATECALL(CallInstruction):
     def get_immediate_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
-        assert self.flow
         _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -223,18 +217,15 @@ class CALLCODE(CallInstruction):
 
     @override
     def get_data(self) -> CallDataNew:
-        assert (
-            self.flow and self.flow.writes.calldata is not None
-        ), f"Tried to get CALLCODE data but contains no memory: {self.flow}"
+        assert self.flow.writes.calldata is not None, f"Tried to get CALLCODE data but contains no memory: {self.flow}"
         return {
-            "address": self.stack_inputs[1].as_address(),
-            "value": StorageByteGroup.deprecated_from_hexstring(self.stack_inputs[2]),
+            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
+            "value": self.flow.accesses.stack[2].value,
             "updates_storage_address": False,
             "input": self.flow.writes.calldata.value,
         }
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
-        assert self.flow
         _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -248,7 +239,6 @@ class CALLCODE(CallInstruction):
     def get_immediate_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
-        assert self.flow
         _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
@@ -311,53 +301,10 @@ CALLDATACOPY = _make_flow(mem_write(stack_arg(0), calldata_range(stack_arg(1), s
 
 CODESIZE = _make_flow(combine(stack_push(oracle_stack_peek(0))))
 
-
-@dataclass(frozen=True, repr=False, eq=False)
-class CODECOPY(Instruction):
-    io_specification = InstructionIOSpec(stack_input_count=3, memory_output_offset_arg=0, memory_output_size_arg=2)
-
-    @classmethod
-    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
-        io = super().parse_io(env, output_oracle)
-        offset = io.inputs_stack[0].as_int()
-        size = io.inputs_stack[2].as_int()
-
-        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
-
-    @override
-    def get_writes(self) -> StorageWrites:
-        assert self.memory_output is not None, f"Tried to CODECOPY but no memory output: {self}"
-        return StorageWrites(
-            memory=[
-                MemoryWrite(
-                    self.stack_inputs[0].as_int(), StorageByteGroup.deprecated_from_hexstring(self.memory_output)
-                )
-            ]
-        )
-
-
-@dataclass(frozen=True, repr=False, eq=False)
-class EXTCODECOPY(Instruction):
-    io_specification = InstructionIOSpec(stack_input_count=4, memory_output_offset_arg=1, memory_output_size_arg=3)
-
-    @classmethod
-    def parse_io(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> InstructionIO:
-        io = super().parse_io(env, output_oracle)
-        offset = io.inputs_stack[1].as_int()
-        size = io.inputs_stack[3].as_int()
-
-        return replace(io, output_memory=output_oracle.memory[offset * 2 : (offset + size) * 2])
-
-    @override
-    def get_writes(self) -> StorageWrites:
-        assert self.memory_output is not None, f"Tried to EXTCODECOPY but no memory output: {self}"
-        return StorageWrites(
-            memory=[
-                MemoryWrite(
-                    self.stack_inputs[1].as_int(), StorageByteGroup.deprecated_from_hexstring(self.memory_output)
-                )
-            ]
-        )
+CODECOPY = _make_flow(mem_write(stack_arg(0), oracle_mem_range_peek(stack_arg(1), stack_arg(2))))
+EXTCODECOPY = _make_flow(
+    combine(stack_arg(0), mem_write(stack_arg(1), oracle_mem_range_peek(stack_arg(2), stack_arg(3))))
+)
 
 
 GASPRICE = _make_flow(stack_push(oracle_stack_peek(0)))

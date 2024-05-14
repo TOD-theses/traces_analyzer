@@ -86,14 +86,17 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
         else changed_logs_with_3_topics[1]
     )
     assert transfer_log.stack_input_changes == []
-    assert transfer_log.instruction_one.stack_inputs == transfer_log.instruction_two.stack_inputs
-    assert transfer_log.instruction_one.stack_inputs[0].as_int() == 0x60
-    assert transfer_log.instruction_one.stack_inputs[1].as_int() == 0x20
-    assert transfer_log.instruction_one.stack_inputs[2:] == (
-        HexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").as_size(32),
-        HexString("6da0fd433c1a5d7a4faa01111c044910a184553").as_size(32),
-        HexString("822beb1cd1bd7148d07e4107b636fd15118913bc").as_size(32),
-    )
+    assert transfer_log.instruction_one.get_accesses().stack == transfer_log.instruction_two.get_accesses().stack
+    assert transfer_log.instruction_one.get_accesses().memory != transfer_log.instruction_two.get_accesses().memory
+    accesses = transfer_log.instruction_one.get_accesses()
+    assert accesses.stack[0].value.get_hexstring().as_int() == 0x60
+    assert accesses.stack[1].value.get_hexstring().as_int() == 0x20
+    assert accesses.stack[2].value.get_hexstring() == HexString(
+        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    ).as_size(32)
+    assert accesses.stack[3].value.get_hexstring() == HexString("6da0fd433c1a5d7a4faa01111c044910a184553").as_size(32)
+    assert accesses.stack[4].value.get_hexstring() == HexString("822beb1cd1bd7148d07e4107b636fd15118913bc").as_size(32)
+
     assert transfer_log.instruction_one.step_index == 1921
     assert transfer_log.instruction_two.step_index == 1921
     assert transfer_log.program_counter == 10748
@@ -103,10 +106,12 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     # but there are many other transac 45th transaction also makes a transfer of Tether: USDT Stablecoin (influencing the price)
     # eg https://etherscan.io/tx/0xa3c5c292cac5fe09ff3e3bd325c698fc6ad2be8558903453b330e38deb1cea03#eventlog
     assert (
-        transfer_log.instruction_one.memory_input == "000000000000000000000000000000000000000000000000000000069be06e4a"
+        transfer_log.instruction_one.get_accesses().memory[0].value.get_hexstring()
+        == "000000000000000000000000000000000000000000000000000000069be06e4a"
     )
     assert (
-        transfer_log.instruction_two.memory_input == "000000000000000000000000000000000000000000000000000000069f7ec680"
+        transfer_log.instruction_two.get_accesses().memory[0].value.get_hexstring()
+        == "000000000000000000000000000000000000000000000000000000069f7ec680"
     )
 
     # Call Trees are as expected

@@ -1,9 +1,7 @@
 from typing import TypeVar, cast
-from tests.conftest import TEST_ROOT_CALLCONTEXT
 from tests.test_utils.test_utils import (
     _test_addr,
     _test_call_context,
-    _test_child,
     _test_group,
     _test_group32,
     _test_hash_addr,
@@ -175,32 +173,6 @@ def test_instruction_opcode_matches_class():
     for opcode, cls in _opcodes_to_instruction:
         assert get_instruction_class(opcode) == cls
         assert cls.opcode == opcode
-
-
-_instruction_stack_io_counts = [
-    (CODECOPY, 3, 0),
-    (EXTCODECOPY, 4, 0),
-]
-
-
-def test_stack_io():
-    for instruction, stack_inputs, stack_outputs in _instruction_stack_io_counts:
-        assert instruction.io_specification.stack_input_count == stack_inputs
-        assert instruction.io_specification.stack_output_count == stack_outputs
-
-
-_instruction_memory_args = [
-    (CODECOPY, None, None, 0, 2),
-    (EXTCODECOPY, None, None, 1, 3),
-]
-
-
-def test_memory_inputs():
-    for instruction, input_offset_arg, input_size_arg, output_offset_arg, output_size_arg in _instruction_memory_args:
-        assert instruction.io_specification.memory_input_offset_arg == input_offset_arg
-        assert instruction.io_specification.memory_input_size_arg == input_size_arg
-        assert instruction.io_specification.memory_output_offset_arg == output_offset_arg
-        assert instruction.io_specification.memory_output_size_arg == output_size_arg
 
 
 InstructionType = TypeVar("InstructionType", bound=Instruction)
@@ -442,7 +414,6 @@ def test_mload() -> None:
     assert accesses.memory[0].value.get_hexstring() == padded_value
     # the access outside of memory range is padded by the current instruction (3)
     assert accesses.memory[0].value.depends_on_instruction_indexes() == {2, 3}
-    assert mload.stack_outputs == (padded_value,)
 
 
 def test_mstore() -> None:
@@ -677,6 +648,44 @@ def test_calldatacopy() -> None:
     assert writes.memory[0].offset == 8
     assert writes.memory[0].value.get_hexstring() == "44556677" + "00" * 12
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1, 3}
+
+
+def test_codecopy() -> None:
+    env = mock_env(
+        step_index=1234,
+        stack_contents=["8", "4", hex(16)],
+    )
+    oracle = _test_oracle(memory="0011223344556677")
+
+    codecopy = _test_parse_instruction(CODECOPY, env, oracle)
+
+    accesses = codecopy.get_accesses()
+    assert len(accesses.stack) == 3
+
+    writes = codecopy.get_writes()
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 8
+    assert writes.memory[0].value.get_hexstring() == "44556677" + "00" * 12
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
+
+
+def test_extcodecopy() -> None:
+    env = mock_env(
+        step_index=1234,
+        stack_contents=["abcdef", "8", "4", hex(16)],
+    )
+    oracle = _test_oracle(memory="0011223344556677")
+
+    extcodecopy = _test_parse_instruction(EXTCODECOPY, env, oracle)
+
+    accesses = extcodecopy.get_accesses()
+    assert len(accesses.stack) == 4
+
+    writes = extcodecopy.get_writes()
+    assert len(writes.memory) == 1
+    assert writes.memory[0].offset == 8
+    assert writes.memory[0].value.get_hexstring() == "44556677" + "00" * 12
+    assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
 
 
 def test_return() -> None:

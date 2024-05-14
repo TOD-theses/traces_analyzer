@@ -1,6 +1,16 @@
 from typing import Callable
 import pytest
-from tests.test_utils.test_utils import _test_group, _test_hash_addr, _test_root, _test_child, _test_child_of
+from tests.test_utils.test_utils import (
+    _test_flow,
+    _test_group,
+    _test_hash_addr,
+    _test_mem_access,
+    _test_root,
+    _test_child,
+    _test_child_of,
+    _test_stack_accesses,
+    _test_stack_pushes,
+)
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.call_context_manager import (
     ExpectedDepthChange,
@@ -27,12 +37,16 @@ from traces_analyzer.parser.storage.storage_writes import CalldataWrite, Storage
 from traces_analyzer.utils.hexstring import HexString
 
 
-def flow_with_calldata() -> Flow:
-    return Flow(accesses=StorageAccesses(), writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))))
-
-
 get_add: Callable[[CallContext], Instruction] = lambda call_context: ADD(
-    ADD.opcode, "ADD", 1, 1, call_context, (1, 2), (3), None, None
+    ADD.opcode,
+    "ADD",
+    1,
+    1,
+    call_context,
+    _test_flow(
+        accesses=StorageAccesses(stack=_test_stack_accesses(["1", "2"])),
+        writes=StorageWrites(stack_pushes=_test_stack_pushes(["3"])),
+    ),
 )
 get_call: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: CALL(
     CALL.opcode,
@@ -40,19 +54,13 @@ get_call: Callable[[CallContext, HexString], Instruction] = lambda call_context,
     1,
     1,
     call_context,
-    (
-        HexString("0x1234"),
-        address,
-        HexString("0x1"),
-        HexString("0x0"),
-        HexString("0x4"),
-        HexString("0x0"),
-        HexString("0x0"),
+    _test_flow(
+        accesses=StorageAccesses(
+            stack=_test_stack_accesses(["0x1234", address, "0x1", "0x0", "0x4", "0x0", "0x0"]),
+            memory=[_test_mem_access("11111111")],
+        ),
+        writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
     ),
-    (),
-    HexString("11111111"),
-    None,
-    flow_with_calldata(),
 )
 get_staticcall: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: STATICCALL(
     STATICCALL.opcode,
@@ -60,11 +68,13 @@ get_staticcall: Callable[[CallContext, HexString], Instruction] = lambda call_co
     1,
     1,
     call_context,
-    (HexString("0x1234"), address, HexString("0x0"), HexString("0x4"), HexString("0x0"), HexString("0x0")),
-    (),
-    HexString("11111111"),
-    None,
-    flow_with_calldata(),
+    _test_flow(
+        accesses=StorageAccesses(
+            stack=_test_stack_accesses(["0x1234", address, "0x0", "0x4", "0x0", "0x0"]),
+            memory=[_test_mem_access("11111111")],
+        ),
+        writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
+    ),
 )
 get_delegate_call: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: DELEGATECALL(
     DELEGATECALL.opcode,
@@ -72,11 +82,13 @@ get_delegate_call: Callable[[CallContext, HexString], Instruction] = lambda call
     1,
     1,
     call_context,
-    (HexString("0x1234"), address, HexString("0x0"), HexString("0x4"), HexString("0x0"), HexString("0x0")),
-    (),
-    HexString("11111111"),
-    None,
-    flow_with_calldata(),
+    _test_flow(
+        accesses=StorageAccesses(
+            stack=_test_stack_accesses(["0x1234", address, "0x0", "0x4", "0x0", "0x0"]),
+            memory=[_test_mem_access("11111111")],
+        ),
+        writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
+    ),
 )
 get_callcode: Callable[[CallContext, HexString], Instruction] = lambda call_context, address: CALLCODE(
     CALLCODE.opcode,
@@ -84,19 +96,13 @@ get_callcode: Callable[[CallContext, HexString], Instruction] = lambda call_cont
     1,
     1,
     call_context,
-    (
-        HexString("0x1234"),
-        address,
-        HexString("0x1"),
-        HexString("0x0"),
-        HexString("0x4"),
-        HexString("0x0"),
-        HexString("0x0"),
+    _test_flow(
+        accesses=StorageAccesses(
+            stack=_test_stack_accesses(["0x1234", address, "0x1", "0x0", "0x4", "0x0", "0x0"]),
+            memory=[_test_mem_access("11111111")],
+        ),
+        writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
     ),
-    (),
-    HexString("11111111"),
-    None,
-    flow_with_calldata(),
 )
 get_create: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
     CREATE.opcode,
@@ -104,10 +110,11 @@ get_create: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
     1,
     1,
     call_context,
-    (HexString("0x0"), HexString("0x0"), HexString("0x4")),
-    (),
-    HexString("11111111"),
-    None,
+    _test_flow(
+        accesses=StorageAccesses(
+            stack=_test_stack_accesses(["0x0", "0x0", "0x4"]), memory=[_test_mem_access("11111111")]
+        )
+    ),
 )
 get_create2: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
     CREATE2.opcode,
@@ -115,22 +122,43 @@ get_create2: Callable[[CallContext], Instruction] = lambda call_context: CREATE(
     1,
     1,
     call_context,
-    (HexString("0x0"), HexString("0x0"), HexString("0x4"), HexString("0x0")),
-    (),
-    HexString("11111111"),
-    None,
+    _test_flow(
+        accesses=StorageAccesses(
+            stack=_test_stack_accesses(["0x0", "0x0", "0x4", "0x0"]), memory=[_test_mem_access("11111111")]
+        )
+    ),
 )
 get_stop: Callable[[CallContext], Instruction] = lambda call_context: STOP(
-    STOP.opcode, "STOP", 1, 1, call_context, (), (), None, None
+    STOP.opcode,
+    "STOP",
+    1,
+    1,
+    call_context,
+    _test_flow(),
 )
 get_return: Callable[[CallContext], Instruction] = lambda call_context: RETURN(
-    RETURN.opcode, "RETURN", 1, 1, call_context, (HexString("0x0"), HexString("0x0")), (), None, None
+    RETURN.opcode,
+    "RETURN",
+    1,
+    1,
+    call_context,
+    _test_flow(accesses=StorageAccesses(stack=_test_stack_accesses(["0x0", "0x0"]))),
 )
 get_revert: Callable[[CallContext], Instruction] = lambda call_context: REVERT(
-    REVERT.opcode, "REVERT", 1, 1, call_context, (HexString("0x0"), HexString("0x0")), (), None, None
+    REVERT.opcode,
+    "REVERT",
+    1,
+    1,
+    call_context,
+    _test_flow(accesses=StorageAccesses(stack=_test_stack_accesses(["0x0", "0x0"]))),
 )
 get_selfdestruct: Callable[[CallContext], Instruction] = lambda call_context: SELFDESTRUCT(
-    SELFDESTRUCT.opcode, "SELFDESTRUCT", 1, 1, call_context, ("0x0"), (), "", ""
+    SELFDESTRUCT.opcode,
+    "SELFDESTRUCT",
+    1,
+    1,
+    call_context,
+    _test_flow(accesses=StorageAccesses(stack=_test_stack_accesses(["0x0", "0x0"]))),
 )
 
 

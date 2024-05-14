@@ -26,9 +26,6 @@ class TraceEVM:
         self.env.current_step_index += 1
         self._update_storages(instruction, output_oracle)
         self._update_call_context(instruction, output_oracle)
-        # for those, where we did not model the stack writes, simply overwrite it with the oracle
-        if not instruction.implemented_flow():
-            self._apply_stack_oracle(instruction, output_oracle)
 
         if self._should_verify_storages:
             self._verify_storage(instruction, output_oracle)
@@ -111,17 +108,13 @@ class TraceEVM:
 
 
 def parse_instruction(
-    env, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle
+    env: ParsingEnvironment, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle
 ) -> Instruction:
     opcode = instruction_metadata.opcode
     name = opcode_to_name(opcode) or "UNKNOWN"
 
     cls = get_instruction_class(opcode) or Instruction
-    if cls.implemented_flow():
-        io, flow = cls.parse_flow(env, output_oracle)
-    else:
-        io = cls.parse_io(env, output_oracle)
-        flow = None
+    flow = cls.parse_flow(env, output_oracle)
 
     return cls(
         opcode,
@@ -129,9 +122,5 @@ def parse_instruction(
         instruction_metadata.pc,
         env.current_step_index,
         env.current_call_context,
-        io.inputs_stack,
-        io.outputs_stack,
-        io.input_memory,
-        io.output_memory,
         flow,
     )

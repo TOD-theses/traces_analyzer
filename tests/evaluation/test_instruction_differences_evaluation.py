@@ -1,6 +1,13 @@
 import json
 from tests.conftest import TEST_ROOT_CALLCONTEXT
-from tests.test_utils.test_utils import _test_call_context, _test_hash_addr
+from tests.test_utils.test_utils import (
+    _test_call_context,
+    _test_flow,
+    _test_hash_addr,
+    _test_mem_access,
+    _test_stack_accesses,
+    _test_stack_pushes,
+)
 from traces_analyzer.features.extractors.instruction_differences import (
     MemoryInputChange,
     StackInputChange,
@@ -10,10 +17,11 @@ from traces_analyzer.evaluation.instruction_differences_evaluation import Instru
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CALL, SLOAD
+from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 
 
-def test_instruction_differences_evaluation():
+def test_instruction_differences_evaluation() -> None:
     call_context = TEST_ROOT_CALLCONTEXT
     input_changes = [
         InstructionInputChange(
@@ -26,10 +34,11 @@ def test_instruction_differences_evaluation():
                 5,
                 0,
                 call_context,
-                (HexString("val_1"), HexString("val_2"), HexString("val_3")),
-                (),
-                HexString("1111"),
-                None,
+                _test_flow(
+                    accesses=StorageAccesses(
+                        stack=_test_stack_accesses(["val_1", "val_2", "val_3"]), memory=[_test_mem_access("1111")]
+                    )
+                ),
             ),
             instruction_two=CALL(
                 CALL.opcode,
@@ -37,10 +46,11 @@ def test_instruction_differences_evaluation():
                 5,
                 0,
                 call_context,
-                (HexString("val_1"), HexString("val_2_x"), HexString("val_3_x")),
-                (),
-                HexString("2222"),
-                None,
+                _test_flow(
+                    accesses=StorageAccesses(
+                        stack=_test_stack_accesses(["val_1", "val_2_x", "val_3_x"]), memory=[_test_mem_access("2222")]
+                    )
+                ),
             ),
             stack_input_changes=[
                 StackInputChange(index=1, first_value=HexString("val_2"), second_value=HexString("val_2_x")),
@@ -51,22 +61,22 @@ def test_instruction_differences_evaluation():
     ]
     only_first = [
         Instruction(
-            opcode=SLOAD.opcode,
-            name="SLOAD",
-            program_counter=10,
-            step_index=0,
-            call_context=_test_call_context(
+            SLOAD.opcode,
+            "SLOAD",
+            10,
+            0,
+            _test_call_context(
                 msg_sender=_test_hash_addr("0xsender"),
                 storage_address=_test_hash_addr("0xtest"),
                 code_address=_test_hash_addr("0xtest"),
             ),
-            stack_inputs=(HexString("0xkey"),),
-            stack_outputs=(HexString("0xval"),),
-            memory_input=None,
-            memory_output=None,
+            _test_flow(
+                accesses=StorageAccesses(stack=_test_stack_accesses(["0xkey"])),
+                writes=StorageWrites(stack_pushes=_test_stack_pushes(["0xval"])),
+            ),
         )
     ]
-    only_second = []
+    only_second: list[Instruction] = []
 
     evaluation = InstructionDifferencesEvaluation(
         occurrence_changes=(only_first, only_second),

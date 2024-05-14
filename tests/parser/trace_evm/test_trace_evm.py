@@ -23,7 +23,6 @@ def test_trace_evm_mload():
     assert accesses.memory[0].value.get_hexstring() == padded_value
     # the access outside of memory range is padded by the current instruction (3)
     assert accesses.memory[0].value.depends_on_instruction_indexes() == {2, 3}
-    assert mload.stack_outputs == (padded_value,)
 
 
 def test_trace_evm_staticcall_precompiled() -> None:

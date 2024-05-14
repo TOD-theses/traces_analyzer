@@ -14,6 +14,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     calldata_size,
     callvalue,
     combine,
+    oracle_mem_range_peek,
     selfdestruct,
     calldata_range,
     calldata_write,
@@ -118,6 +119,16 @@ def test_oracle_stack_peek():
     flow = oracle_stack_peek(1).compute(env, oracle)
 
     assert flow.result.get_hexstring() == HexString("20").as_size(32)
+    assert flow.result.depends_on_instruction_indexes() == {1234}
+
+
+def test_oracle_mem_range_peek():
+    env = mock_env(step_index=1234)
+    oracle = _test_oracle(memory="0011223344556677")
+
+    flow = oracle_mem_range_peek(2, 4).compute(env, oracle)
+
+    assert flow.result.get_hexstring() == "22334455"
     assert flow.result.depends_on_instruction_indexes() == {1234}
 
 

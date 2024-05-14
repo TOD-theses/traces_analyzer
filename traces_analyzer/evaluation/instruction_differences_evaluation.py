@@ -6,6 +6,7 @@ from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.features.extractors.instruction_differences import InstructionInputChange
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
@@ -73,10 +74,14 @@ class InstructionDifferencesEvaluation(Evaluation):
             if change.stack_input_changes:
                 result += "> stack: " + str(change.stack_input_changes) + "\n"
             else:
-                result += "> common stack input: " + str(change.instruction_one.stack_inputs) + "\n"
+                result += (
+                    "> common stack input: "
+                    + str(tuple(x.value.get_hexstring() for x in change.instruction_one.get_accesses().stack))
+                    + "\n"
+                )
             if change.memory_input_change:
-                result += f'> memory input first trace:   "{change.instruction_one.memory_input}"\n'
-                result += f'> memory input second trace:  "{change.instruction_two.memory_input}"\n'
+                result += f'> memory input first trace:   "{get_mem_input(change.instruction_one)}"\n'
+                result += f'> memory input second trace:  "{get_mem_input(change.instruction_two)}"\n'
             result += "\n"
         return result
 
@@ -101,7 +106,7 @@ def occurence_change_to_dict(changed_instruction: Instruction) -> dict:
         },
         "instruction": {
             "opcode": changed_instruction.opcode,
-            "stack_inputs": changed_instruction.stack_inputs,
+            "stack_inputs": tuple(x.value.get_hexstring() for x in changed_instruction.get_accesses().stack),
         },
     }
 
@@ -116,9 +121,22 @@ def instruction_input_change_to_dict(input_change: InstructionInputChange) -> di
             "opcode": input_change.opcode,
         },
         "inputs": [
-            {"stack": input_change.instruction_one.stack_inputs, "memory": input_change.instruction_one.memory_input},
-            {"stack": input_change.instruction_two.stack_inputs, "memory": input_change.instruction_two.memory_input},
+            {
+                "stack": tuple(x.value.get_hexstring() for x in input_change.instruction_one.get_accesses().stack),
+                "memory": get_mem_input(input_change.instruction_one),
+            },
+            {
+                "stack": tuple(x.value.get_hexstring() for x in input_change.instruction_two.get_accesses().stack),
+                "memory": get_mem_input(input_change.instruction_two),
+            },
         ],
         "stack_input_changes": [asdict(change) for change in input_change.stack_input_changes],
         "memory_input_change": asdict(input_change.memory_input_change) if input_change.memory_input_change else None,
     }
+
+
+def get_mem_input(instruction: Instruction) -> HexString | None:
+    mem_accesses = instruction.get_accesses().memory
+    if not mem_accesses:
+        return None
+    return mem_accesses[0].value.get_hexstring()
