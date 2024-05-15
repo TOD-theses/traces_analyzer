@@ -87,7 +87,7 @@ class TraceEVM:
         if not output_oracle.memory:
             return
 
-        memory = self.env.memory.get_all().get_hexstring().strip("0")
+        memory = self.env.memory.get_all().get_hexstring().without_prefix().strip("0")
         oracle_memory = output_oracle.memory.without_prefix().strip("0")
 
         if memory != oracle_memory:

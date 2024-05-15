@@ -23,6 +23,7 @@ def test_stack_push():
     stack.push(_test_group("1234"))
 
     assert stack.size() == 1
+    assert stack.peek(0).get_hexstring() == HexString("1234").as_size(32)
 
 
 def test_stack_push_all():

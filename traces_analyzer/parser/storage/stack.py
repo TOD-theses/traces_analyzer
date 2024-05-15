@@ -14,8 +14,8 @@ class Stack:
 
     def push(self, value: StorageByteGroup):
         """Push a single value to the top of the stack"""
-        if len(value.get_hexstring()) != 64:
-            padding = StorageByteGroup.deprecated_from_hexstring(HexString("0" * (64 - len(value.get_hexstring()))))
+        if len(value) < 32:
+            padding = StorageByteGroup.deprecated_from_hexstring(HexString("00" * (32 - len(value))))
             value = padding + value
         self._stack.append(value)
 

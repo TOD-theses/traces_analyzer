@@ -4,7 +4,10 @@ from collections.abc import Iterable
 
 class HexString(UserString):
     def __init__(self, value: str) -> None:
-        super().__init__(value.removeprefix("0x").lower())
+        value = value.removeprefix("0x")
+        value = value.lower()
+        value = value if len(value) % 2 == 0 else "0" + value
+        super().__init__(value)
 
     def with_prefix(self) -> str:
         return "0x" + self.data

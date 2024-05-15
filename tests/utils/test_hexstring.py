@@ -9,6 +9,10 @@ def test_hexstring_with_prefix_equals_str():
     assert "abcd" == HexString("0xabcd")
 
 
+def test_hexstring_pads_half_bytes():
+    assert "0123" == HexString("123")
+
+
 def test_hexstring_is_lower_case():
     assert "abcd" == HexString("ABCD")
 

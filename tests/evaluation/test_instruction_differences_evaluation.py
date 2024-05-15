@@ -98,24 +98,24 @@ def test_instruction_differences_evaluation() -> None:
                     },
                     "inputs": [
                         {
-                            "stack": ("0xval_1", "0xval_2", "0xval_3"),
+                            "stack": ("0x0val_1", "0x0val_2", "0x0val_3"),
                             "memory": "0x1111",
                         },
                         {
-                            "stack": ("0xval_1", "0xval_2_x", "0xval_3_x"),
+                            "stack": ("0x0val_1", "0x0val_2_x", "0x0val_3_x"),
                             "memory": "0x2222",
                         },
                     ],
                     "stack_input_changes": [
                         {
                             "index": 1,
-                            "first_value": "0xval_2",
-                            "second_value": "0xval_2_x",
+                            "first_value": "0x0val_2",
+                            "second_value": "0x0val_2_x",
                         },
                         {
                             "index": 2,
-                            "first_value": "0xval_3",
-                            "second_value": "0xval_3_x",
+                            "first_value": "0x0val_3",
+                            "second_value": "0x0val_3_x",
                         },
                     ],
                     "memory_input_change": {
@@ -131,7 +131,7 @@ def test_instruction_differences_evaluation() -> None:
                             "address": _test_hash_addr("0xtest").with_prefix(),
                             "pc": 10,
                         },
-                        "instruction": {"opcode": SLOAD.opcode, "stack_inputs": ("0xkey",)},
+                        "instruction": {"opcode": SLOAD.opcode, "stack_inputs": ("0x0key",)},
                     }
                 ],
                 "only_in_second_trace": [],
