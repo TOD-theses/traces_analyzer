@@ -275,6 +275,28 @@ def _mem_range_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, o
     )
 
 
+@node_with_results
+def _mem_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+    size = env.memory.size()
+    result = StorageByteGroup.from_hexstring(HexString.from_int(size).as_size(32), env.current_step_index)
+
+    # it depends on the last 32 bytes, which are essential for the memory size
+    if size == 0:
+        offset = 0
+        value = StorageByteGroup()
+    else:
+        offset = size - 32
+        value = env.memory.get(offset, 32, -1)
+
+    mem_access = MemoryAccess(offset, value)
+
+    return FlowWithResult(
+        accesses=StorageAccesses(memory=[mem_access]),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
 @node_with_writes
 def _mem_write_node(
     args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle

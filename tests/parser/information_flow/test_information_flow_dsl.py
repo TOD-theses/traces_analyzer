@@ -15,6 +15,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     calldata_size,
     callvalue,
     combine,
+    mem_size,
     oracle_mem_range_peek,
     selfdestruct,
     calldata_range,
@@ -156,6 +157,22 @@ def test_mem_range_stack_args():
     flow = mem_range(stack_arg(0), stack_arg(1)).compute(env, _test_oracle())
 
     assert flow.result.get_hexstring() == "22334455"
+    assert flow.result.depends_on_instruction_indexes() == {1234}
+
+
+def test_mem_size():
+    content = _test_group32("aa", 0) + _test_group("bb" * 28, 1) + _test_group("cc" * 4, 2)
+    env = mock_env(memory_content=content, step_index=1234)
+
+    flow = mem_size().compute(env, _test_oracle())
+
+    assert len(flow.accesses.memory) == 1
+    # it depends on the last 32 bytes, which are essential for the memory size
+    assert flow.accesses.memory[0].offset == 32
+    assert flow.accesses.memory[0].value.get_hexstring() == "bb" * 28 + "cc" * 4
+    assert flow.accesses.memory[0].value.depends_on_instruction_indexes() == {1, 2}
+
+    assert flow.result.get_hexstring().as_int() == 64
     assert flow.result.depends_on_instruction_indexes() == {1234}
 
 

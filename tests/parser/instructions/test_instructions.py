@@ -247,7 +247,6 @@ simple_stack_instructions = [
     (JUMP, 1, 0),
     (JUMPI, 2, 0),
     (PC, 0, 1),
-    (MSIZE, 0, 1),
     (GAS, 0, 1),
     (JUMPDEST, 0, 0),
 ]
@@ -436,6 +435,25 @@ def test_mstore8() -> None:
     assert writes.memory[0].offset == 0x4
     assert writes.memory[0].value.get_hexstring() == "01"
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_msize() -> None:
+    content = _test_group32("aa", 0) + _test_group("bb" * 28, 1) + _test_group("cc" * 4, 2)
+    env = mock_env(memory_content=content, step_index=1234)
+
+    msize = _test_parse_instruction(MSIZE, env, _test_oracle())
+
+    accesses = msize.get_accesses()
+    assert len(accesses.memory) == 1
+    # it depends on the last 32 bytes, which are essential for the memory size
+    assert accesses.memory[0].offset == 32
+    assert accesses.memory[0].value.get_hexstring() == "bb" * 28 + "cc" * 4
+    assert accesses.memory[0].value.depends_on_instruction_indexes() == {1, 2}
+
+    writes = msize.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring().as_int() == 64
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1234}
 
 
 def test_mcopy() -> None:

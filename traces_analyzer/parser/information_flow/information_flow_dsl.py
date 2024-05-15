@@ -13,6 +13,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     _callvalue_node,
     _current_storage_address_node,
     _mem_range_node,
+    _mem_size_node,
     _mem_write_node,
     _oracle_mem_range_peek_node,
     _oracle_stack_peek_node,
@@ -62,6 +63,10 @@ def mem_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) 
 
 def mem_write(offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
     return _mem_write_node(offset, value)
+
+
+def mem_size() -> FlowNodeWithResult:
+    return _mem_size_node()
 
 
 def transient_storage_get(key: FlowNodeWithResult) -> FlowNodeWithResult:

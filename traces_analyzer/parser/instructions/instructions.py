@@ -16,6 +16,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     combine,
     current_storage_address,
     mem_range,
+    mem_size,
     mem_write,
     noop,
     oracle_mem_range_peek,
@@ -343,8 +344,7 @@ SSTORE = _make_flow(combine(stack_arg(0), stack_arg(1)))
 JUMP = _make_flow(stack_arg(0))
 JUMPI = _make_flow(combine(stack_arg(0), stack_arg(1)))
 PC = _make_flow(stack_push(oracle_stack_peek(0)))
-# TODO: MSIZE
-MSIZE = _make_flow(stack_push(oracle_stack_peek(0)))
+MSIZE = _make_flow(stack_push(mem_size()))
 GAS = _make_flow(stack_push(oracle_stack_peek(0)))
 JUMPDEST = _make_flow()
 TLOAD = _make_flow(stack_push(transient_storage_get(stack_arg(0))))
