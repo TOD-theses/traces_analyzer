@@ -16,6 +16,7 @@ from traces_analyzer.parser.storage.storage_writes import (
     StorageAccesses,
     StorageWrites,
 )
+from traces_analyzer.parser.storage.transient_storage import TransientStorageTables
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata
 from traces_analyzer.utils.hexstring import HexString
 
@@ -74,10 +75,22 @@ def _test_group32(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
 
-def _test_mem(memory: TestVal, step_index=1) -> Memory:
+def _test_mem(memory: TestVal, step_index=-1) -> Memory:
     mem = Memory()
     mem.set(0, _test_group(memory, step_index), step_index)
     return mem
+
+
+def _test_transient_storage(tables: dict[str | HexString, dict[str | HexString, TestVal]], step_index=-1):
+    transient_storage = TransientStorageTables()
+    for addr, table in tables.items():
+        addr_hexstring = addr if isinstance(addr, HexString) else HexString(addr)
+        for key, val in table.items():
+            key_hexstring = key if isinstance(key, HexString) else HexString(key)
+            val_group = _test_group32(val, step_index)
+            transient_storage.set(addr_hexstring, key_hexstring, val_group)
+
+    return transient_storage
 
 
 def _test_call_context(
@@ -140,6 +153,7 @@ def mock_env(
     stack_contents: list[TestVal] | None = None,
     memory_content: TestVal | None = None,
     balances: dict[str | HexString, int] | None = None,
+    transient_storage: dict[str | HexString, dict[str | HexString, TestVal]] | None = None,
 ):
     env = MagicMock(spec=ParsingEnvironment)
     env.current_step_index = step_index
@@ -151,6 +165,8 @@ def mock_env(
         env.memory = _test_mem(memory_content, storage_step_index)
     if balances is not None:
         env.balances = _test_balances(balances)
+    if transient_storage:
+        env.transient_storage = _test_transient_storage(transient_storage)
     return env
 
 

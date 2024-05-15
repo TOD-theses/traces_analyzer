@@ -6,6 +6,7 @@ from traces_analyzer.parser.storage.last_executed_sub_context import LastExecute
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.parser.storage.storage import ContextSpecificStorage, Storage
+from traces_analyzer.parser.storage.transient_storage import TransientStorage, TransientStorageTables
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -16,6 +17,7 @@ class ParsingEnvironment:
         self._stack_storage = ContextSpecificStorage(Stack)
         self._memory_storage = ContextSpecificStorage(Memory)
         self._balances_storage = BalancesStorage()
+        self._transient_storage = TransientStorage()
         self._last_executed_sub_context = LastExecutedSubContextStorage()
 
     def on_call_enter(self, next_call_context: CallContext):
@@ -42,6 +44,10 @@ class ParsingEnvironment:
     @property
     def balances(self) -> Balances:
         return self._balances_storage.current()
+
+    @property
+    def transient_storage(self) -> TransientStorageTables:
+        return self._transient_storage.current()
 
     @property
     def last_executed_sub_context(self) -> CallContext | None:

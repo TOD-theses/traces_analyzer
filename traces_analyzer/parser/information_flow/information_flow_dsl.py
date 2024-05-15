@@ -25,6 +25,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl_implementation
     _stack_push_node,
     _stack_set_node,
     _to_size_node,
+    _transient_storage_get_node,
+    _transient_storage_set_node,
 )
 
 
@@ -60,6 +62,14 @@ def mem_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) 
 
 def mem_write(offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
     return _mem_write_node(offset, value)
+
+
+def transient_storage_get(key: FlowNodeWithResult) -> FlowNodeWithResult:
+    return _transient_storage_get_node(key)
+
+
+def transient_storage_set(key: FlowNodeWithResult, value: FlowNodeWithResult) -> WritingFlowNode:
+    return _transient_storage_set_node(key, value)
 
 
 def to_size(value: FlowNodeWithResult, bytes_size: int) -> FlowNodeWithResult:

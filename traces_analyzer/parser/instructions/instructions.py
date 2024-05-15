@@ -29,6 +29,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     stack_push,
     stack_set,
     to_size,
+    transient_storage_get,
+    transient_storage_set,
 )
 from traces_analyzer.parser.information_flow.information_flow_spec import FlowSpec
 from traces_analyzer.parser.instructions.instruction import Instruction
@@ -345,9 +347,8 @@ PC = _make_flow(stack_push(oracle_stack_peek(0)))
 MSIZE = _make_flow(stack_push(oracle_stack_peek(0)))
 GAS = _make_flow(stack_push(oracle_stack_peek(0)))
 JUMPDEST = _make_flow()
-# TOOD: TLOAD + TSTORE
-TLOAD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
-TSTORE = _make_flow(combine(stack_arg(0), stack_arg(1)))
+TLOAD = _make_flow(stack_push(transient_storage_get(stack_arg(0))))
+TSTORE = _make_flow(transient_storage_set(stack_arg(0), stack_arg(1)))
 
 MCOPY = _make_flow(mem_write(stack_arg(0), mem_range(stack_arg(1), stack_arg(2))))
 

@@ -1,6 +1,7 @@
 from tests.test_utils.test_utils import (
     _test_addr,
     _test_call_context,
+    _test_child,
     _test_group,
     _test_group32,
     _test_oracle,
@@ -32,6 +33,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     stack_push,
     stack_set,
     to_size,
+    transient_storage_get,
+    transient_storage_set,
 )
 from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import (
     FlowNode,
@@ -154,6 +157,45 @@ def test_mem_range_stack_args():
 
     assert flow.result.get_hexstring() == "22334455"
     assert flow.result.depends_on_instruction_indexes() == {1234}
+
+
+def test_transient_storage_get():
+    call_context = _test_child()
+    address = call_context.storage_address
+    key = HexString("1234").as_size(32)
+    env = mock_env(current_call_context=call_context, transient_storage={address: {key: _test_group32("00112233", 1)}})
+
+    flow = transient_storage_get(_test_node(key, 2)).compute(env, _test_oracle())
+
+    assert len(flow.accesses.transient_storage) == 1
+    assert flow.accesses.transient_storage[0].address == address
+    assert flow.accesses.transient_storage[0].key.get_hexstring() == key
+    assert flow.accesses.transient_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert flow.accesses.transient_storage[0].value.get_hexstring() == HexString("00112233").as_size(32)
+    assert flow.accesses.transient_storage[0].value.depends_on_instruction_indexes() == {1}
+
+    assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
+    assert flow.result.depends_on_instruction_indexes() == {1}
+
+
+def test_transient_storage_set():
+    call_context = _test_child()
+    address = call_context.storage_address
+    key = HexString("1234").as_size(32)
+    value = HexString("00112233").as_size(32)
+    env = mock_env(
+        current_call_context=call_context,
+        transient_storage={},
+    )
+
+    flow = transient_storage_set(_test_node(key, 2), _test_node(value, 1)).compute(env, _test_oracle())
+
+    assert len(flow.writes.transient_storage) == 1
+    assert flow.writes.transient_storage[0].address == address
+    assert flow.writes.transient_storage[0].key.get_hexstring() == key
+    assert flow.writes.transient_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert flow.writes.transient_storage[0].value.get_hexstring() == value
+    assert flow.writes.transient_storage[0].value.depends_on_instruction_indexes() == {1}
 
 
 def test_stack_push_const():

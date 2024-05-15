@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
+from traces_analyzer.utils.hexstring import HexString
 
 
 @dataclass
@@ -44,8 +45,22 @@ class MemoryWrite(StorageWrite):
 
 
 @dataclass
+class TransientStorageWrite(StorageWrite):
+    address: HexString
+    key: StorageByteGroup
+    value: StorageByteGroup
+
+
+@dataclass
 class MemoryAccess(StorageAccess):
     offset: int
+    value: StorageByteGroup
+
+
+@dataclass
+class TransientStorageAccess(StorageAccess):
+    address: HexString
+    key: StorageByteGroup
     value: StorageByteGroup
 
 
@@ -102,6 +117,7 @@ class StorageWrites:
     stack_pops: Sequence[StackPop] = ()
     stack_pushes: Sequence[StackPush] = ()
     memory: Sequence[MemoryWrite] = ()
+    transient_storage: Sequence[TransientStorageWrite] = ()
     calldata: CalldataWrite | None = None
     return_data: ReturnWrite | None = None
     balance_transfers: Sequence[BalanceTransferWrite] = ()
@@ -110,6 +126,7 @@ class StorageWrites:
     @staticmethod
     def merge(writes: list["StorageWrites"]) -> "StorageWrites":
         mem_writes: list[MemoryWrite] = []
+        transient_storage_writes: list[TransientStorageWrite] = []
         calldata_write: CalldataWrite | None = None
         return_data_write: ReturnWrite | None = None
         stack_sets: list[StackSet] = []
@@ -123,6 +140,7 @@ class StorageWrites:
             stack_pops.extend(write.stack_pops)
             stack_pushes.extend(write.stack_pushes)
             mem_writes.extend(write.memory)
+            transient_storage_writes.extend(write.transient_storage)
             calldata_write = calldata_write or write.calldata
             return_data_write = return_data_write or write.return_data
             balance_transfers.extend(write.balance_transfers)
@@ -133,6 +151,7 @@ class StorageWrites:
             stack_pops=stack_pops,
             stack_pushes=stack_pushes,
             memory=mem_writes,
+            transient_storage=transient_storage_writes,
             calldata=calldata_write,
             return_data=return_data_write,
             balance_transfers=balance_transfers,
@@ -144,6 +163,7 @@ class StorageWrites:
 class StorageAccesses:
     stack: Sequence[StackAccess] = ()
     memory: Sequence[MemoryAccess] = ()
+    transient_storage: Sequence[TransientStorageAccess] = ()
     balance: Sequence[BalanceAccess] = ()
     calldata: Sequence[CalldataAccess] = ()
     callvalue: Sequence[CallvalueAccess] = ()
@@ -160,6 +180,11 @@ class StorageAccesses:
             for group in memory_access.value.split_by_dependencies():
                 step_index = next(iter(group.depends_on_instruction_indexes()))
                 yield (step_index, memory_access, group)
+
+        for transient_storage_access in self.transient_storage:
+            for group in transient_storage_access.value.split_by_dependencies():
+                step_index = next(iter(group.depends_on_instruction_indexes()))
+                yield (step_index, transient_storage_access, group)
 
         for calldata_access in self.calldata:
             for group in calldata_access.value.split_by_dependencies():
@@ -182,6 +207,7 @@ class StorageAccesses:
     @staticmethod
     def merge(accesses: list["StorageAccesses"]) -> "StorageAccesses":
         memory_accesses: list[MemoryAccess] = []
+        transient_storage_accesses: list[TransientStorageAccess] = []
         stack_accesses: list[StackAccess] = []
         balance_accesses: list[BalanceAccess] = []
         calldata_accesses: list[CalldataAccess] = []
@@ -189,6 +215,7 @@ class StorageAccesses:
         return_data_access: ReturnDataAccess | None = None
         for access in accesses:
             memory_accesses.extend(access.memory)
+            transient_storage_accesses.extend(access.transient_storage)
             stack_accesses.extend(access.stack)
             balance_accesses.extend(access.balance)
             calldata_accesses.extend(access.calldata)
@@ -198,6 +225,7 @@ class StorageAccesses:
         return StorageAccesses(
             stack=stack_accesses,
             memory=memory_accesses,
+            transient_storage=transient_storage_accesses,
             balance=balance_accesses,
             calldata=calldata_accesses,
             callvalue=callvalue_accesses,

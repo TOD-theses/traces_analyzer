@@ -250,8 +250,6 @@ simple_stack_instructions = [
     (MSIZE, 0, 1),
     (GAS, 0, 1),
     (JUMPDEST, 0, 0),
-    (TLOAD, 1, 1),
-    (TSTORE, 2, 0),
 ]
 
 
@@ -460,6 +458,51 @@ def test_mcopy() -> None:
     assert writes.memory[0].offset == 0x20
     assert writes.memory[0].value.get_hexstring() == "00112233"
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_tload() -> None:
+    call_context = _test_root()
+    address = call_context.storage_address
+    key = _test_group32("1234", 2)
+    value = _test_group32("00112233", 1)
+    env = mock_env(step_index=3, stack_contents=[key], transient_storage={address: {key.get_hexstring(): value}})
+
+    tload = _test_parse_instruction(TLOAD, env, _test_oracle())
+
+    accesses = tload.get_accesses()
+    assert len(accesses.stack) == 1
+    assert len(accesses.transient_storage) == 1
+    assert accesses.transient_storage[0].address == address
+    assert accesses.transient_storage[0].key.get_hexstring() == key.get_hexstring()
+    assert accesses.transient_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert accesses.transient_storage[0].value.get_hexstring() == value.get_hexstring()
+    assert accesses.transient_storage[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = tload.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring() == value.get_hexstring()
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_tstore() -> None:
+    call_context = _test_root()
+    address = call_context.storage_address
+    key = _test_group32("1234", 2)
+    value = _test_group32("00112233", 1)
+    env = mock_env(step_index=3, stack_contents=[key, value], transient_storage={})
+
+    tstore = _test_parse_instruction(TSTORE, env, _test_oracle())
+
+    acesses = tstore.get_accesses()
+    assert len(acesses.stack) == 2
+
+    writes = tstore.get_writes()
+    assert len(writes.transient_storage) == 1
+    assert writes.transient_storage[0].address == address
+    assert writes.transient_storage[0].key.get_hexstring() == key.get_hexstring()
+    assert writes.transient_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert writes.transient_storage[0].value.get_hexstring() == value.get_hexstring()
+    assert writes.transient_storage[0].value.depends_on_instruction_indexes() == {1}
 
 
 def test_address() -> None:

@@ -23,6 +23,8 @@ from traces_analyzer.parser.storage.storage_writes import (
     StackSet,
     StorageAccesses,
     StorageWrites,
+    TransientStorageAccess,
+    TransientStorageWrite,
 )
 from traces_analyzer.utils.hexstring import HexString
 
@@ -297,6 +299,33 @@ def _to_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, out
         writes=StorageWrites(),
         result=value,
     )
+
+
+@node_with_results
+def _transient_storage_get_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    key = args[0].result
+    address = env.current_call_context.storage_address
+    result = env.transient_storage.get(address, key.get_hexstring())
+
+    return FlowWithResult(
+        accesses=StorageAccesses(transient_storage=(TransientStorageAccess(address, key, result),)),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
+@node_with_writes
+def _transient_storage_set_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    key = args[0].result
+    value = args[1].result
+    address = env.current_call_context.storage_address
+    env.transient_storage.set(address, key.get_hexstring(), value)
+
+    return StorageWrites(transient_storage=(TransientStorageWrite(address, key, value),))
 
 
 @node_with_results
