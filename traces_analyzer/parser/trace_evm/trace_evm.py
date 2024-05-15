@@ -84,8 +84,16 @@ class TraceEVM:
             currently I ignore those, as I'm not sure if there is a bug in my implementation or the trace
             traces_analyzer --bundles traces/benchmark_traces/62a876599363fc9f281b2768
         """
-        if not output_oracle.memory:
+        # ignore the last instruction, as we don't have an output oracle for it
+        if output_oracle.depth is None:
             return
+        current_depth = self.env.current_call_context.depth
+        if current_depth != output_oracle.depth:
+            raise Exception(
+                f"The environments depth does not match the output_oracles depth after {instruction}:\n"
+                f"Environment: {current_depth}\n"
+                f"Oracle:      {output_oracle.depth}"
+            )
 
         memory = self.env.memory.get_all().get_hexstring().without_prefix().strip("0")
         oracle_memory = output_oracle.memory.without_prefix().strip("0")
@@ -96,6 +104,7 @@ class TraceEVM:
                 f"Environment: {memory}\n"
                 f"Oracle:      {oracle_memory}"
             )
+
         stack = [x.get_hexstring().as_int() for x in self.env.stack.get_all()]
         oracle_stack = [x.as_int() for x in output_oracle.stack]
 

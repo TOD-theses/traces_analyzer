@@ -5,7 +5,7 @@ from traces_analyzer.parser.instructions.instructions import KECCAK256, LOG1, MC
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
 
-def test_information_flow() -> None:
+def test_simple_information_flow() -> None:
     root = _test_root()
     env = ParsingEnvironment(root)
     evm = TraceEVM(env, verify_storages=False)

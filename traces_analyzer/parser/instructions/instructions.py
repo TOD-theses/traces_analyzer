@@ -21,6 +21,8 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     noop,
     oracle_mem_range_peek,
     oracle_stack_peek,
+    persistent_storage_get,
+    persistent_storage_set,
     return_data_range,
     return_data_size,
     return_data_write,
@@ -321,14 +323,12 @@ EXTCODEHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0))
 BLOCKHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
 COINBASE = _make_flow(stack_push(oracle_stack_peek(0)))
 TIMESTAMP = _make_flow(stack_push(oracle_stack_peek(0)))
-# TODO: what are NUMBER and PREVRANDAO?
 NUMBER = _make_flow(stack_push(oracle_stack_peek(0)))
 PREVRANDAO = _make_flow(stack_push(oracle_stack_peek(0)))
 GASLIMIT = _make_flow(stack_push(oracle_stack_peek(0)))
 CHAINID = _make_flow(stack_push(oracle_stack_peek(0)))
 SELFBALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(current_storage_address())))
 BASEFEE = _make_flow(stack_push(oracle_stack_peek(0)))
-# TODO: what are the BLOB*?
 BLOBHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
 BLOBBASEFEE = _make_flow(stack_push(oracle_stack_peek(0)))
 
@@ -338,9 +338,8 @@ MLOAD = _make_flow(stack_push(mem_range(stack_arg(0), 32)))
 MSTORE = _make_flow(mem_write(stack_arg(0), stack_arg(1)))
 MSTORE8 = _make_flow(mem_write(stack_arg(0), to_size(stack_arg(1), 1)))
 
-# TODO: SLOAD + SSTORE
-SLOAD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
-SSTORE = _make_flow(combine(stack_arg(0), stack_arg(1)))
+SLOAD = _make_flow(stack_push(persistent_storage_get(stack_arg(0))))
+SSTORE = _make_flow(persistent_storage_set(stack_arg(0), stack_arg(1)))
 JUMP = _make_flow(stack_arg(0))
 JUMPI = _make_flow(combine(stack_arg(0), stack_arg(1)))
 PC = _make_flow(stack_push(oracle_stack_peek(0)))

@@ -45,6 +45,13 @@ class MemoryWrite(StorageWrite):
 
 
 @dataclass
+class PersistentStorageWrite(StorageWrite):
+    address: HexString
+    key: StorageByteGroup
+    value: StorageByteGroup
+
+
+@dataclass
 class TransientStorageWrite(StorageWrite):
     address: HexString
     key: StorageByteGroup
@@ -54,6 +61,13 @@ class TransientStorageWrite(StorageWrite):
 @dataclass
 class MemoryAccess(StorageAccess):
     offset: int
+    value: StorageByteGroup
+
+
+@dataclass
+class PersistentStorageAccess(StorageAccess):
+    address: HexString
+    key: StorageByteGroup
     value: StorageByteGroup
 
 
@@ -117,6 +131,7 @@ class StorageWrites:
     stack_pops: Sequence[StackPop] = ()
     stack_pushes: Sequence[StackPush] = ()
     memory: Sequence[MemoryWrite] = ()
+    persistent_storage: Sequence[PersistentStorageWrite] = ()
     transient_storage: Sequence[TransientStorageWrite] = ()
     calldata: CalldataWrite | None = None
     return_data: ReturnWrite | None = None
@@ -126,6 +141,7 @@ class StorageWrites:
     @staticmethod
     def merge(writes: list["StorageWrites"]) -> "StorageWrites":
         mem_writes: list[MemoryWrite] = []
+        persistent_storage_writes: list[PersistentStorageWrite] = []
         transient_storage_writes: list[TransientStorageWrite] = []
         calldata_write: CalldataWrite | None = None
         return_data_write: ReturnWrite | None = None
@@ -140,6 +156,7 @@ class StorageWrites:
             stack_pops.extend(write.stack_pops)
             stack_pushes.extend(write.stack_pushes)
             mem_writes.extend(write.memory)
+            persistent_storage_writes.extend(write.persistent_storage)
             transient_storage_writes.extend(write.transient_storage)
             calldata_write = calldata_write or write.calldata
             return_data_write = return_data_write or write.return_data
@@ -151,6 +168,7 @@ class StorageWrites:
             stack_pops=stack_pops,
             stack_pushes=stack_pushes,
             memory=mem_writes,
+            persistent_storage=persistent_storage_writes,
             transient_storage=transient_storage_writes,
             calldata=calldata_write,
             return_data=return_data_write,
@@ -163,6 +181,7 @@ class StorageWrites:
 class StorageAccesses:
     stack: Sequence[StackAccess] = ()
     memory: Sequence[MemoryAccess] = ()
+    persistent_storage: Sequence[PersistentStorageAccess] = ()
     transient_storage: Sequence[TransientStorageAccess] = ()
     balance: Sequence[BalanceAccess] = ()
     calldata: Sequence[CalldataAccess] = ()
@@ -180,6 +199,11 @@ class StorageAccesses:
             for group in memory_access.value.split_by_dependencies():
                 step_index = next(iter(group.depends_on_instruction_indexes()))
                 yield (step_index, memory_access, group)
+
+        for persistent_storage_access in self.persistent_storage:
+            for group in persistent_storage_access.value.split_by_dependencies():
+                step_index = next(iter(group.depends_on_instruction_indexes()))
+                yield (step_index, persistent_storage_access, group)
 
         for transient_storage_access in self.transient_storage:
             for group in transient_storage_access.value.split_by_dependencies():
@@ -207,6 +231,7 @@ class StorageAccesses:
     @staticmethod
     def merge(accesses: list["StorageAccesses"]) -> "StorageAccesses":
         memory_accesses: list[MemoryAccess] = []
+        persistent_storage_accesses: list[PersistentStorageAccess] = []
         transient_storage_accesses: list[TransientStorageAccess] = []
         stack_accesses: list[StackAccess] = []
         balance_accesses: list[BalanceAccess] = []
@@ -215,6 +240,7 @@ class StorageAccesses:
         return_data_access: ReturnDataAccess | None = None
         for access in accesses:
             memory_accesses.extend(access.memory)
+            persistent_storage_accesses.extend(access.persistent_storage)
             transient_storage_accesses.extend(access.transient_storage)
             stack_accesses.extend(access.stack)
             balance_accesses.extend(access.balance)
@@ -225,6 +251,7 @@ class StorageAccesses:
         return StorageAccesses(
             stack=stack_accesses,
             memory=memory_accesses,
+            persistent_storage=persistent_storage_accesses,
             transient_storage=transient_storage_accesses,
             balance=balance_accesses,
             calldata=calldata_accesses,

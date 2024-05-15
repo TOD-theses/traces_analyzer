@@ -3,7 +3,14 @@ from pathlib import Path
 import pytest
 import sys
 
-from tests.test_utils.test_utils import _test_call_context, _test_mem, _test_oracle, _test_stack, mock_env
+from tests.test_utils.test_utils import (
+    _test_address_key_storage,
+    _test_call_context,
+    _test_mem,
+    _test_oracle,
+    _test_stack,
+    mock_env,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import JUMPDEST
 from traces_analyzer.utils.mnemonics import opcode_to_name
@@ -56,6 +63,7 @@ def make_instruction(
     )
     env.stack = stack
     env.memory = memory
+    env.persistent_storage = _test_address_key_storage({})
     oracle = _test_oracle(stack_after, memory_after)
     flow = type.parse_flow(env, oracle)
     return type(

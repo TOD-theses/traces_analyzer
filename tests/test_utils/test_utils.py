@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow
-from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CREATE, CREATE2, PUSH32, CallInstruction
+from traces_analyzer.parser.storage.address_key_storage import AddressKeyStorage
 from traces_analyzer.parser.storage.balances import Balances
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
@@ -16,7 +16,6 @@ from traces_analyzer.parser.storage.storage_writes import (
     StorageAccesses,
     StorageWrites,
 )
-from traces_analyzer.parser.storage.transient_storage import TransientStorageTables
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata
 from traces_analyzer.utils.hexstring import HexString
 
@@ -81,16 +80,17 @@ def _test_mem(memory: TestVal, step_index=-1) -> Memory:
     return mem
 
 
-def _test_transient_storage(tables: dict[str | HexString, dict[str | HexString, TestVal]], step_index=-1):
-    transient_storage = TransientStorageTables()
+def _test_address_key_storage(tables: dict[str | HexString, dict[str | HexString, TestVal]], step_index=-1):
+    storage = AddressKeyStorage()
     for addr, table in tables.items():
-        addr_hexstring = addr if isinstance(addr, HexString) else HexString(addr)
+        addr_hexstring = _test_addr(addr)
         for key, val in table.items():
             key_hexstring = key if isinstance(key, HexString) else HexString(key)
+            key_hexstring = key_hexstring.as_size(32)
             val_group = _test_group32(val, step_index)
-            transient_storage.set(addr_hexstring, key_hexstring, val_group)
+            storage.set(addr_hexstring, key_hexstring, val_group)
 
-    return transient_storage
+    return storage
 
 
 def _test_call_context(
@@ -153,6 +153,7 @@ def mock_env(
     stack_contents: list[TestVal] | None = None,
     memory_content: TestVal | None = None,
     balances: dict[str | HexString, int] | None = None,
+    persistent_storage: dict[str | HexString, dict[str | HexString, TestVal]] | None = None,
     transient_storage: dict[str | HexString, dict[str | HexString, TestVal]] | None = None,
 ):
     env = MagicMock(spec=ParsingEnvironment)
@@ -165,13 +166,15 @@ def mock_env(
         env.memory = _test_mem(memory_content, storage_step_index)
     if balances is not None:
         env.balances = _test_balances(balances)
-    if transient_storage:
-        env.transient_storage = _test_transient_storage(transient_storage)
+    if persistent_storage is not None:
+        env.persistent_storage = _test_address_key_storage(persistent_storage)
+    if transient_storage is not None:
+        env.transient_storage = _test_address_key_storage(transient_storage)
     return env
 
 
 def _test_oracle(stack: list[str | HexString] = [], memory: str | HexString = "", depth=1) -> InstructionOutputOracle:
-    return InstructionOutputOracle([_test_hexstring(x) for x in stack], _test_hexstring(memory), depth)
+    return InstructionOutputOracle([_test_hexstring(x).as_size(32) for x in stack], _test_hexstring(memory), depth)
 
 
 class _TestCounter:
@@ -191,12 +194,12 @@ class _TestCounter:
 
 
 def _test_push_steps(
-    values: Iterable[str], counter: _TestCounter, base_name="push", base_oracle=_test_oracle()
+    values: Iterable[str | HexString], counter: _TestCounter, base_name="push", base_oracle=_test_oracle()
 ) -> list[tuple[InstructionMetadata, InstructionOutputOracle]]:
     pushes: list[tuple[InstructionMetadata, InstructionOutputOracle]] = []
     oracle_stack = list(base_oracle.stack)
     for i, val in enumerate(values):
-        oracle_stack.insert(0, val)
+        oracle_stack = [_test_hexstring(val)] + oracle_stack
         oracle = _test_oracle(oracle_stack, base_oracle.memory, base_oracle.depth)
         pushes.append((InstructionMetadata(PUSH32.opcode, counter.next(f"{base_name}_{i}")), oracle))
     return pushes

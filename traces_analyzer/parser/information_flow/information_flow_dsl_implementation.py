@@ -4,6 +4,7 @@ from functools import wraps
 from typing import Callable
 
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow, FlowSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
@@ -14,6 +15,8 @@ from traces_analyzer.parser.storage.storage_writes import (
     CallvalueAccess,
     MemoryAccess,
     MemoryWrite,
+    PersistentStorageAccess,
+    PersistentStorageWrite,
     ReturnDataAccess,
     ReturnWrite,
     SelfdestructWrite,
@@ -321,6 +324,41 @@ def _to_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, out
         writes=StorageWrites(),
         result=value,
     )
+
+
+@node_with_results
+def _persistent_storage_get_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    key = args[0].result
+    hex_key = key.get_hexstring()
+    address = env.current_call_context.storage_address
+    if env.persistent_storage.knows_key(address, hex_key):
+        result = env.persistent_storage.get(address, key.get_hexstring())
+        access = PersistentStorageAccess(address, key, result)
+    else:
+        result = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
+        access = PersistentStorageAccess(
+            address, key, StorageByteGroup.from_hexstring(output_oracle.stack[0], PRESTATE)
+        )
+
+    return FlowWithResult(
+        accesses=StorageAccesses(persistent_storage=(access,)),
+        writes=StorageWrites(),
+        result=result,
+    )
+
+
+@node_with_writes
+def _persistent_storage_set_node(
+    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+):
+    key = args[0].result
+    value = args[1].result
+    address = env.current_call_context.storage_address
+    env.persistent_storage.set(address, key.get_hexstring(), value)
+
+    return StorageWrites(persistent_storage=(PersistentStorageWrite(address, key, value),))
 
 
 @node_with_results

@@ -9,6 +9,7 @@ from tests.test_utils.test_utils import (
     _test_root,
     mock_env,
 )
+from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import *
 from traces_analyzer.parser.instructions_parser import InstructionMetadata
@@ -242,8 +243,6 @@ simple_stack_instructions = [
     (BASEFEE, 0, 1),
     (BLOBHASH, 1, 1),
     (BLOBBASEFEE, 0, 1),
-    (SLOAD, 1, 1),
-    (SSTORE, 2, 0),
     (JUMP, 1, 0),
     (JUMPI, 2, 0),
     (PC, 0, 1),
@@ -476,6 +475,77 @@ def test_mcopy() -> None:
     assert writes.memory[0].offset == 0x20
     assert writes.memory[0].value.get_hexstring() == "00112233"
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_sload_known() -> None:
+    call_context = _test_root()
+    address = call_context.storage_address
+    key = _test_group32("1234", 2)
+    value = _test_group32("00112233", 1)
+    env = mock_env(step_index=3, stack_contents=[key], persistent_storage={address: {key.get_hexstring(): value}})
+
+    sload = _test_parse_instruction(SLOAD, env, _test_oracle())
+
+    accesses = sload.get_accesses()
+    assert len(accesses.stack) == 1
+    assert len(accesses.persistent_storage) == 1
+    assert accesses.persistent_storage[0].address == address
+    assert accesses.persistent_storage[0].key.get_hexstring() == key.get_hexstring()
+    assert accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert accesses.persistent_storage[0].value.get_hexstring() == value.get_hexstring()
+    assert accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {1}
+
+    writes = sload.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring() == value.get_hexstring()
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1}
+
+
+def test_sload_unknown() -> None:
+    call_context = _test_root()
+    address = call_context.storage_address
+    key = _test_group32("1234", 2)
+    value = HexString("00112233").as_size(32)
+    env = mock_env(step_index=3, stack_contents=[key], persistent_storage={})
+    oracle = _test_oracle(stack=[value])
+
+    sload = _test_parse_instruction(SLOAD, env, oracle)
+
+    accesses = sload.get_accesses()
+    assert len(accesses.stack) == 1
+    assert len(accesses.persistent_storage) == 1
+    assert accesses.persistent_storage[0].address == address
+    assert accesses.persistent_storage[0].key.get_hexstring() == key.get_hexstring()
+    assert accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert accesses.persistent_storage[0].value.get_hexstring() == value
+    # the value has not been set in this transaction, thus PRESTATE
+    assert accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {PRESTATE}
+
+    writes = sload.get_writes()
+    assert len(writes.stack_pushes) == 1
+    assert writes.stack_pushes[0].value.get_hexstring() == value
+    assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {3}
+
+
+def test_sstore() -> None:
+    call_context = _test_root()
+    address = call_context.storage_address
+    key = _test_group32("1234", 2)
+    value = _test_group32("00112233", 1)
+    env = mock_env(step_index=3, stack_contents=[key, value], persistent_storage={})
+
+    sstore = _test_parse_instruction(SSTORE, env, _test_oracle())
+
+    acesses = sstore.get_accesses()
+    assert len(acesses.stack) == 2
+
+    writes = sstore.get_writes()
+    assert len(writes.persistent_storage) == 1
+    assert writes.persistent_storage[0].address == address
+    assert writes.persistent_storage[0].key.get_hexstring() == key.get_hexstring()
+    assert writes.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert writes.persistent_storage[0].value.get_hexstring() == value.get_hexstring()
+    assert writes.persistent_storage[0].value.depends_on_instruction_indexes() == {1}
 
 
 def test_tload() -> None:

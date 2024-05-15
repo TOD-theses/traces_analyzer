@@ -9,6 +9,7 @@ from tests.test_utils.test_utils import (
     mock_env,
 )
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
     balance_transfer,
@@ -17,6 +18,7 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     combine,
     mem_size,
     oracle_mem_range_peek,
+    persistent_storage_get,
     selfdestruct,
     calldata_range,
     calldata_write,
@@ -174,6 +176,46 @@ def test_mem_size():
 
     assert flow.result.get_hexstring().as_int() == 64
     assert flow.result.depends_on_instruction_indexes() == {1234}
+
+
+def test_persistent_storage_known():
+    call_context = _test_child()
+    address = call_context.storage_address
+    key = HexString("1234").as_size(32)
+    env = mock_env(current_call_context=call_context, persistent_storage={address: {key: _test_group32("00112233", 1)}})
+
+    flow = persistent_storage_get(_test_node(key, 2)).compute(env, _test_oracle())
+
+    assert len(flow.accesses.persistent_storage) == 1
+    assert flow.accesses.persistent_storage[0].address == address
+    assert flow.accesses.persistent_storage[0].key.get_hexstring() == key
+    assert flow.accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert flow.accesses.persistent_storage[0].value.get_hexstring() == HexString("00112233").as_size(32)
+    assert flow.accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {1}
+
+    assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
+    assert flow.result.depends_on_instruction_indexes() == {1}
+
+
+def test_persistent_storage_unknown():
+    call_context = _test_child()
+    address = call_context.storage_address
+    value = HexString("00112233").as_size(32)
+    key = HexString("1234").as_size(32)
+    env = mock_env(current_call_context=call_context, step_index=1, persistent_storage={address: {}})
+    oracle = _test_oracle(stack=[value])
+
+    flow = persistent_storage_get(_test_node(key, 2)).compute(env, oracle)
+
+    assert len(flow.accesses.persistent_storage) == 1
+    assert flow.accesses.persistent_storage[0].address == address
+    assert flow.accesses.persistent_storage[0].key.get_hexstring() == key
+    assert flow.accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert flow.accesses.persistent_storage[0].value.get_hexstring() == value
+    assert flow.accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {PRESTATE}
+
+    assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
+    assert flow.result.depends_on_instruction_indexes() == {1}
 
 
 def test_transient_storage_get():
