@@ -424,8 +424,6 @@ def _balance_transfer_node(
     value = args[2].result
     from_addr_last_modified = env.balances.last_modified_at_step_index(from_addr.get_hexstring())
 
-    env.balances.modified_at_step_index(to_addr.get_hexstring(), env.current_step_index)
-
     return FlowWithResult(
         accesses=StorageAccesses(balance=(BalanceAccess(from_addr, from_addr_last_modified),)),
         writes=StorageWrites(balance_transfers=(BalanceTransferWrite(from_addr, to_addr, value),)),

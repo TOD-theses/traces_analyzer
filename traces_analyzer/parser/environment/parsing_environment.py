@@ -2,13 +2,11 @@ from dataclasses import dataclass
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.storage.address_key_storage import AddressKeyStorage
-from traces_analyzer.parser.storage.balances import Balances, BalancesStorage
+from traces_analyzer.parser.storage.balances import Balances
 from traces_analyzer.parser.storage.last_executed_sub_context import LastExecutedSubContextStorage
 from traces_analyzer.parser.storage.memory import Memory
-from traces_analyzer.parser.storage.persistent_storage import PersistentStorage
 from traces_analyzer.parser.storage.stack import Stack
-from traces_analyzer.parser.storage.storage import ContextSpecificStorage, Storage
-from traces_analyzer.parser.storage.transient_storage import TransientStorage
+from traces_analyzer.parser.storage.storage import ContextSpecificStorage, RevertableStorage, Storage
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -18,9 +16,9 @@ class ParsingEnvironment:
         self.current_step_index = 0
         self._stack_storage = ContextSpecificStorage(Stack)
         self._memory_storage = ContextSpecificStorage(Memory)
-        self._balances_storage = BalancesStorage()
-        self._transient_storage = TransientStorage()
-        self._persistent_storage = PersistentStorage()
+        self._balances_storage = RevertableStorage(Balances())
+        self._transient_storage = RevertableStorage(AddressKeyStorage())
+        self._persistent_storage = RevertableStorage(AddressKeyStorage())
         self._last_executed_sub_context = LastExecutedSubContextStorage()
 
     def on_call_enter(self, next_call_context: CallContext):
@@ -33,8 +31,20 @@ class ParsingEnvironment:
             storage.on_call_exit(self.current_call_context, next_call_context)
         self.current_call_context = next_call_context
 
+    def on_revert(self, next_call_context: CallContext):
+        for storage in self._storages():
+            storage.on_revert(self.current_call_context, next_call_context)
+        self.current_call_context = next_call_context
+
     def _storages(self) -> list[Storage]:
-        return [self._last_executed_sub_context, self._stack_storage, self._memory_storage, self._balances_storage]
+        return [
+            self._last_executed_sub_context,
+            self._stack_storage,
+            self._memory_storage,
+            self._balances_storage,
+            self._persistent_storage,
+            self._transient_storage,
+        ]
 
     @property
     def stack(self) -> Stack:

@@ -26,6 +26,9 @@ class TraceEVM:
         self.env.current_step_index += 1
         self._update_storages(instruction, output_oracle)
         self._update_call_context(instruction, output_oracle)
+        # we apply balance transfers after potential call context changes
+        # such that they are not part of state snapshots and can be reverted properly
+        self._apply_balance_transfers(instruction, output_oracle)
 
         if self._should_verify_storages:
             self._verify_storage(instruction, output_oracle)
@@ -52,7 +55,10 @@ class TraceEVM:
             self.env.on_call_enter(next_call_context)
             self._apply_stack_oracle(instruction, output_oracle)
         elif next_call_context.depth < self.env.current_call_context.depth:
-            self.env.on_call_exit(next_call_context)
+            if current_call_context.reverted:
+                self.env.on_revert(next_call_context)
+            else:
+                self.env.on_call_exit(next_call_context)
             self._apply_stack_oracle(instruction, output_oracle)
             call = current_call_context.initiating_instruction
             if call is not None:
@@ -76,6 +82,10 @@ class TraceEVM:
             self.env.memory.set(mem_write.offset, mem_write.value, self.env.current_step_index)
         if storage_writes.return_data:
             self.env.current_call_context.return_data = storage_writes.return_data.value
+
+    def _apply_balance_transfers(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+        for transfer in instruction.get_writes().balance_transfers:
+            self.env.balances.modified_at_step_index(transfer.address_to.get_hexstring(), instruction.step_index)
 
     def _verify_storage(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
         """Verify that current storages match the output oracle"""

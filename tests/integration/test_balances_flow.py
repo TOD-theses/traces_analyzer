@@ -2,37 +2,37 @@ from tests.test_utils.test_utils import _TestCounter, _test_hash_addr, _test_ora
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
 from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_graph import build_information_flow_graph
-from traces_analyzer.parser.instructions.instructions import CALL, POP, SLOAD, SSTORE, STOP
+from traces_analyzer.parser.instructions.instructions import BALANCE, CALL, POP, REVERT, SLOAD, SSTORE, STOP
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
 
-def test_persistent_storage_across_calls() -> None:
+def test_balances_across_calls() -> None:
     root = _test_root()
     env = ParsingEnvironment(root)
     evm = TraceEVM(env, verify_storages=True)
     step_index = _TestCounter(0)
 
     steps: list[tuple[InstructionMetadata, InstructionOutputOracle]] = [
-        # store data in child context
+        # send value to child contract
         *_test_push_steps(
-            reversed(["0x1234", _test_hash_addr("target address"), "0", "0", "0", "0", "0"]), step_index, "push_call"
+            reversed(["0x0", _test_hash_addr("target address"), "0x1234", "0", "0", "0", "0"]), step_index, "push_call"
         ),
         (InstructionMetadata(CALL.opcode, step_index.next("call")), _test_oracle(depth=2)),
-        *_test_push_steps(reversed(["0x20", "0xabcdef"]), step_index, "push_sstore", base_oracle=_test_oracle(depth=2)),
-        (InstructionMetadata(SSTORE.opcode, step_index.next("sstore")), _test_oracle(depth=2)),
         (InstructionMetadata(STOP.opcode, step_index.next("stop")), _test_oracle()),
-        # sload in root should use oracle
-        *_test_push_steps(reversed(["0x20"]), step_index, "push_sload_root", _test_oracle()),
-        (InstructionMetadata(SLOAD.opcode, step_index.next("sload_root")), _test_oracle(stack=["0x12345678"])),
-        (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
-        # sload in child should use previously stored value
+        # get balance of target address
+        *_test_push_steps(reversed([_test_hash_addr("target address")]), step_index, "push_balance_known"),
+        (InstructionMetadata(BALANCE.opcode, step_index.next("balance_known")), _test_oracle(stack=["0x1234"])),
+        # get balance of random address
         *_test_push_steps(
-            reversed(["0x1234", _test_hash_addr("target address"), "0", "0", "0", "0", "0"]), step_index, "push_call2"
+            reversed([_test_hash_addr("some other address")]),
+            step_index,
+            "push_balance_other",
+            base_oracle=_test_oracle(stack=["0x1234"]),
         ),
-        (InstructionMetadata(CALL.opcode, step_index.next("call2")), _test_oracle(depth=2)),
-        *_test_push_steps(reversed(["0x20"]), step_index, "push_sload_child", _test_oracle(depth=2)),
-        (InstructionMetadata(SLOAD.opcode, step_index.next("sload_child")), _test_oracle(stack=["0xabcdef"], depth=2)),
-        (InstructionMetadata(POP.opcode, step_index.next("pop2")), _test_oracle(depth=2)),
+        (
+            InstructionMetadata(BALANCE.opcode, step_index.next("balance_other")),
+            _test_oracle(stack=["0x11223344", "0x1234"]),
+        ),
     ]
 
     instructions = []
@@ -45,8 +45,8 @@ def test_persistent_storage_across_calls() -> None:
     assert len(information_flow_graph) == len(steps) + 1
 
     expected_dependencies: list[tuple[str, set[str | int]]] = [
-        ("sload_root", {"push_sload_root_0", PRESTATE}),
-        ("sload_child", {"push_sload_child_0", "push_sstore_0"}),
+        ("balance_known", {"push_balance_known_0", "call"}),
+        ("balance_other", {"push_balance_other_0", PRESTATE}),
     ]
 
     for name, should_depend_on in expected_dependencies:
@@ -65,30 +65,32 @@ def test_persistent_storage_across_calls() -> None:
         )
 
 
-def test_persistent_storage_is_dropped_on_revert() -> None:
+def test_balances_restored_on_revert() -> None:
     root = _test_root()
     env = ParsingEnvironment(root)
     evm = TraceEVM(env, verify_storages=True)
     step_index = _TestCounter(0)
 
     steps: list[tuple[InstructionMetadata, InstructionOutputOracle]] = [
-        # store data in child context
+        # successfully send value to child contract
         *_test_push_steps(
-            reversed(["0x1234", _test_hash_addr("target address"), "0", "0", "0", "0", "0"]), step_index, "push_call"
+            reversed(["0x0", _test_hash_addr("target address"), "0x1234", "0", "0", "0", "0"]), step_index, "push_call"
         ),
         (InstructionMetadata(CALL.opcode, step_index.next("call")), _test_oracle(depth=2)),
-        *_test_push_steps(reversed(["0x20", "0xabcdef"]), step_index, "push_sstore", base_oracle=_test_oracle(depth=2)),
-        (InstructionMetadata(SSTORE.opcode, step_index.next("sstore")), _test_oracle(depth=2)),
-        # exceptional halt as call depth changed unexpectedly back to 1; eg out of gas
-        # and enter child context again
+        (InstructionMetadata(STOP.opcode, step_index.next("stop")), _test_oracle()),
+        # send value, but revert
         *_test_push_steps(
-            reversed(["0x1234", _test_hash_addr("target address"), "0", "0", "0", "0", "0"]), step_index, "push_call"
+            reversed(["0x0", _test_hash_addr("target address"), "0x1234", "0", "0", "0", "0"]),
+            step_index,
+            "push_call_reverted",
         ),
-        (InstructionMetadata(CALL.opcode, step_index.next("call")), _test_oracle(depth=2)),
-        # sload should now use oracle
-        *_test_push_steps(reversed(["0x20"]), step_index, "push_sload", _test_oracle(depth=2)),
-        (InstructionMetadata(SLOAD.opcode, step_index.next("sload")), _test_oracle(stack=["0x12345678"], depth=2)),
-        (InstructionMetadata(POP.opcode, step_index.next("pop2")), _test_oracle(depth=2)),
+        (InstructionMetadata(CALL.opcode, step_index.next("call_reverted")), _test_oracle(depth=2)),
+        # revert
+        *_test_push_steps(reversed(["0x0", "0x0"]), step_index, "push_revert", base_oracle=_test_oracle(depth=2)),
+        (InstructionMetadata(REVERT.opcode, step_index.next("revert")), _test_oracle()),
+        # get balance of target address
+        *_test_push_steps(reversed([_test_hash_addr("target address")]), step_index, "push_balance_known"),
+        (InstructionMetadata(BALANCE.opcode, step_index.next("balance_known")), _test_oracle(stack=["0x1234"])),
     ]
 
     instructions = []
@@ -101,7 +103,8 @@ def test_persistent_storage_is_dropped_on_revert() -> None:
     assert len(information_flow_graph) == len(steps) + 1
 
     expected_dependencies: list[tuple[str, set[str | int]]] = [
-        ("sload", {"push_sload_0", PRESTATE}),
+        # the balance depends on the first call, as the 2nd was reverted
+        ("balance_known", {"push_balance_known_0", "call"}),
     ]
 
     for name, should_depend_on in expected_dependencies:

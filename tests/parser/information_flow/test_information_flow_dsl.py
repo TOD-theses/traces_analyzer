@@ -364,8 +364,6 @@ def test_balance_transfer():
     assert flow.writes.balance_transfers[0].address_to.get_hexstring() == _test_addr("cdef")
     assert flow.writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
 
-    assert env.balances.last_modified_at_step_index(HexString("cdef").as_address()) == 1234
-
 
 def test_selfdestruct():
     env = mock_env(balances={"abcd": 4}, step_index=1234)

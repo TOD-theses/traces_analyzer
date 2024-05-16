@@ -20,6 +20,14 @@ class LastExecutedSubContextStorage(Storage):
     @override
     def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
         super().on_call_exit(current_call_context, next_call_context)
+        self._call_exit(current_call_context)
+
+    @override
+    def on_revert(self, current_call_context: CallContext, next_call_context: CallContext):
+        super().on_revert(current_call_context, next_call_context)
+        self._call_exit(current_call_context)
+
+    def _call_exit(self, current_call_context: CallContext):
         self._last_executed_sub_context_stack.pop()
         self._last_executed_sub_context_stack[-1] = current_call_context
 

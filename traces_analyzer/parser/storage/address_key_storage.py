@@ -1,8 +1,11 @@
+from typing_extensions import Self
+
+from traces_analyzer.parser.storage.storage import CloneableStorage
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
 
 
-class AddressKeyStorage:
+class AddressKeyStorage(CloneableStorage):
     """Handle storage of key-value pairs for any address"""
 
     def __init__(self) -> None:
@@ -27,3 +30,10 @@ class AddressKeyStorage:
         self._tables.setdefault(address, {})
         assert len(value) == 32
         self._tables[address][key] = value
+
+    def clone(self) -> Self:
+        new_storage = self.__class__()
+        for address, table in self._tables.items():
+            for key, val in table.items():
+                new_storage.set(address, key, val)
+        return new_storage
