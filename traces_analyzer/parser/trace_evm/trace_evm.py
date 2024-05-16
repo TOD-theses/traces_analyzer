@@ -79,7 +79,7 @@ class TraceEVM:
         for stack_set in storage_writes.stack_sets:
             self.env.stack.set(stack_set.index, stack_set.value)
         for mem_write in storage_writes.memory:
-            self.env.memory.set(mem_write.offset, mem_write.value, self.env.current_step_index)
+            self.env.memory.set(mem_write.offset, mem_write.value, instruction.step_index)
         if storage_writes.return_data:
             self.env.current_call_context.return_data = storage_writes.return_data.value
 

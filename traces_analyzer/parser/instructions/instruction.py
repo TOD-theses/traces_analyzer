@@ -5,7 +5,7 @@ from typing_extensions import Mapping
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.information_flow.information_flow_dsl import FlowSpec
+from traces_analyzer.parser.information_flow.information_flow_dsl import FlowSpec, noop
 from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import Flow
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 
@@ -18,7 +18,7 @@ class Instruction:
     step_index: int
     call_context: CallContext = field(compare=False, hash=False)
     flow: Flow
-    flow_spec: ClassVar[FlowSpec]
+    flow_spec: ClassVar[FlowSpec] = noop()
 
     def get_accesses(self) -> StorageAccesses:
         return self.flow.accesses

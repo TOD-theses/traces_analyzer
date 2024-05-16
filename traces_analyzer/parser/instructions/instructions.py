@@ -192,7 +192,7 @@ class DELEGATECALL(CallInstruction):
         if size == 0:
             return StorageWrites()
         return_data = child_call_context.return_data
-        return_data_slice = return_data[: size * 2]
+        return_data_slice = return_data[:size]
         return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
 
     @override
