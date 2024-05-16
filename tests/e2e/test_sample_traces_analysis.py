@@ -129,15 +129,16 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     assert call_tree_normal.call_context.code_address.with_prefix() == "0x11111112542d85b3ef69ae05771c2dccff4faa26"
     assert weth9_call.call_context.code_address.with_prefix() == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
     assert weth9_transfer.call_context.code_address.with_prefix() == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    # TODO: correct parsing of addresses with leading 0s
-    # assert uniswap_staticcall.call_context.code_address == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
-    # assert uniswap_swap.call_context.code_address == " 0x06da0fd433c1a5d7a4faa01111c044910a184553"
+    assert uniswap_staticcall.call_context.code_address.with_prefix() == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
+    assert uniswap_swap.call_context.code_address.with_prefix() == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
     assert tether_transfer.call_context.code_address.with_prefix() == "0xdac17f958d2ee523a2206206994597c13d831ec7"
     assert weth_balance.call_context.code_address.with_prefix() == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
     assert tether_balance.call_context.code_address.with_prefix() == "0xdac17f958d2ee523a2206206994597c13d831ec7"
 
-    # TODO: calldata parsing from metadata file
-    # assert call_tree_normal.call_context.calldata == "000000000000000000000000000000000000000000000000000000069c35828a"
+    assert (
+        call_tree_normal.call_context.calldata.get_hexstring()
+        == "2e95b6c8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000062884461f1460000000000000000000000000000000000000000000000000000000000069082020f0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000100000000000000003b6d034006da0fd433c1a5d7a4faa01111c044910a184553e26b9977"
+    )
     assert weth9_call.call_context.calldata.get_hexstring() == "d0e30db0"
     assert (
         weth9_transfer.call_context.calldata.get_hexstring()
