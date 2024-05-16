@@ -175,7 +175,7 @@ def test_call_context_manager_does_not_update_on_add():
 def test_call_context_managers_does_not_enter_without_depth_change():
     """For instance when the call only sends ether, we don't want to dont enter a new call context"""
     root = _test_root()
-    call = get_call(root, "0xtarget")
+    call = get_call(root, _test_hash_addr("call target"))
 
     next_call_context = update_call_context(root, call, root.depth)
 

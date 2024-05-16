@@ -16,5 +16,5 @@ def test_mnemonics_name_to_opcode():
 
     assert name_to_opcode("CALL") == 241
     assert name_to_opcode("call") == 241
-    assert opcode_to_name("abc") == None
-    assert opcode_to_name("abc", -1) == -1
+    assert name_to_opcode("abc") == None
+    assert name_to_opcode("abc", -1) == -1

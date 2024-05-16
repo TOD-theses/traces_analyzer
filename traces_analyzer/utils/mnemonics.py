@@ -1,3 +1,5 @@
+from typing import overload
+
 _OPCODE_HEX_TO_NAME = {
     "0x00": "STOP",
     "0x01": "ADD",
@@ -153,6 +155,14 @@ _OPCODE_HEX_TO_NAME = {
 _OPCODE_TO_NAME = dict((int(opcode_hex, 16), name) for opcode_hex, name in _OPCODE_HEX_TO_NAME.items())
 
 _NAME_TO_OPCODE = dict((name, opcode) for opcode, name in _OPCODE_TO_NAME.items())
+
+
+@overload
+def opcode_to_name(opcode: int) -> str | None: ...
+
+
+@overload
+def opcode_to_name(opcode: int, default: str) -> str: ...
 
 
 def opcode_to_name(opcode: int, default: str | None = None) -> str | None:

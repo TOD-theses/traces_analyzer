@@ -1,15 +1,16 @@
 import json
 from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 def test_instruction_usage_evaluation():
     opcodes_one = {
-        "0xroot": {0x1, 0x2, 0x3},
-        "0xchild": {0x1, 0x20, 0x30},
+        HexString("0xroot"): {0x1, 0x2, 0x3},
+        HexString("0x0child"): {0x1, 0x20, 0x30},
     }
     opcodes_two = {
-        "0xroot": {0x1, 0x5, 0x6},
+        HexString("0xroot"): {0x1, 0x5, 0x6},
     }
 
     evaluation = InstructionUsageEvaluation(
@@ -24,14 +25,14 @@ def test_instruction_usage_evaluation():
         "report": {
             "opcodes_first": {
                 "0xroot": ["0x1", "0x2", "0x3"],
-                "0xchild": ["0x1", "0x20", "0x30"],
+                "0x0child": ["0x1", "0x20", "0x30"],
             },
             "opcodes_second": {
                 "0xroot": ["0x1", "0x5", "0x6"],
             },
             "opcodes_relevant_merged": {
                 "0xroot": ["0x1", "0x5"],
-                "0xchild": ["0x1"],
+                "0x0child": ["0x1"],
             },
         },
     }
@@ -39,15 +40,15 @@ def test_instruction_usage_evaluation():
     evaluation_str = evaluation.cli_report()
 
     assert "Instruction usage" in evaluation_str
-    assert "0xroot" in evaluation_str
-    assert "0xchild" in evaluation_str
-    assert opcode_to_name(0x5) in evaluation_str
-    assert opcode_to_name(0x6) not in evaluation_str
+    assert "root" in evaluation_str
+    assert "0child" in evaluation_str
+    assert opcode_to_name(0x5, "") in evaluation_str
+    assert opcode_to_name(0x6, "") not in evaluation_str
 
 
 def test_instruction_usage_evaluation_serializable():
     opcodes = {
-        "0xroot": {0x1, 0x2, 0x3},
+        HexString("0xroot"): {0x1, 0x2, 0x3},
     }
 
     evaluation = InstructionUsageEvaluation(

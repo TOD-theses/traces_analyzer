@@ -20,17 +20,6 @@ from traces_analyzer.parser.trace_evm.trace_evm import parse_instruction
 from traces_analyzer.utils.hexstring import HexString
 
 
-def get_root_call_context():
-    return CallContext(
-        parent=None,
-        calldata="",
-        depth=1,
-        msg_sender="0x1111111111111111111111111111111111111111",
-        code_address="0x1234123412341234123412341234123412341234",
-        storage_address="0x1234123412341234123412341234123412341234",
-    )
-
-
 def get_parsing_info(verify_storages=True) -> TransactionParsingInfo:
     return TransactionParsingInfo(
         _test_hash_addr("0xsender"),
@@ -42,7 +31,7 @@ def get_parsing_info(verify_storages=True) -> TransactionParsingInfo:
 
 
 def get_dummy_event():
-    return TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], depth=1, memory="")
+    return TraceEvent(pc=1, op=JUMPDEST.opcode, stack=[], depth=1, memory=HexString(""))
 
 
 def test_parser_empty_events() -> None:

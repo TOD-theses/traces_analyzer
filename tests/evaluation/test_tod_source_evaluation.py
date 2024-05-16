@@ -1,8 +1,10 @@
 import json
+from typing import cast
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from tests.test_utils.test_utils import _test_stack
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
+from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import SLOAD
 
 
@@ -53,8 +55,8 @@ def test_tod_source_serializable():
 def test_tod_source_not_found():
     tod_source = TODSource(
         found=False,
-        instruction_one=None,
-        instruction_two=None,
+        instruction_one=cast(Instruction, None),
+        instruction_two=cast(Instruction, None),
     )
 
     evaluation = TODSourceEvaluation(tod_source)

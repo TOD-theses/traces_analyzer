@@ -65,7 +65,7 @@ class _TestFlowNode(FlowNodeWithResult):
         )
 
 
-def _test_node(value: StorageByteGroup | HexString | str, step_index=-1) -> FlowNode:
+def _test_node(value: StorageByteGroup | HexString | str, step_index=-1) -> FlowNodeWithResult:
     return _TestFlowNode(value=_test_group(value, step_index))
 
 
@@ -480,6 +480,7 @@ def test_calldata_write():
 
     flow = calldata_write(input).compute(env, _test_oracle())
 
+    assert flow.writes.calldata
     assert flow.writes.calldata.value.get_hexstring() == "11223344"
     assert flow.writes.calldata.value.depends_on_instruction_indexes() == {1234}
 
@@ -504,6 +505,7 @@ def test_return_data_write():
 
     flow = return_data_write(input).compute(env, _test_oracle())
 
+    assert flow.writes.return_data
     assert flow.writes.return_data.value.get_hexstring() == "11223344"
     assert flow.writes.return_data.value.depends_on_instruction_indexes() == {1234}
 
@@ -514,8 +516,10 @@ def test_return_data_size():
 
     flow = return_data_size().compute(env, _test_oracle())
 
-    assert flow.result.get_hexstring().as_int() == 40
+    assert flow.accesses.return_data
     assert flow.accesses.return_data.offset == 0
     assert flow.accesses.return_data.size == 40
     assert flow.accesses.return_data.value.get_hexstring() == HexString("11" * 40)
     assert flow.accesses.return_data.value.depends_on_instruction_indexes() == {1234}
+
+    assert flow.result.get_hexstring().as_int() == 40

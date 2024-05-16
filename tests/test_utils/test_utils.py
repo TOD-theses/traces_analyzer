@@ -27,7 +27,7 @@ def _test_hash_addr(name: str) -> HexString:
     return HexString.from_int(abs(hash(name))).as_address()
 
 
-def _test_stack(items: list[TestVal], step_index=-1) -> Stack:
+def _test_stack(items: Iterable[TestVal], step_index=-1) -> Stack:
     stack = Stack()
     stack.push_all([_test_group32(val, step_index) for val in items])
     return stack
