@@ -239,8 +239,8 @@ def test_calcode_to_precompiled_contract() -> None:
                 [
                     "0x10",
                     _test_addr("0x4"),
-                    hex(32 - 3),  # offset
                     "0x1234",
+                    hex(32 - 3),  # offset
                     "0x3",  # size
                     "0x0",  # return offset
                     "0x3",  # return size

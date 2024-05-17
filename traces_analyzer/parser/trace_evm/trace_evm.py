@@ -16,7 +16,7 @@ from traces_analyzer.parser.instructions.instructions import (
     get_instruction_class,
 )
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import StorageWrites
+from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
@@ -46,7 +46,7 @@ class TraceEVM:
         self._check_call_context_changes(instruction, output_oracle)
         # we apply balance transfers after potential call context changes
         # such that they are not part of state snapshots and can be reverted properly
-        self._apply_balance_transfers(instruction, output_oracle)
+        self._apply_balance_transfers(instruction)
 
         if self._should_verify_storages:
             self._verify_storage(instruction, output_oracle)
@@ -56,8 +56,8 @@ class TraceEVM:
     def _update_storages(
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
-        # NOTE: memory expansion on access is done by the io flow parsing. Maybe it should also be moved here.
-        self._apply_storage_writes(instruction.get_writes(), instruction, output_oracle)
+        self._apply_storage_accesses(instruction.get_accesses(), instruction)
+        self._apply_storage_writes(instruction.get_writes(), instruction)
 
         if isinstance(instruction, CallInstruction) and not self._changes_depth(
             output_oracle
@@ -65,7 +65,6 @@ class TraceEVM:
             self._apply_storage_writes(
                 instruction.get_immediate_return_writes(self.env, output_oracle),
                 instruction,
-                output_oracle,
             )
 
     def _changes_depth(self, output_oracle: InstructionOutputOracle) -> bool:
@@ -113,7 +112,7 @@ class TraceEVM:
             # update stack and memory
             if isinstance(call, CallInstruction):
                 return_writes = call.get_return_writes(self.env, output_oracle)
-                self._apply_storage_writes(return_writes, call, output_oracle)
+                self._apply_storage_writes(return_writes, call)
             else:
                 # for CREATE and CREATE2 and exceptional halts
                 self._apply_stack_oracle(output_oracle)
@@ -130,11 +129,20 @@ class TraceEVM:
             [StorageByteGroup.from_hexstring(val, -1) for val in output_oracle.stack]
         )
 
+    def _apply_storage_accesses(
+        self,
+        storage_accesses: StorageAccesses,
+        instruction: Instruction,
+    ):
+        for mem_access in storage_accesses.memory:
+            self.env.memory.check_expansion(
+                mem_access.offset, len(mem_access.value), instruction.step_index
+            )
+
     def _apply_storage_writes(
         self,
         storage_writes: StorageWrites,
         instruction: Instruction,
-        output_oracle: InstructionOutputOracle,
     ):
         for _ in storage_writes.stack_pops:
             self.env.stack.pop()
@@ -149,9 +157,7 @@ class TraceEVM:
         if storage_writes.return_data:
             self.env.current_call_context.return_data = storage_writes.return_data.value
 
-    def _apply_balance_transfers(
-        self, instruction: Instruction, output_oracle: InstructionOutputOracle
-    ):
+    def _apply_balance_transfers(self, instruction: Instruction):
         for transfer in instruction.get_writes().balance_transfers:
             self.env.balances.modified_at_step_index(
                 transfer.address_to.get_hexstring(), instruction.step_index
@@ -190,13 +196,8 @@ class TraceEVM:
             )
 
     def _verify_memory(self, instruction: Instruction, memory_oracle: HexString):
-        """
-        TODO also check for trailing zeros
-            currently I ignore those, as I'm not sure if there is a bug in my implementation or the trace
-            traces_analyzer --bundles traces/benchmark_traces/62a876599363fc9f281b2768
-        """
-        memory = self.env.memory.get_all().get_hexstring().without_prefix().strip("0")
-        oracle_memory = memory_oracle.without_prefix().strip("0")
+        memory = self.env.memory.get_all().get_hexstring()
+        oracle_memory = memory_oracle
 
         if memory != oracle_memory:
             raise Exception(
