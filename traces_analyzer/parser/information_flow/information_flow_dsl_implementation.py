@@ -316,7 +316,7 @@ def _oracle_mem_range_peek_node(
     data = output_oracle.memory[offset * 2 : offset * 2 + size * 2]
     result = StorageByteGroup.from_hexstring(data, env.current_step_index)
     if len(result) < size:
-        padding = HexString("00" * (size - len(result)))
+        padding = HexString.zeros(size - len(result))
         result += StorageByteGroup.from_hexstring(padding, env.current_step_index)
 
     return FlowWithResult(
@@ -395,7 +395,7 @@ def _to_size_node(
     elif len(value) < size:
         missing_bytes = size - len(value)
         padding = StorageByteGroup.from_hexstring(
-            HexString("00" * missing_bytes), env.current_step_index
+            HexString.zeros(missing_bytes), env.current_step_index
         )
         value = padding + value
 
@@ -611,7 +611,11 @@ def _calldata_range_node(
     size = args[1].result.get_hexstring().as_int()
     result = env.current_call_context.calldata[offset : offset + size]
     if len(result) < size:
-        missing_hexstring = HexString("00" * (size - len(result)))
+        # TODO: traces/benchmark_traces/62a84cf6e30161692b6607c2
+        # this attack behaves differently in REVM
+        # probably it detects that something is off in the environment
+        # and as a response fails
+        missing_hexstring = HexString.zeros(size - len(result))
         result += StorageByteGroup.from_hexstring(
             missing_hexstring, env.current_step_index
         )

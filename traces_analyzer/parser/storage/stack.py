@@ -16,7 +16,7 @@ class Stack:
         """Push a single value to the top of the stack"""
         if len(value) < 32:
             padding = StorageByteGroup.deprecated_from_hexstring(
-                HexString("00" * (32 - len(value)))
+                HexString.zeros(32 - len(value))
             )
             value = padding + value
         self._stack.append(value)

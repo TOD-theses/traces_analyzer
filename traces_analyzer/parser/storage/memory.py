@@ -12,7 +12,7 @@ class Memory:
         slice = self._memory[offset : offset + size]
         if len(slice) < size:
             slice += StorageByteGroup.from_hexstring(
-                HexString("00" * (size - len(slice))), step_index
+                HexString.zeros(size - len(slice)), step_index
             )
         return slice
 
@@ -33,9 +33,7 @@ class Memory:
             self._expand(step_index)
 
     def _expand(self, step_index: int):
-        self._memory += StorageByteGroup.from_hexstring(
-            HexString("00" * 32), step_index
-        )
+        self._memory += StorageByteGroup.from_hexstring(HexString.zeros(32), step_index)
 
     def size(self) -> int:
         """Get size in bytes"""

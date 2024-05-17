@@ -1,4 +1,5 @@
 from collections import UserString
+from functools import cache
 
 
 class HexString(UserString):
@@ -38,3 +39,14 @@ class HexString(UserString):
     @staticmethod
     def from_int(value: int) -> "HexString":
         return HexString(hex(value))
+
+    @staticmethod
+    @cache
+    def zeros(size: int) -> "HexString":
+        """Create a HexString consisting of {size} 00s"""
+        if size >= 1_000_000:
+            # no one will reasonably use a HexString with such a size
+            # because of gas costs for memory expansion, the maximum is around 30_000_000 bytes per block
+            print(f"WARNING: Limited HexString size to 1_000_000 instead of {size}.")
+            size = 1_000_000
+        return HexString("00" * size)

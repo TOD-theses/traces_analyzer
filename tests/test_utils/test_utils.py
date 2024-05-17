@@ -85,7 +85,7 @@ def _test_group32(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
     if isinstance(hexstring, str):
         hexstring = HexString(hexstring)
     if hexstring.size() < 32:
-        padding = HexString("00" * (32 - hexstring.size()))
+        padding = HexString.zeros(32 - hexstring.size())
         hexstring = padding + hexstring
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
