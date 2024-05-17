@@ -11,7 +11,6 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
@@ -130,8 +129,7 @@ def test_call_data_and_return_data_flow() -> None:
         information_flow_graph,
         step_index,
         [
-            # TODO: pop depends on the call success value
-            ("pop", {PRESTATE}),
+            ("pop", {"call"}),
             (
                 "log0",
                 {

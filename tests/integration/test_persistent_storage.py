@@ -53,7 +53,11 @@ def test_persistent_storage_across_calls() -> None:
             InstructionMetadata(SSTORE.opcode, step_index.next("sstore")),
             _test_oracle(depth=2),
         ),
-        (InstructionMetadata(STOP.opcode, step_index.next("stop")), _test_oracle()),
+        (
+            InstructionMetadata(STOP.opcode, step_index.next("stop")),
+            _test_oracle(stack=["0x1"]),
+        ),
+        (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
         # sload in root should use oracle
         *_test_push_steps(
             reversed(["0x20"]), step_index, "push_sload_root", _test_oracle()
@@ -131,6 +135,7 @@ def test_persistent_storage_is_dropped_on_revert() -> None:
             _test_oracle(depth=2),
         ),
         # exceptional halt as call depth changed unexpectedly back to 1; eg out of gas
+        (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
         # and enter child context again
         *_test_push_steps(
             reversed(

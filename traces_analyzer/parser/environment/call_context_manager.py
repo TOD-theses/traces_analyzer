@@ -20,6 +20,7 @@ from traces_analyzer.parser.instructions.instructions import (
 )
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
+from traces_analyzer.utils.mnemonics import opcode_to_name
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 # TODO: rename and/or split this file
@@ -149,27 +150,11 @@ def update_call_context(
             storage_address=HexString(created_contract_addr),
             is_contract_initialization=True,
         )
-    elif makes_normal_halt(
-        instruction, current_call_context.depth, next_depth
-    ) or makes_exceptional_halt(instruction, current_call_context.depth, next_depth):
-        if not current_call_context.parent:
-            raise UnexpectedDepthChange(
-                "Tried to return to parent call context, while already being at the root."
-                f" {current_call_context}. {instruction}"
-            )
-        next_call_context = current_call_context.parent
-
-        if isinstance(instruction, REVERT):
-            current_call_context.reverted = True
-            current_call_context.halt_type = HaltType.NORMAL
-        elif not makes_normal_halt(instruction, current_call_context.depth, next_depth):
-            current_call_context.reverted = True
-            current_call_context.halt_type = HaltType.EXCEPTIONAL
-        else:
-            current_call_context.halt_type = HaltType.NORMAL
-
-    elif makes_normal_halt(instruction, 1, 0):
-        # if we get here, this means that we have a STOP/... without a proper depth change
+    elif makes_halt(current_call_context.depth, next_depth):
+        next_call_context = exit_call_context(
+            current_call_context, instruction.opcode, next_depth
+        )
+    elif is_normal_halt_opcode(instruction.opcode):
         msg = (
             "Encountered a halt without observing a correct depth change in the trace event."
             f" Found {instruction} with next depth {next_depth} and current call context {current_call_context}"
@@ -194,6 +179,29 @@ def update_call_context(
     return next_call_context
 
 
+def exit_call_context(
+    current_call_context: CallContext, instruction_opcode: int, next_depth: int
+) -> CallContext:
+    if not current_call_context.parent:
+        raise UnexpectedDepthChange(
+            "Tried to return to parent call context, while already being at the root."
+            f" {current_call_context}. {opcode_to_name(instruction_opcode)}"
+        )
+
+    if instruction_opcode == REVERT.opcode:
+        current_call_context.reverted = True
+        current_call_context.halt_type = HaltType.NORMAL
+    elif makes_exceptional_halt(
+        instruction_opcode, current_call_context.depth, next_depth
+    ):
+        current_call_context.reverted = True
+        current_call_context.halt_type = HaltType.EXCEPTIONAL
+    else:
+        current_call_context.halt_type = HaltType.NORMAL
+
+    return current_call_context.parent
+
+
 def enters_call_context(
     instruction: Instruction, current_depth: int, next_depth: int
 ) -> TypeGuard[CALL | STATICCALL | DELEGATECALL | CALLCODE]:
@@ -210,15 +218,22 @@ def creates_contract(
     )
 
 
-def makes_normal_halt(instruction: Instruction, current_depth: int, next_depth: int):
-    return current_depth - 1 == next_depth and isinstance(
-        instruction, (STOP, REVERT, RETURN, SELFDESTRUCT)
-    )
+_NORMAL_HALT_OPCODES = {RETURN.opcode, STOP.opcode, REVERT.opcode, SELFDESTRUCT.opcode}
 
 
-def makes_exceptional_halt(
-    instruction: Instruction, current_depth: int, next_depth: int
-):
-    return current_depth - 1 == next_depth and not isinstance(
-        instruction, (STOP, REVERT, RETURN, SELFDESTRUCT)
-    )
+def makes_halt(current_depth: int, next_depth: int):
+    return current_depth - 1 == next_depth
+
+
+def makes_normal_halt(opcode: int, current_depth: int, next_depth: int):
+    return makes_halt(current_depth, next_depth) and is_normal_halt_opcode(opcode)
+
+
+def makes_exceptional_halt(opcode: int, current_depth: int, next_depth: int):
+    return makes_halt(
+        current_depth, next_depth
+    ) == next_depth and not is_normal_halt_opcode(opcode)
+
+
+def is_normal_halt_opcode(opcode: int) -> bool:
+    return opcode in _NORMAL_HALT_OPCODES

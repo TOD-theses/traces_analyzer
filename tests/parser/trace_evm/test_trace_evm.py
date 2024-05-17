@@ -53,18 +53,19 @@ def test_trace_evm_staticcall_precompiled() -> None:
         ),
         (
             InstructionMetadata(MSTORE.opcode, step_index.next("mstore")),
-            _test_oracle(memory="0000abcdef"),
+            _test_oracle(memory="0000abcdef" + "00" * 59),
         ),
         *_test_push_steps(
             reversed([hex(1234), hex(2), hex(2), hex(3), hex(10), hex(32)]),
             step_index,
             "push_staticcall",
-            _test_oracle(memory="0000abcdef"),
+            _test_oracle(memory="0000abcdef" + "00" * 59),
         ),
         (
             InstructionMetadata(STATICCALL.opcode, step_index.next("staticcall")),
             _test_oracle(
-                memory="0000abcdef0000000000995da3cf545787d65f9ced52674e92ee8171c87c7a4008aa4349ec47d21609a7",
+                memory="0000abcdef0000000000995da3cf545787d65f9ced52674e92ee8171c87c7a4008aa4349ec47d21609a7"
+                + "00" * 22,
                 stack=[hex(1)],
             ),
         ),

@@ -17,6 +17,7 @@ from traces_analyzer.parser.information_flow.information_flow_graph import (
 from traces_analyzer.parser.instructions.instructions import (
     BALANCE,
     CALL,
+    POP,
     REVERT,
     STOP,
 )
@@ -42,7 +43,11 @@ def test_balances_across_calls() -> None:
             InstructionMetadata(CALL.opcode, step_index.next("call")),
             _test_oracle(depth=2),
         ),
-        (InstructionMetadata(STOP.opcode, step_index.next("stop")), _test_oracle()),
+        (
+            InstructionMetadata(STOP.opcode, step_index.next("stop")),
+            _test_oracle(stack=["0x1"]),
+        ),
+        (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
         # get balance of target address
         *_test_push_steps(
             reversed([_test_hash_addr("target address")]),
@@ -98,7 +103,11 @@ def test_balances_restored_on_revert() -> None:
             InstructionMetadata(CALL.opcode, step_index.next("call")),
             _test_oracle(depth=2),
         ),
-        (InstructionMetadata(STOP.opcode, step_index.next("stop")), _test_oracle()),
+        (
+            InstructionMetadata(STOP.opcode, step_index.next("stop")),
+            _test_oracle(stack=["0x1"]),
+        ),
+        (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
         # send value, but revert
         *_test_push_steps(
             reversed(
@@ -118,7 +127,11 @@ def test_balances_restored_on_revert() -> None:
             "push_revert",
             base_oracle=_test_oracle(depth=2),
         ),
-        (InstructionMetadata(REVERT.opcode, step_index.next("revert")), _test_oracle()),
+        (
+            InstructionMetadata(REVERT.opcode, step_index.next("revert")),
+            _test_oracle(stack=["0x0"]),
+        ),
+        (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
         # get balance of target address
         *_test_push_steps(
             reversed([_test_hash_addr("target address")]),

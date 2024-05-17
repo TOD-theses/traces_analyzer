@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 
-from traces_analyzer.parser.environment.call_context_manager import update_call_context
+from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.parser.environment.call_context_manager import (
+    exit_call_context,
+    makes_exceptional_halt,
+    update_call_context,
+)
 from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
@@ -12,6 +17,7 @@ from traces_analyzer.parser.instructions.instructions import (
 )
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import StorageWrites
+from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
@@ -31,11 +37,13 @@ class TraceEVM:
         instruction_metadata: InstructionMetadata,
         output_oracle: InstructionOutputOracle,
     ) -> Instruction:
+        self._check_exceptional_halt(instruction_metadata, output_oracle)
+
         instruction = parse_instruction(self.env, instruction_metadata, output_oracle)
 
         self.env.current_step_index += 1
         self._update_storages(instruction, output_oracle)
-        self._update_call_context(instruction, output_oracle)
+        self._check_call_context_changes(instruction, output_oracle)
         # we apply balance transfers after potential call context changes
         # such that they are not part of state snapshots and can be reverted properly
         self._apply_balance_transfers(instruction, output_oracle)
@@ -63,31 +71,60 @@ class TraceEVM:
     def _changes_depth(self, output_oracle: InstructionOutputOracle) -> bool:
         return self.env.current_call_context.depth != output_oracle.depth
 
-    def _update_call_context(
+    def _check_exceptional_halt(
+        self,
+        instruction_metadata: InstructionMetadata,
+        output_oracle: InstructionOutputOracle,
+    ):
+        if not output_oracle.depth:
+            return
+        if makes_exceptional_halt(
+            instruction_metadata.opcode,
+            self.env.current_call_context.depth,
+            output_oracle.depth,
+        ):
+            next_call_context = exit_call_context(
+                self.env.current_call_context,
+                instruction_metadata.opcode,
+                output_oracle.depth,
+            )
+            call = self.env.current_call_context.initiating_instruction
+            assert call is not None
+            self._update_call_context(next_call_context)
+            self.env.stack.push(
+                StorageByteGroup.from_hexstring(
+                    HexString("0").as_size(32), call.step_index
+                )
+            )
+
+    def _check_call_context_changes(
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
-        current_call_context = self.env.current_call_context
         next_call_context = update_call_context(
             self.env.current_call_context, instruction, output_oracle.depth
         )
 
         if next_call_context.depth > self.env.current_call_context.depth:
             self.env.on_call_enter(next_call_context)
-            self._apply_stack_oracle(instruction, output_oracle)
         elif next_call_context.depth < self.env.current_call_context.depth:
-            if current_call_context.reverted:
-                self.env.on_revert(next_call_context)
-            else:
-                self.env.on_call_exit(next_call_context)
-            self._apply_stack_oracle(instruction, output_oracle)
+            current_call_context = self.env.current_call_context
+            self._update_call_context(next_call_context)
             call = current_call_context.initiating_instruction
-            if call is not None:
-                return_writes = call.get_return_writes(current_call_context)
+            # update stack and memory
+            if isinstance(call, CallInstruction):
+                return_writes = call.get_return_writes(self.env, output_oracle)
                 self._apply_storage_writes(return_writes, call, output_oracle)
+            else:
+                # for CREATE and CREATE2 and exceptional halts
+                self._apply_stack_oracle(output_oracle)
 
-    def _apply_stack_oracle(
-        self, instruction: Instruction, output_oracle: InstructionOutputOracle
-    ):
+    def _update_call_context(self, next_call_context: CallContext):
+        if self.env.current_call_context.reverted:
+            self.env.on_revert(next_call_context)
+        else:
+            self.env.on_call_exit(next_call_context)
+
+    def _apply_stack_oracle(self, output_oracle: InstructionOutputOracle):
         self.env.stack.clear()
         self.env.stack.push_all(
             [StorageByteGroup.from_hexstring(val, -1) for val in output_oracle.stack]

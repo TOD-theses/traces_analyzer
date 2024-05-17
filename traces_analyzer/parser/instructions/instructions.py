@@ -4,7 +4,6 @@ from typing import Mapping, TypedDict
 
 from typing_extensions import override
 
-from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
@@ -65,7 +64,9 @@ class CallInstruction(Instruction, ABC):
         pass
 
     @abstractmethod
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
         """Writes that occur when a sub-context has exited"""
         pass
 
@@ -106,15 +107,27 @@ class CALL(CallInstruction):
             "input": self.flow.writes.calldata.value,
         }
 
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert env.last_executed_sub_context, f"Tried to get call return writes, but did not find last executed sub context: {env}"
+        child_context = env.last_executed_sub_context
         _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         if size == 0:
-            return StorageWrites()
-        return_data = child_call_context.return_data
-        return_data_slice = return_data[:size]
-        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
+            mem_writes = []
+        else:
+            return_data = child_context.return_data
+            return_data_slice = return_data[:size]
+            mem_writes = [MemoryWrite(offset, return_data_slice)]
+        success = "0x0" if child_context.reverted else "0x1"
+        stack_push = StackPush(
+            StorageByteGroup.from_hexstring(
+                HexString(success).as_size(32), self.step_index
+            )
+        )
+        return StorageWrites(stack_pushes=[stack_push], memory=mem_writes)
 
     def get_immediate_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -160,15 +173,27 @@ class STATICCALL(CallInstruction):
             "input": self.flow.writes.calldata.value,
         }
 
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert env.last_executed_sub_context, f"Tried to get call return writes, but did not find last executed sub context: {env}"
+        child_context = env.last_executed_sub_context
         _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         if size == 0:
-            return StorageWrites()
-        return_data = child_call_context.return_data
-        return_data_slice = return_data[:size]
-        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
+            mem_writes = []
+        else:
+            return_data = child_context.return_data
+            return_data_slice = return_data[:size]
+            mem_writes = [MemoryWrite(offset, return_data_slice)]
+        success = "0x0" if child_context.reverted else "0x1"
+        stack_push = StackPush(
+            StorageByteGroup.from_hexstring(
+                HexString(success).as_size(32), self.step_index
+            )
+        )
+        return StorageWrites(stack_pushes=[stack_push], memory=mem_writes)
 
     def get_immediate_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -215,15 +240,27 @@ class DELEGATECALL(CallInstruction):
         }
 
     @override
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert env.last_executed_sub_context, f"Tried to get call return writes, but did not find last executed sub context: {env}"
+        child_context = env.last_executed_sub_context
         _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         if size == 0:
-            return StorageWrites()
-        return_data = child_call_context.return_data
-        return_data_slice = return_data[:size]
-        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
+            mem_writes = []
+        else:
+            return_data = child_context.return_data
+            return_data_slice = return_data[:size]
+            mem_writes = [MemoryWrite(offset, return_data_slice)]
+        success = "0x0" if child_context.reverted else "0x1"
+        stack_push = StackPush(
+            StorageByteGroup.from_hexstring(
+                HexString(success).as_size(32), self.step_index
+            )
+        )
+        return StorageWrites(stack_pushes=[stack_push], memory=mem_writes)
 
     @override
     def get_immediate_return_writes(
@@ -269,16 +306,27 @@ class CALLCODE(CallInstruction):
             "input": self.flow.writes.calldata.value,
         }
 
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
+        assert env.last_executed_sub_context, f"Tried to get call return writes, but did not find last executed sub context: {env}"
+        child_context = env.last_executed_sub_context
         _, _, _, _, _, offset_access, size_access = self.flow.accesses.stack
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         if size == 0:
-            return StorageWrites()
-        # TODO: also set stack here instead of using the oracle in the trace_evm
-        return_data = child_call_context.return_data
-        return_data_slice = return_data[:size]
-        return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
+            mem_writes = []
+        else:
+            return_data = child_context.return_data
+            return_data_slice = return_data[:size]
+            mem_writes = [MemoryWrite(offset, return_data_slice)]
+        success = "0x0" if child_context.reverted else "0x1"
+        stack_push = StackPush(
+            StorageByteGroup.from_hexstring(
+                HexString(success).as_size(32), self.step_index
+            )
+        )
+        return StorageWrites(stack_pushes=[stack_push], memory=mem_writes)
 
     @override
     def get_immediate_return_writes(
@@ -517,7 +565,9 @@ class CREATE(Instruction):
         mem_range(stack_arg(1), stack_arg(2)),
     )
 
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
         return StorageWrites()
 
 
@@ -531,7 +581,9 @@ class CREATE2(Instruction):
         stack_arg(3),
     )
 
-    def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:
+    def get_return_writes(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> StorageWrites:
         return StorageWrites()
 
 
