@@ -59,14 +59,6 @@ class TraceEVM:
         self._apply_storage_accesses(instruction.get_accesses(), instruction)
         self._apply_storage_writes(instruction.get_writes(), instruction)
 
-        if isinstance(instruction, CallInstruction) and not self._changes_depth(
-            output_oracle
-        ):
-            self._apply_storage_writes(
-                instruction.get_immediate_return_writes(self.env, output_oracle),
-                instruction,
-            )
-
     def _changes_depth(self, output_oracle: InstructionOutputOracle) -> bool:
         return self.env.current_call_context.depth != output_oracle.depth
 
@@ -89,7 +81,7 @@ class TraceEVM:
             )
             call = self.env.current_call_context.initiating_instruction
             assert call is not None
-            self._update_call_context(next_call_context)
+            self._update_call_context_on_exit(next_call_context)
             self.env.stack.push(
                 StorageByteGroup.from_hexstring(
                     HexString("0").as_size(32), call.step_index
@@ -99,6 +91,7 @@ class TraceEVM:
     def _check_call_context_changes(
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
+        current_call_context = self.env.current_call_context
         next_call_context = update_call_context(
             self.env.current_call_context, instruction, output_oracle.depth
         )
@@ -106,8 +99,7 @@ class TraceEVM:
         if next_call_context.depth > self.env.current_call_context.depth:
             self.env.on_call_enter(next_call_context)
         elif next_call_context.depth < self.env.current_call_context.depth:
-            current_call_context = self.env.current_call_context
-            self._update_call_context(next_call_context)
+            self._update_call_context_on_exit(next_call_context)
             call = current_call_context.initiating_instruction
             # update stack and memory
             if isinstance(call, CallInstruction):
@@ -116,8 +108,23 @@ class TraceEVM:
             else:
                 # for CREATE and CREATE2 and exceptional halts
                 self._apply_stack_oracle(output_oracle)
+        elif next_call_context is not self.env.current_call_context:
+            # immediate call exit (call to EOA or precompiled contract)
+            # we create new call frames so that returndata will point to this call
+            # and it shows up in the call tree
+            self.env.on_call_enter(next_call_context)
+            self._update_call_context_on_exit(current_call_context)
+            # update stack and memory
+            if isinstance(instruction, CallInstruction):
+                return_writes = instruction.get_immediate_return_writes(
+                    self.env, output_oracle
+                )
+                self._apply_storage_writes(return_writes, instruction)
+            else:
+                # for CREATE and CREATE2 and exceptional halts
+                self._apply_stack_oracle(output_oracle)
 
-    def _update_call_context(self, next_call_context: CallContext):
+    def _update_call_context_on_exit(self, next_call_context: CallContext):
         if self.env.current_call_context.reverted:
             self.env.on_revert(next_call_context)
         else:

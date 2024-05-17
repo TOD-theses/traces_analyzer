@@ -24,6 +24,7 @@ from traces_analyzer.parser.instructions.instructions import (
     MSTORE8,
     POP,
     RETURN,
+    RETURNDATASIZE,
 )
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
@@ -253,5 +254,115 @@ def test_call_to_precompiled_contract() -> None:
             # the push, as the value from mstore is still in memory.
             # the call, as it returned new data (not 100% accurate if we would model it as a real identity)
             ("msize", {"push_mstore_0", "call"}),
+        ],
+    )
+
+
+def test_call_to_eoa_sets_returndata() -> None:
+    """Check that returndata depends on the last call, even if it did not execute any code"""
+    root = _test_root()
+    env = ParsingEnvironment(root)
+    evm = TraceEVM(env, verify_storages=True)
+    step_index = _TestCounter(0)
+
+    steps: list[tuple[InstructionMetadata, InstructionOutputOracle]] = [
+        # call that enters contract and executes code there
+        *_test_push_steps(
+            reversed(
+                [
+                    "0x10",
+                    _test_hash_addr("target address"),
+                    "0x1234",
+                    "0x0",
+                    "0x0",
+                    "0x0",  # return offset
+                    "0x20",  # return size
+                ]
+            ),
+            step_index,
+            "push_call",
+        ),
+        (
+            InstructionMetadata(CALL.opcode, step_index.next("call")),
+            _test_oracle(depth=2),
+        ),
+        *_test_push_steps(
+            reversed(["0x0", "aa" * 32]),
+            step_index,
+            "push_mstore",
+            base_oracle=_test_oracle(depth=2),
+        ),
+        (
+            InstructionMetadata(MSTORE.opcode, step_index.next("mstore")),
+            _test_oracle(depth=2, memory="aa" * 32),
+        ),
+        *_test_push_steps(
+            reversed(["0x0", "0x20"]),
+            step_index,
+            "push_return",
+            base_oracle=_test_oracle(depth=2, memory="aa" * 32),
+        ),
+        (
+            InstructionMetadata(RETURN.opcode, step_index.next("return")),
+            _test_oracle(depth=1, stack=["0x1"], memory="aa" * 32),
+        ),
+        (
+            InstructionMetadata(POP.opcode, step_index.next("pop")),
+            _test_oracle(memory="aa" * 32),
+        ),
+        # returndatasize for the first call
+        (
+            InstructionMetadata(
+                RETURNDATASIZE.opcode, step_index.next("returndatasize")
+            ),
+            _test_oracle(stack=["0x20"], memory="aa" * 32),
+        ),
+        (
+            InstructionMetadata(POP.opcode, step_index.next("pop_size")),
+            _test_oracle(memory="aa" * 32),
+        ),
+        # call to EOA
+        *_test_push_steps(
+            reversed(
+                [
+                    "0x10",
+                    _test_hash_addr("other target address"),
+                    "0x1234",
+                    "0x0",
+                    "0x0",
+                    "0x0",
+                    "0x0",
+                ]
+            ),
+            step_index,
+            "push_call_eoa",
+            base_oracle=_test_oracle(memory="aa" * 32),
+        ),
+        (
+            InstructionMetadata(CALL.opcode, step_index.next("call_eoa")),
+            _test_oracle(stack=["0x1"], memory="aa" * 32),
+        ),
+        (
+            InstructionMetadata(POP.opcode, step_index.next("pop_eoa")),
+            _test_oracle(memory="aa" * 32),
+        ),
+        # returndatasize for the eoa call
+        (
+            InstructionMetadata(
+                RETURNDATASIZE.opcode, step_index.next("returndatasize_eoa")
+            ),
+            _test_oracle(stack=["0x0"], memory="aa" * 32),
+        ),
+    ]
+
+    instructions = [evm.step(instr, oracle) for instr, oracle in steps]
+    information_flow_graph = build_information_flow_graph(instructions)
+
+    assert_flow_dependencies(
+        information_flow_graph,
+        step_index,
+        [
+            ("pop", {"call"}),
+            ("returndatasize", {"push_mstore_0"}),
         ],
     )

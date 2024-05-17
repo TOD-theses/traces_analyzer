@@ -409,12 +409,16 @@ CALLDATACOPY = _make_flow(
 CODESIZE = _make_flow(combine(stack_push(oracle_stack_peek(0))))
 
 CODECOPY = _make_flow(
-    mem_write(stack_arg(0), oracle_mem_range_peek(stack_arg(1), stack_arg(2)))
+    combine(
+        mem_write(stack_arg(0), oracle_mem_range_peek(stack_peek(0), stack_arg(2))),
+        stack_arg(1),
+    )
 )
 EXTCODECOPY = _make_flow(
     combine(
         stack_arg(0),
-        mem_write(stack_arg(1), oracle_mem_range_peek(stack_arg(2), stack_arg(3))),
+        # TODO
+        mem_write(stack_arg(1), oracle_mem_range_peek(stack_arg(1), stack_arg(3))),
     )
 )
 

@@ -108,7 +108,7 @@ def update_call_context(
         # do not enter/return a callframe at the end of the trace
         return next_call_context
 
-    if enters_call_context(instruction, current_call_context.depth, next_depth):
+    if is_call_instruction(instruction):
         call_config = instruction.get_data()
         code_address = call_config["address"]
         storage_address = (
@@ -125,7 +125,7 @@ def update_call_context(
             initiating_instruction=instruction,
             calldata=call_config["input"],
             value=call_config["value"],
-            depth=current_call_context.depth + 1,
+            depth=next_depth,
             msg_sender=caller,
             code_address=code_address,
             storage_address=storage_address,
@@ -202,12 +202,10 @@ def exit_call_context(
     return current_call_context.parent
 
 
-def enters_call_context(
-    instruction: Instruction, current_depth: int, next_depth: int
+def is_call_instruction(
+    instruction: Instruction,
 ) -> TypeGuard[CALL | STATICCALL | DELEGATECALL | CALLCODE]:
-    return current_depth + 1 == next_depth and isinstance(
-        instruction, (CALL, STATICCALL, DELEGATECALL, CALLCODE)
-    )
+    return isinstance(instruction, (CALL, STATICCALL, DELEGATECALL, CALLCODE))
 
 
 def creates_contract(
