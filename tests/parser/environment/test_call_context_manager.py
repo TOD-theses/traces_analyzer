@@ -227,7 +227,6 @@ def test_call_context_managers_does_not_enter_without_depth_change():
     assert next_call_context == root
 
 
-# TODO: are there other instructions that create a new call context? eg CREATE?
 @pytest.mark.parametrize(
     "call",
     [

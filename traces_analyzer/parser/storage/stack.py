@@ -36,11 +36,10 @@ class Stack:
         return result
 
     def set(self, index: int, value: StorageByteGroup):
-        if len(value) != 64:
-            padding = StorageByteGroup.deprecated_from_hexstring(
-                HexString("0" * (64 - len(value.get_hexstring())))
+        if len(value) != 32:
+            raise Exception(
+                f"Tried to set stack value with unexpected size {len(value)} instead of 32: {value}"
             )
-            value = padding + value
         self._stack[-index - 1] = value
 
     def clear(self):

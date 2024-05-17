@@ -28,7 +28,6 @@ class CallContext:
     calldata: StorageByteGroup
     value: StorageByteGroup
     depth: int
-    # TODO: addresses should be StorageByteGroups
     msg_sender: HexString
     code_address: HexString
     storage_address: HexString

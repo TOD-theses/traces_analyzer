@@ -80,13 +80,6 @@ class CallInstruction(Instruction, ABC):
 
 @dataclass(frozen=True, repr=False, eq=False)
 class CALL(CallInstruction):
-    """
-    TODO:
-    - after_exit_flow_spec:
-        - mem_write(stack_arg(5), return_data_range(0, stack_arg(6))))
-        - stack_push(stack_peek(0))
-    """
-
     flow_spec = combine(
         stack_arg(0),
         balance_transfer(current_storage_address(), stack_arg(1), stack_arg(2)),

@@ -191,7 +191,6 @@ class StorageAccesses:
     def get_dependencies(
         self,
     ) -> Iterable[tuple[int, StorageAccess, StorageByteGroup | None]]:
-        # TODO: unit test
         for stack_access in self.stack:
             for group in stack_access.value.split_by_dependencies():
                 step_index = next(iter(group.depends_on_instruction_indexes()))

@@ -1,4 +1,5 @@
-from tests.test_utils.test_utils import _test_group, _test_stack
+import pytest
+from tests.test_utils.test_utils import _test_group, _test_group32, _test_stack
 from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.utils.hexstring import HexString
 
@@ -39,11 +40,17 @@ def test_stack_push_all():
 def test_stack_set():
     stack = _test_stack(["0x1", "0x2", "0x3", "0x4"])
 
-    stack.set(2, _test_group("11223344", 1234))
+    stack.set(2, _test_group32("11223344", 1234))
 
     assert stack.peek(2).get_hexstring() == HexString("11223344").as_size(32)
-    # TODO: consider a better approach to remove the -1 here
-    assert stack.peek(2).depends_on_instruction_indexes() == {-1, 1234}
+    assert stack.peek(2).depends_on_instruction_indexes() == {1234}
+
+
+def test_stack_set_with_wrong_size():
+    stack = _test_stack(["0x1", "0x2", "0x3", "0x4"])
+
+    with pytest.raises(Exception):
+        stack.set(2, _test_group("11223344", 1234))
 
 
 def test_stack_pop():

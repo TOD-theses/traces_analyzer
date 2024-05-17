@@ -3,16 +3,6 @@ from typing_extensions import Self, override
 from traces_analyzer.parser.storage.storage import CloneableStorage
 from traces_analyzer.utils.hexstring import HexString
 
-"""
-BALANCE(addr) -> bytes32
-SELFBALANCE() -> bytes32
-
-TODO: implement the balance flow accesses/writes
-CALL
-CALLCODE
-SELFDESTRUCT(addr)
-"""
-
 
 class InvalidAddressException(Exception):
     pass
