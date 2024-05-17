@@ -154,6 +154,13 @@ def compare_traces(
     )
     runner.run()
 
+    information_flow_graph_one = build_information_flow_graph(
+        transaction_one.instructions
+    )
+    information_flow_graph_two = build_information_flow_graph(
+        transaction_two.instructions
+    )
+
     if verbose:
         call_tree_normal, call_tree_reverse = runner.get_call_trees()
         print(f"Transaction: {hash}")
@@ -188,9 +195,9 @@ def compare_traces(
         sink_instruction_index = min(potential_sink_instruction_indexes)
         sink_instruction = all_instructions[sink_instruction_index]
 
-        information_flow_graph = build_information_flow_graph(all_instructions)
-        print(information_flow_graph)
-        print(list(ancestors(information_flow_graph, sink_instruction.step_index)))
+        print(information_flow_graph_one)
+        print(information_flow_graph_two)
+        print(list(ancestors(information_flow_graph_one, sink_instruction.step_index)))
 
         source_to_sink_contexts: list[CallContext] = []
 
