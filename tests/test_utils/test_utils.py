@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, TypeVar
 from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
 from traces_analyzer.parser.environment.parsing_environment import (
@@ -9,10 +9,12 @@ from traces_analyzer.parser.information_flow.information_flow_graph import (
     InformationFlowGraph,
 )
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow
+from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import (
     CREATE,
     CREATE2,
     PUSH32,
+    SLOAD,
     CallInstruction,
 )
 from traces_analyzer.parser.storage.address_key_storage import AddressKeyStorage
@@ -22,6 +24,8 @@ from traces_analyzer.parser.storage.stack import Stack
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
     MemoryAccess,
+    PersistentStorageAccess,
+    PersistentStorageWrite,
     StackAccess,
     StackPush,
     StorageAccesses,
@@ -29,6 +33,7 @@ from traces_analyzer.parser.storage.storage_writes import (
 )
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata
 from traces_analyzer.utils.hexstring import HexString
+from traces_analyzer.utils.mnemonics import opcode_to_name
 
 TestVal = str | HexString | StorageByteGroup
 
@@ -241,8 +246,14 @@ def _test_flow(accesses=StorageAccesses(), writes=StorageWrites()) -> Flow:
     )
 
 
+def _test_flow_stack_accesses(vals: Iterable[TestVal], step_index=-1) -> Flow:
+    return _test_flow(
+        accesses=StorageAccesses(stack=_test_stack_accesses(vals, step_index))
+    )
+
+
 def _test_stack_accesses(values: Iterable[TestVal], step_index=-1) -> list[StackAccess]:
-    return [StackAccess(i, _test_group(x, step_index)) for i, x in enumerate(values)]
+    return [StackAccess(i, _test_group32(x, step_index)) for i, x in enumerate(values)]
 
 
 def _test_mem_access(value: TestVal, offset=0, step_index=-1) -> MemoryAccess:
@@ -250,7 +261,7 @@ def _test_mem_access(value: TestVal, offset=0, step_index=-1) -> MemoryAccess:
 
 
 def _test_stack_pushes(values: Iterable[TestVal], step_index=-1) -> list[StackPush]:
-    return [StackPush(_test_group(x, step_index)) for x in values]
+    return [StackPush(_test_group32(x, step_index)) for x in values]
 
 
 def assert_flow_dependencies(
@@ -276,3 +287,99 @@ def assert_flow_dependencies(
             f"Instruction '{name}' should depend on '{should_depend_on}."
             f" Found {edges}, expected {expected_edges}'."
         )
+
+
+InstrType = TypeVar("InstrType", bound=Instruction)
+
+
+def _test_instruction(
+    instruction_type: type[InstrType],
+    pc=1,
+    step_index=0,
+    call_context: CallContext | None = None,
+    flow: Flow | None = None,
+) -> InstrType:
+    if not call_context:
+        call_context = _test_root()
+    if not flow:
+        flow = _test_flow()
+
+    return instruction_type(
+        instruction_type.opcode,
+        opcode_to_name(instruction_type.opcode, "UKNOWN"),
+        pc,
+        step_index,
+        call_context,
+        flow,
+    )
+
+
+def _test_push32(
+    val: TestVal, pc=1, step_index=0, call_context: CallContext | None = None
+) -> Instruction:
+    return _test_instruction(
+        PUSH32,
+        pc,
+        step_index,
+        call_context,
+        flow=_test_flow(
+            writes=StorageWrites(stack_pushes=_test_stack_pushes([val], step_index))
+        ),
+    )
+
+
+def _test_sload(
+    key: TestVal,
+    value: TestVal,
+    pc=1,
+    step_index=0,
+    call_context: CallContext | None = None,
+):
+    if not call_context:
+        call_context = _test_root()
+    key = _test_group32(key)
+    value = _test_group32(value)
+    return _test_instruction(
+        SLOAD,
+        pc,
+        step_index,
+        call_context,
+        flow=_test_flow(
+            accesses=StorageAccesses(
+                stack=_test_stack_accesses([key], step_index),
+                persistent_storage=[
+                    PersistentStorageAccess(call_context.storage_address, key, value)
+                ],
+            ),
+            writes=StorageWrites(stack_pushes=_test_stack_pushes([value], step_index)),
+        ),
+    )
+
+
+def _test_sstore(
+    key: TestVal,
+    value: TestVal,
+    pc=1,
+    step_index=0,
+    call_context: CallContext | None = None,
+):
+    if not call_context:
+        call_context = _test_root()
+    key = _test_group32(key)
+    value = _test_group32(value)
+    return _test_instruction(
+        SLOAD,
+        pc,
+        step_index,
+        call_context,
+        flow=_test_flow(
+            accesses=StorageAccesses(
+                stack=_test_stack_accesses([key, value], step_index)
+            ),
+            writes=StorageWrites(
+                persistent_storage=[
+                    PersistentStorageWrite(call_context.storage_address, key, value)
+                ]
+            ),
+        ),
+    )

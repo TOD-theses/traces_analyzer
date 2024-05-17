@@ -1,10 +1,10 @@
 import json
-from tests.conftest import TEST_ROOT_CALLCONTEXT
 from tests.test_utils.test_utils import (
     _test_call_context,
     _test_flow,
     _test_hash_addr,
     _test_mem_access,
+    _test_root,
     _test_stack_accesses,
     _test_stack_pushes,
 )
@@ -23,7 +23,7 @@ from traces_analyzer.utils.hexstring import HexString
 
 
 def test_instruction_differences_evaluation() -> None:
-    call_context = TEST_ROOT_CALLCONTEXT
+    call_context = _test_root()
     input_changes = [
         InstructionInputChange(
             address=_test_hash_addr("0xtest"),
@@ -109,11 +109,19 @@ def test_instruction_differences_evaluation() -> None:
                     },
                     "inputs": [
                         {
-                            "stack": ("0x0val_1", "0x0val_2", "0x0val_3"),
+                            "stack": (
+                                HexString("val_1").as_size(32).with_prefix(),
+                                HexString("val_2").as_size(32).with_prefix(),
+                                HexString("val_3").as_size(32).with_prefix(),
+                            ),
                             "memory": "0x1111",
                         },
                         {
-                            "stack": ("0x0val_1", "0x0val_2_x", "0x0val_3_x"),
+                            "stack": (
+                                HexString("val_1").as_size(32).with_prefix(),
+                                HexString("val_2_x").as_size(32).with_prefix(),
+                                HexString("val_3_x").as_size(32).with_prefix(),
+                            ),
                             "memory": "0x2222",
                         },
                     ],
@@ -144,7 +152,9 @@ def test_instruction_differences_evaluation() -> None:
                         },
                         "instruction": {
                             "opcode": SLOAD.opcode,
-                            "stack_inputs": ("0x0key",),
+                            "stack_inputs": (
+                                HexString("key").as_size(32).with_prefix(),
+                            ),
                         },
                     }
                 ],

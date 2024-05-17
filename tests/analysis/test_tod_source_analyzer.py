@@ -1,25 +1,42 @@
 from itertools import zip_longest
-from tests.conftest import make_instruction
-from tests.test_utils.test_utils import _test_stack
+from tests.test_utils.test_utils import (
+    _test_flow,
+    _test_flow_stack_accesses,
+    _test_instruction,
+    _test_push32,
+    _test_stack_accesses,
+    _test_stack_pushes,
+)
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
-from traces_analyzer.parser.instructions.instructions import POP, PUSH0, SLOAD
+from traces_analyzer.parser.instructions.instructions import POP, SLOAD
+from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
 
 
 def test_tod_source_analyzer() -> None:
     instructions_one = [
-        make_instruction(PUSH0, stack_after=["0x1"]),
-        make_instruction(
-            SLOAD, pc=2, stack=_test_stack(["0x1"]), stack_after=["0x1234"]
+        _test_push32("0x1"),
+        _test_instruction(
+            SLOAD,
+            pc=2,
+            flow=_test_flow(
+                StorageAccesses(stack=_test_stack_accesses(["0x1"])),
+                StorageWrites(stack_pushes=_test_stack_pushes(["0x1234"])),
+            ),
         ),
-        make_instruction(POP, pc=3, stack=_test_stack(["0x1234"])),
+        _test_instruction(POP, pc=3, flow=_test_flow_stack_accesses(["0x1234"])),
     ]
     instructions_two = [
-        make_instruction(PUSH0, stack_after=["0x1"]),
-        make_instruction(
-            SLOAD, pc=2, stack=_test_stack(["0x1"]), stack_after=["0x5678"]
+        _test_push32("0x1"),
+        _test_instruction(
+            SLOAD,
+            pc=2,
+            flow=_test_flow(
+                StorageAccesses(stack=_test_stack_accesses(["0x1"])),
+                StorageWrites(stack_pushes=_test_stack_pushes(["0x5678"])),
+            ),
         ),
-        make_instruction(POP, pc=3, stack=_test_stack(["0x5678"])),
+        _test_instruction(POP, pc=3, flow=_test_flow_stack_accesses(["0x5678"])),
     ]
 
     feature_extractor = TODSourceFeatureExtractor()

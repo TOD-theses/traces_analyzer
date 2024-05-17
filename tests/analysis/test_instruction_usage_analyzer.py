@@ -1,30 +1,33 @@
-from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_child, _test_stack
+from tests.test_utils.test_utils import (
+    _test_child,
+    _test_instruction,
+    _test_push32,
+    _test_root,
+)
 from traces_analyzer.features.extractors.instruction_usages import (
     InstructionUsagesFeatureExtractor,
 )
 from traces_analyzer.parser.instructions.instructions import (
     JUMPDEST,
     POP,
-    PUSH0,
+    PUSH32,
     STOP,
 )
 
 
 def test_instruction_usage_analyzer():
-    child_context = _test_child()
-    root_code_address = TEST_ROOT_CALLCONTEXT.code_address
-    child_code_address = child_context.code_address
+    root = _test_root()
+    child = _test_child()
+    root_code_address = root.code_address
+    child_code_address = child.code_address
 
     trace = [
-        make_instruction(PUSH0, stack_after=["0x1"]),
-        make_instruction(STOP),
-        make_instruction(JUMPDEST),
-        make_instruction(PUSH0, stack_after=["0x0", "0x0"], call_context=child_context),
-        make_instruction(
-            POP, stack=_test_stack(["0x0", "0x0"]), call_context=child_context
-        ),
-        make_instruction(POP, stack=_test_stack(["0x0"]), call_context=child_context),
+        _test_push32("0x1", call_context=root),
+        _test_instruction(STOP, call_context=root),
+        _test_instruction(JUMPDEST, call_context=root),
+        _test_push32("0x0", call_context=child),
+        _test_instruction(POP, call_context=child),
+        _test_instruction(POP, call_context=child),
     ]
 
     feature_extractor = InstructionUsagesFeatureExtractor()
@@ -34,11 +37,11 @@ def test_instruction_usage_analyzer():
     used_opcodes_per_contract = feature_extractor.get_used_opcodes_per_contract()
 
     assert used_opcodes_per_contract[root_code_address] == {
-        PUSH0.opcode,
+        PUSH32.opcode,
         STOP.opcode,
         JUMPDEST.opcode,
     }
     assert used_opcodes_per_contract[child_code_address] == {
-        PUSH0.opcode,
+        PUSH32.opcode,
         POP.opcode,
     }

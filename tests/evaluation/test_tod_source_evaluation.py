@@ -1,7 +1,6 @@
 import json
 from typing import cast
-from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_stack
+from tests.test_utils.test_utils import _test_root, _test_sload
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.parser.instructions.instruction import Instruction
@@ -9,14 +8,11 @@ from traces_analyzer.parser.instructions.instructions import SLOAD
 
 
 def test_tod_source_evaluation_found():
+    root = _test_root()
     tod_source = TODSource(
         found=True,
-        instruction_one=make_instruction(
-            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]
-        ),
-        instruction_two=make_instruction(
-            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]
-        ),
+        instruction_one=_test_sload("0x1122", "0x10", pc=1234, call_context=root),
+        instruction_two=_test_sload("0x1122", "0x20", pc=1234, call_context=root),
     )
 
     evaluation = TODSourceEvaluation(tod_source)
@@ -28,7 +24,7 @@ def test_tod_source_evaluation_found():
             "found": True,
             "source": {
                 "location": {
-                    "address": TEST_ROOT_CALLCONTEXT.code_address.with_prefix(),
+                    "address": root.code_address.with_prefix(),
                     "pc": 1234,
                 },
                 "instruction": {
@@ -45,14 +41,11 @@ def test_tod_source_evaluation_found():
 
 
 def test_tod_source_serializable():
+    root = _test_root()
     tod_source = TODSource(
         found=True,
-        instruction_one=make_instruction(
-            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]
-        ),
-        instruction_two=make_instruction(
-            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]
-        ),
+        instruction_one=_test_sload("0x1122", "0x10", pc=1234, call_context=root),
+        instruction_two=_test_sload("0x1122", "0x20", pc=1234, call_context=root),
     )
 
     evaluation = TODSourceEvaluation(tod_source)

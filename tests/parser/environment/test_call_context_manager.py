@@ -4,6 +4,7 @@ from tests.test_utils.test_utils import (
     _test_group,
     _test_group32,
     _test_hash_addr,
+    _test_instruction,
     _test_mem_access,
     _test_root,
     _test_child,
@@ -24,7 +25,6 @@ from traces_analyzer.parser.instructions.instructions import (
     CALL,
     CALLCODE,
     CREATE,
-    CREATE2,
     DELEGATECALL,
     RETURN,
     REVERT,
@@ -42,27 +42,21 @@ from traces_analyzer.utils.hexstring import HexString
 
 
 def get_add(call_context: CallContext) -> Instruction:
-    return ADD(
-        ADD.opcode,
-        "ADD",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        ADD,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(stack=_test_stack_accesses(["1", "2"])),
             writes=StorageWrites(stack_pushes=_test_stack_pushes(["3"])),
         ),
     )
 
 
-def get_call(call_context: CallContext, address: HexString) -> Instruction:
-    return CALL(
-        CALL.opcode,
-        "CALL",
-        1,
-        1,
-        call_context,
-        _test_flow(
+def get_call(call_context: CallContext, address: HexString) -> CALL:
+    return _test_instruction(
+        CALL,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(
                     ["0x1234", address, "0x1", "0x0", "0x4", "0x0", "0x0"]
@@ -74,14 +68,11 @@ def get_call(call_context: CallContext, address: HexString) -> Instruction:
     )
 
 
-def get_staticcall(call_context: CallContext, address: HexString) -> Instruction:
-    return STATICCALL(
-        STATICCALL.opcode,
-        "STATICCALL",
-        1,
-        1,
-        call_context,
-        _test_flow(
+def get_staticcall(call_context: CallContext, address: HexString) -> STATICCALL:
+    return _test_instruction(
+        STATICCALL,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(
                     ["0x1234", address, "0x0", "0x4", "0x0", "0x0"]
@@ -93,14 +84,11 @@ def get_staticcall(call_context: CallContext, address: HexString) -> Instruction
     )
 
 
-def get_delegate_call(call_context: CallContext, address: HexString) -> Instruction:
-    return DELEGATECALL(
-        DELEGATECALL.opcode,
-        "DELEGATECALL",
-        1,
-        1,
-        call_context,
-        _test_flow(
+def get_delegate_call(call_context: CallContext, address: HexString) -> DELEGATECALL:
+    return _test_instruction(
+        DELEGATECALL,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(
                     ["0x1234", address, "0x0", "0x4", "0x0", "0x0"]
@@ -114,13 +102,10 @@ def get_delegate_call(call_context: CallContext, address: HexString) -> Instruct
 
 
 def get_callcode(call_context: CallContext, address: HexString) -> Instruction:
-    return CALLCODE(
-        CALLCODE.opcode,
-        "CALLCODE",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        CALLCODE,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(
                     ["0x1234", address, "0x1", "0x0", "0x4", "0x0", "0x0"]
@@ -133,13 +118,10 @@ def get_callcode(call_context: CallContext, address: HexString) -> Instruction:
 
 
 def get_create(call_context: CallContext) -> Instruction:
-    return CREATE(
-        CREATE.opcode,
-        "CREATE",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        CREATE,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(["0x0", "0x0", "0x4"]),
                 memory=[_test_mem_access("11111111")],
@@ -149,13 +131,10 @@ def get_create(call_context: CallContext) -> Instruction:
 
 
 def get_create2(call_context: CallContext) -> Instruction:
-    return CREATE(
-        CREATE2.opcode,
-        "CREATE2",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        CREATE,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(["0x0", "0x0", "0x4", "0x0"]),
                 memory=[_test_mem_access("11111111")],
@@ -165,43 +144,34 @@ def get_create2(call_context: CallContext) -> Instruction:
 
 
 def get_stop(call_context: CallContext) -> Instruction:
-    return STOP(STOP.opcode, "STOP", 1, 1, call_context, _test_flow())
+    return _test_instruction(STOP, call_context=call_context)
 
 
 def get_return(call_context: CallContext) -> Instruction:
-    return RETURN(
-        RETURN.opcode,
-        "RETURN",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        RETURN,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(stack=_test_stack_accesses(["0x0", "0x0"]))
         ),
     )
 
 
 def get_revert(call_context: CallContext) -> Instruction:
-    return REVERT(
-        REVERT.opcode,
-        "REVERT",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        REVERT,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(stack=_test_stack_accesses(["0x0", "0x0"]))
         ),
     )
 
 
 def get_selfdestruct(call_context: CallContext) -> Instruction:
-    return SELFDESTRUCT(
-        SELFDESTRUCT.opcode,
-        "SELFDESTRUCT",
-        1,
-        1,
-        call_context,
-        _test_flow(
+    return _test_instruction(
+        SELFDESTRUCT,
+        call_context=call_context,
+        flow=_test_flow(
             accesses=StorageAccesses(stack=_test_stack_accesses(["0x0", "0x0"]))
         ),
     )

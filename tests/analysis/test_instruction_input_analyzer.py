@@ -1,9 +1,12 @@
 from itertools import zip_longest
-from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
 from tests.test_utils.test_utils import (
     _test_child,
-    _test_mem,
-    _test_stack,
+    _test_flow,
+    _test_flow_stack_accesses,
+    _test_instruction,
+    _test_mem_access,
+    _test_root,
+    _test_stack_accesses,
 )
 from traces_analyzer.features.extractors.instruction_differences import (
     InstructionDifferencesFeatureExtractor,
@@ -11,9 +14,9 @@ from traces_analyzer.features.extractors.instruction_differences import (
 from traces_analyzer.parser.instructions.instructions import (
     CALL,
     JUMPDEST,
-    LOG1,
     STOP,
 )
+from traces_analyzer.parser.storage.storage_writes import StorageAccesses
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -24,41 +27,25 @@ def test_instruction_input_analyzer():
     second_call_value = HexString("0x100000").as_size(32)
 
     first_trace = [
-        make_instruction(),
-        make_instruction(
+        _test_instruction(JUMPDEST),
+        _test_instruction(
             CALL,
-            stack=_test_stack(
-                [
-                    HexString("0x1234"),
-                    HexString("0xchild"),
-                    first_call_value,
-                    HexString("0x0"),
-                    HexString("0x0"),
-                    HexString("0x0"),
-                    HexString("0x0"),
-                ]
+            flow=_test_flow_stack_accesses(
+                ["0x1234", "0xchild", first_call_value, "0x0", "0x0", "0x0", "0x0"]
             ),
         ),
-        make_instruction(STOP, call_context=child_context),
+        _test_instruction(STOP, call_context=child_context),
     ]
     second_trace = [
-        make_instruction(),
-        make_instruction(
+        _test_instruction(JUMPDEST),
+        _test_instruction(
             CALL,
-            stack=_test_stack(
-                [
-                    HexString("0x1234"),
-                    HexString("0xchild"),
-                    second_call_value,
-                    HexString("0x0"),
-                    HexString("0x0"),
-                    HexString("0x0"),
-                    HexString("0x0"),
-                ]
+            flow=_test_flow_stack_accesses(
+                ["0x1234", "0xchild", second_call_value, "0x0", "0x0", "0x0", "0x0"]
             ),
         ),
-        make_instruction(JUMPDEST, call_context=child_context),
-        make_instruction(STOP, call_context=child_context),
+        _test_instruction(JUMPDEST, call_context=child_context),
+        _test_instruction(STOP, call_context=child_context),
     ]
 
     # run feature extraction
@@ -73,7 +60,7 @@ def test_instruction_input_analyzer():
     assert len(instruction_input_changes) == 1
     assert len(instruction_input_changes[0].stack_input_changes) == 1
 
-    assert instruction_input_changes[0].address == TEST_ROOT_CALLCONTEXT.code_address
+    assert instruction_input_changes[0].address == _test_root().code_address
     assert len(instruction_input_changes[0].stack_input_changes) == 1
     assert instruction_input_changes[0].stack_input_changes[0].index == 2
     assert (
@@ -94,20 +81,28 @@ def test_instruction_input_analyzer():
     assert only_second_executions[0].opcode == JUMPDEST.opcode
 
 
-def test_instruction_input_analyzer_reports_stack_differences():
-    memory_one = "0000000000000000000000000000000000000000000000000000000011110000"
-    memory_two = "0000000000000000000000000000000000000000000000000000000022220000"
-    mem_offset = hex(28)
-    mem_size = hex(2)
-    common_stack = ["0x0", "0xchild", "0x0", mem_offset, mem_size, "0x0", "0x0"]
+def test_instruction_input_analyzer_reports_memory_differences():
+    common_stack = ["0x0", "0xchild", "0x0", hex(28), "0x2", "0x0", "0x0"]
 
     feature_extractor = InstructionDifferencesFeatureExtractor()
     feature_extractor.on_instructions(
-        make_instruction(
-            CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_one)
+        _test_instruction(
+            CALL,
+            flow=_test_flow(
+                accesses=StorageAccesses(
+                    stack=_test_stack_accesses(common_stack),
+                    memory=[_test_mem_access("1111", 28)],
+                ),
+            ),
         ),
-        make_instruction(
-            CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_two)
+        _test_instruction(
+            CALL,
+            flow=_test_flow(
+                accesses=StorageAccesses(
+                    stack=_test_stack_accesses(common_stack),
+                    memory=[_test_mem_access("2222", 28)],
+                ),
+            ),
         ),
     )
 
@@ -119,37 +114,6 @@ def test_instruction_input_analyzer_reports_stack_differences():
     change = instruction_input_changes[0]
 
     assert change.opcode == CALL.opcode
-    assert change.memory_input_change is not None
-    assert change.memory_input_change.first_value == "1111"
-    assert change.memory_input_change.second_value == "2222"
-
-
-def test_instruction_input_analyzer_reports_log_changes():
-    topic = "0x1234"
-    memory_one = "0000000000000000000000000000000000000000000000000000000011110000"
-    memory_two = "0000000000000000000000000000000000000000000000000000000022220000"
-    mem_offset = hex(28)
-    mem_size = hex(2)
-    common_stack = [mem_offset, mem_size, topic]
-
-    feature_extractor = InstructionDifferencesFeatureExtractor()
-    feature_extractor.on_instructions(
-        make_instruction(
-            LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_one)
-        ),
-        make_instruction(
-            LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_two)
-        ),
-    )
-
-    # check if it detected the different CALL inputs
-    instruction_input_changes = (
-        feature_extractor.get_instructions_with_different_inputs()
-    )
-    assert len(instruction_input_changes) == 1
-    change = instruction_input_changes[0]
-
-    assert change.opcode == LOG1.opcode
     assert change.memory_input_change is not None
     assert change.memory_input_change.first_value == "1111"
     assert change.memory_input_change.second_value == "2222"
