@@ -5,12 +5,13 @@ from typing import Iterable
 from traces_analyzer.utils.hexstring import HexString
 
 
-# TODO: better naming / structure
 @dataclass
-class TransactionBundle:
+class TraceBundle:
+    """Traces of the same transaction in two orders"""
+
+    hash: HexString
     caller: HexString
     to: HexString
-    hash: HexString
     calldata: HexString
     value: HexString
     trace_actual: Iterable[str]
@@ -18,13 +19,13 @@ class TransactionBundle:
 
 
 @dataclass
-class TraceBundle:
+class PotentialAttack:
     id: str
-    tx_victim: TransactionBundle
-    tx_attack: TransactionBundle
+    tx_victim: TraceBundle
+    tx_attack: TraceBundle
 
 
 class TraceLoader(ABC):
     @abstractmethod
-    def load(self) -> TraceBundle:
+    def load(self) -> PotentialAttack:
         pass

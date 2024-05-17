@@ -31,7 +31,7 @@ from traces_analyzer.features.feature_extractor import (
     SingleToDoubleInstructionFeatureExtractor,
 )
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.loader.loader import TraceBundle
+from traces_analyzer.loader.loader import PotentialAttack
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import parse_events
 from traces_analyzer.parser.information_flow.information_flow_graph import (
@@ -84,7 +84,7 @@ def main():  # pragma: no cover
         analyze_transactions_in_dir(bundle, out, verbose)
 
 
-def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, verbose: bool):
+def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose: bool):
     evaluations_victim = compare_traces(
         bundle.tx_victim.hash,
         bundle.tx_victim.caller,

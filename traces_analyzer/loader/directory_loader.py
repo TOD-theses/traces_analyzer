@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from traces_analyzer.loader.loader import TraceBundle, TraceLoader, TransactionBundle
+from traces_analyzer.loader.loader import PotentialAttack, TraceLoader, TraceBundle
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -13,43 +13,49 @@ class DirectoryLoader(TraceLoader):
         super().__init__()
         self._dir = dir
 
-    def load(self) -> TraceBundle:
+    def load(self) -> PotentialAttack:
         with open(self._dir / self.METADATA_FILENAME) as metadata_file:
             metadata = json.load(metadata_file)
 
             id = metadata["id"]
-            traces_actual = metadata["transaction_replays"]["actual"]["transactions"]
-            traces_reverse = metadata["transaction_replays"]["reverse"]["transactions"]
-            return self._load_trace_bundle(id, traces_actual, traces_reverse)
+            transactions_actual = metadata["transaction_replays"]["actual"][
+                "transactions"
+            ]
+            transactions_reverse = metadata["transaction_replays"]["reverse"][
+                "transactions"
+            ]
+            return self._load_trace_bundle(
+                id, transactions_actual, transactions_reverse
+            )
 
     def _load_trace_bundle(
-        self, id: str, traces_actual: list[dict], traces_reverse: list[dict]
-    ) -> TraceBundle:
-        return TraceBundle(
+        self, id: str, transactions_actual: list[dict], transactions_reverse: list[dict]
+    ) -> PotentialAttack:
+        return PotentialAttack(
             id=id,
             tx_attack=self._load_transaction_bundle(
-                traces_actual[0], traces_reverse[1]
+                transactions_actual[0], transactions_reverse[1]
             ),
             tx_victim=self._load_transaction_bundle(
-                traces_actual[1], traces_reverse[0]
+                transactions_actual[1], transactions_reverse[0]
             ),
         )
 
     def _load_transaction_bundle(
         self, tx_actual: dict, tx_reverse: dict
-    ) -> TransactionBundle:
+    ) -> TraceBundle:
         assert (
             tx_actual["hash"] == tx_reverse["hash"]
         ), f"Tried to compare traces with different transaction hashes: {tx_actual['hash']} {tx_reverse['hash']}"
-        hash = HexString(tx_actual["hash"])
+        tx = tx_actual["tx"]
+        hash = HexString(tx["hash"])
 
-        return TransactionBundle(
+        return TraceBundle(
             hash=hash,
-            caller=HexString(tx_actual["from"]),
-            to=HexString(tx_actual["to"]),
-            # TODO: remove get when it is implemented in the metadata
-            calldata=HexString(tx_actual.get("calldata", "")),
-            value=HexString(tx_actual.get("value", "")),
+            caller=HexString(tx["from"]),
+            to=HexString(tx["to"]),
+            calldata=HexString(tx["input"]),
+            value=HexString(tx["value"]),
             trace_actual=lazy_load_file(
                 self._dir / "actual" / (hash.with_prefix() + ".jsonl")
             ),
