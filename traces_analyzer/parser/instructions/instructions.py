@@ -168,7 +168,9 @@ class STATICCALL(CallInstruction):
         ), f"Tried to get STATICCALL data but contains no memory: {self.flow}"
         return {
             "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
-            "value": StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
+            "value": StorageByteGroup.from_hexstring(
+                HexString.from_int(0).as_size(32), self.step_index
+            ),
             "updates_storage_address": True,
             "input": self.flow.writes.calldata.value,
         }

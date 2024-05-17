@@ -2,7 +2,6 @@ from tests.test_utils.test_utils import (
     _TestCounter,
     _test_addr,
     _test_call_context,
-    _test_group32,
     assert_flow_dependencies,
     _test_hash_addr,
     _test_oracle,
@@ -13,12 +12,11 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
 from traces_analyzer.parser.instructions.instructions import (
-    DELEGATECALL,
+    STATICCALL,
     CALLDATACOPY,
     CALLVALUE,
     LOG0,
@@ -33,16 +31,16 @@ from traces_analyzer.parser.instructions.instructions import (
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
 
-def test_delegatecall_with_persisten_storage_writes() -> None:
-    root = _test_call_context(value=_test_group32("0x1234", PRESTATE))
+def test_staticcall() -> None:
+    root = _test_call_context()
     env = ParsingEnvironment(root)
     evm = TraceEVM(env, verify_storages=True)
     step_index = _TestCounter(0)
 
     initial_root_memory = "00" * 0x20 + "00" * 29 + "abcdef"
     calldata_child_memory = "abcdef" + 29 * "00"
-    calldata_value_memory = "abcdef000034" + 26 * "00"
-    post_call_memory = "abcdef000034" + 55 * "00" + "abcdef"
+    calldata_value_memory = "abcdef000000" + 26 * "00"
+    post_call_memory = "abcdef000000" + 55 * "00" + "abcdef"
 
     steps: list[tuple[InstructionMetadata, InstructionOutputOracle]] = [
         # write to memory
@@ -51,7 +49,7 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
             InstructionMetadata(MSTORE.opcode, step_index.next("mstore")),
             _test_oracle(memory=initial_root_memory),
         ),
-        # delegatecall with abcdef as calldata and implicitly value 0x1234
+        # staticcall with abcdef as calldata and implicitly value 0x1234
         # writes 16 bytes from the call return data to 0x0
         *_test_push_steps(
             reversed(
@@ -65,11 +63,11 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
                 ]
             ),
             step_index,
-            "push_delegatecall",
+            "push_staticcall",
             base_oracle=_test_oracle(memory=initial_root_memory),
         ),
         (
-            InstructionMetadata(DELEGATECALL.opcode, step_index.next("delegatecall")),
+            InstructionMetadata(STATICCALL.opcode, step_index.next("staticcall")),
             _test_oracle(depth=2),
         ),
         # store something inside of the call
@@ -96,14 +94,14 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
         ),
         (
             InstructionMetadata(CALLVALUE.opcode, step_index.next("callvalue")),
-            _test_oracle(depth=2, stack=["0x1234"], memory=calldata_child_memory),
+            _test_oracle(depth=2, stack=["0x0"], memory=calldata_child_memory),
         ),
         *_test_push_steps(
             reversed(["0x5"]),
             step_index,
             "push_mstore8",
             base_oracle=_test_oracle(
-                depth=2, stack=["0x1234"], memory=calldata_child_memory
+                depth=2, stack=["0x0"], memory=calldata_child_memory
             ),
         ),
         (
@@ -155,7 +153,7 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
         information_flow_graph,
         step_index,
         [
-            ("pop", {"delegatecall"}),
+            ("pop", {"staticcall"}),
             (
                 "log0",
                 {
@@ -163,8 +161,8 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
                     "push_mstore_0",
                     # memory expansion to 0x40 (0x20 + the padded abcdef is only 0x30 big, memory is multiples of 0x20)
                     "mstore",
-                    # 0x1234 implicitly passed from the initial call context
-                    PRESTATE,
+                    # 0x0 callvalue set by staticcall
+                    "staticcall",
                     # memory expansion 0x20
                     "calldatacopy",
                     # stack args for LOG0
@@ -172,13 +170,11 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
                     "push_log0_1",
                 },
             ),
-            # sload depends on the stored value, even if it was stored by another contract (delegatecall)
-            ("sload", {"push_sload_0", "push_sstore_0"}),
         ],
     )
 
 
-def test_delegatecall_to_eoa() -> None:
+def test_staticcall_to_eoa() -> None:
     root = _test_root()
     env = ParsingEnvironment(root)
     evm = TraceEVM(env, verify_storages=True)
@@ -200,7 +196,7 @@ def test_delegatecall_to_eoa() -> None:
             "push_call",
         ),
         (
-            InstructionMetadata(DELEGATECALL.opcode, step_index.next("call")),
+            InstructionMetadata(STATICCALL.opcode, step_index.next("call")),
             _test_oracle(stack=["0x1"]),
         ),
         (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
@@ -212,7 +208,12 @@ def test_delegatecall_to_eoa() -> None:
     assert_flow_dependencies(
         information_flow_graph,
         step_index,
-        [("pop", {"call"})],
+        [
+            (
+                "pop",
+                {"call"},
+            ),
+        ],
     )
 
 
@@ -249,7 +250,7 @@ def test_delegate_to_precompiled_contract() -> None:
             base_oracle=_test_oracle(memory=initial_memory),
         ),
         (
-            InstructionMetadata(DELEGATECALL.opcode, step_index.next("call")),
+            InstructionMetadata(STATICCALL.opcode, step_index.next("call")),
             _test_oracle(stack=["0x1"], memory=post_memory),
         ),
         (
