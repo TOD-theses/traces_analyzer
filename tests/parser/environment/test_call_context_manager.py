@@ -2,6 +2,7 @@ import pytest
 from tests.test_utils.test_utils import (
     _test_flow,
     _test_group,
+    _test_group32,
     _test_hash_addr,
     _test_mem_access,
     _test_root,
@@ -33,6 +34,7 @@ from traces_analyzer.parser.instructions.instructions import (
 )
 from traces_analyzer.parser.storage.storage_writes import (
     CalldataWrite,
+    CallvalueAccess,
     StorageAccesses,
     StorageWrites,
 )
@@ -104,6 +106,7 @@ def get_delegate_call(call_context: CallContext, address: HexString) -> Instruct
                     ["0x1234", address, "0x0", "0x4", "0x0", "0x0"]
                 ),
                 memory=[_test_mem_access("11111111")],
+                callvalue=[CallvalueAccess(_test_group32("0x1234"))],
             ),
             writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
         ),

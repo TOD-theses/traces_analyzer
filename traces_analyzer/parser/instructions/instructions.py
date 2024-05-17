@@ -224,6 +224,7 @@ class DELEGATECALL(CallInstruction):
         calldata_write(mem_range(stack_arg(2), stack_arg(3))),
         stack_arg(4),
         stack_arg(5),
+        callvalue(),
     )
 
     @override
@@ -233,8 +234,7 @@ class DELEGATECALL(CallInstruction):
         ), f"Tried to get DELEGATECALL data but contains no memory: {self.flow}"
         return {
             "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
-            # TODO: use value from current call context (probably adding it as input)
-            "value": StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
+            "value": self.flow.accesses.callvalue[0].value,
             "updates_storage_address": False,
             "input": self.flow.writes.calldata.value,
         }

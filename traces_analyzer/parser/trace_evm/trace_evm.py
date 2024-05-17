@@ -161,40 +161,48 @@ class TraceEVM:
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
         """Verify that current storages match the output oracle"""
+        # ignore the last instruction, as we don't have an output oracle for it
+        if output_oracle.depth is None:
+            return
+
+        self._verify_depth(instruction, output_oracle.depth)
+        self._verify_stack(instruction, output_oracle.stack)
+        self._verify_memory(instruction, output_oracle.memory)
+
+    def _verify_depth(self, instruction: Instruction, depth_oracle: int):
+        depth = self.env.current_call_context.depth
+        if depth != depth_oracle:
+            raise Exception(
+                f"The environments depth does not match the output_oracles depth after {instruction}:\n"
+                f"Environment: {depth}\n"
+                f"Oracle:      {depth_oracle}"
+            )
+
+    def _verify_stack(self, instruction: Instruction, stack_oracle: list[HexString]):
+        stack_int = [x.get_hexstring().as_int() for x in self.env.stack.get_all()]
+        stack_oracle_int = [x.as_int() for x in stack_oracle]
+
+        if stack_int != stack_oracle_int:
+            raise Exception(
+                f"The environments stack does not match the output_oracles stack after {instruction}:\n"
+                f"Environment: {stack_int}\n"
+                f"Oracle:      {stack_oracle_int}"
+            )
+
+    def _verify_memory(self, instruction: Instruction, memory_oracle: HexString):
         """
         TODO also check for trailing zeros
             currently I ignore those, as I'm not sure if there is a bug in my implementation or the trace
             traces_analyzer --bundles traces/benchmark_traces/62a876599363fc9f281b2768
         """
-        # ignore the last instruction, as we don't have an output oracle for it
-        if output_oracle.depth is None:
-            return
-        current_depth = self.env.current_call_context.depth
-        if current_depth != output_oracle.depth:
-            raise Exception(
-                f"The environments depth does not match the output_oracles depth after {instruction}:\n"
-                f"Environment: {current_depth}\n"
-                f"Oracle:      {output_oracle.depth}"
-            )
-
         memory = self.env.memory.get_all().get_hexstring().without_prefix().strip("0")
-        oracle_memory = output_oracle.memory.without_prefix().strip("0")
+        oracle_memory = memory_oracle.without_prefix().strip("0")
 
         if memory != oracle_memory:
             raise Exception(
                 f"The environments memory does not match the output_oracles memory after {instruction}:\n"
                 f"Environment: {memory}\n"
                 f"Oracle:      {oracle_memory}"
-            )
-
-        stack = [x.get_hexstring().as_int() for x in self.env.stack.get_all()]
-        oracle_stack = [x.as_int() for x in output_oracle.stack]
-
-        if stack != oracle_stack:
-            raise Exception(
-                f"The environments stack does not match the output_oracles stack after {instruction}:\n"
-                f"Environment: {stack}\n"
-                f"Oracle:      {oracle_stack}"
             )
 
 
