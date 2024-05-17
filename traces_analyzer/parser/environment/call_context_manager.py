@@ -125,7 +125,7 @@ def update_call_context(
             initiating_instruction=instruction,
             calldata=call_config["input"],
             value=call_config["value"],
-            depth=next_depth,
+            depth=current_call_context.depth + 1,
             msg_sender=caller,
             code_address=code_address,
             storage_address=storage_address,
@@ -168,12 +168,6 @@ def update_call_context(
             "Could not change call context: the trace showed a change in the call depth,"
             " however the instruction should not change the depth."
             f" Expected depth change from {current_call_context.depth} to {next_depth}. Instruction: {instruction}."
-        )
-
-    if next_call_context.depth != next_depth:
-        raise Exception(
-            f"Unexpected call depth: CallContext has {next_call_context.depth},"
-            f" expected {next_depth}. {instruction}. {next_call_context}"
         )
 
     return next_call_context

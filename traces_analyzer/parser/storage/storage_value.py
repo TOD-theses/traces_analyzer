@@ -1,6 +1,3 @@
-from collections import UserList
-from collections.abc import Iterable
-
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -17,30 +14,35 @@ class StorageByte:
         return f'<{self._byte.decode("utf-8")},{self._created_at_step_index}>'
 
 
-class StorageByteGroup(UserList[StorageByte]):
-    def __init__(self, storage_bytes: Iterable[StorageByte] | None = None) -> None:
-        super().__init__(storage_bytes)
+class StorageByteGroup:
+    def __init__(
+        self, hexstring: HexString = HexString(""), step_indexes: list[int] = []
+    ) -> None:
+        if len(hexstring) // 2 != len(step_indexes):
+            raise Exception(
+                f"The hexstring size does not match the step_indexes length: {len(hexstring)//2} vs {len(step_indexes)}"
+            )
+
+        self._hexstring = hexstring
+        self._step_indexes = step_indexes
 
     def get_hexstring(self) -> HexString:
-        x: list[str] = [
-            storage_byte._byte.decode("utf-8") for storage_byte in self.data
-        ]
-        return HexString("".join(x))
+        return self._hexstring
 
     def depends_on_instruction_indexes(self) -> set[int]:
-        return set(byte._created_at_step_index for byte in self)
+        return set(self._step_indexes)
 
     def split_by_dependencies(self) -> list["StorageByteGroup"]:
         if not (size := len(self)):
             return []
         groups: list["StorageByteGroup"] = []
         current_start_index = 0
-        current_step_index = self[0]._created_at_step_index
+        current_step_index = self._step_indexes[0]
         for i in range(size):
-            if self[i]._created_at_step_index != current_step_index:
+            if self._step_indexes[i] != current_step_index:
                 groups.append(self[current_start_index:i])
                 current_start_index = i
-                current_step_index = self[i]._created_at_step_index
+                current_step_index = self._step_indexes[i]
         if current_start_index < size:
             groups.append(self[current_start_index:])
 
@@ -48,18 +50,65 @@ class StorageByteGroup(UserList[StorageByte]):
 
     @staticmethod
     def from_hexstring(hexstring: HexString, creation_step_index: int):
-        storage_bytes = [
-            StorageByte(b.encode("utf-8"), creation_step_index)
-            for b in hexstring.iter_bytes()
-        ]
-        return StorageByteGroup(storage_bytes)
+        return StorageByteGroup(
+            hexstring, [creation_step_index for _ in range(len(hexstring) // 2)]
+        )
 
     @staticmethod
     def deprecated_from_hexstring(hexstring: HexString) -> "StorageByteGroup":
         return StorageByteGroup.from_hexstring(hexstring, -1)
 
+    def clone(self) -> "StorageByteGroup":
+        return StorageByteGroup(self._hexstring, list(self._step_indexes))
+
+    def __add__(self, other: "StorageByteGroup") -> "StorageByteGroup":
+        return StorageByteGroup(
+            self._hexstring + other._hexstring, self._step_indexes + other._step_indexes
+        )
+
+    def __getitem__(self, index: slice) -> "StorageByteGroup":
+        start, stop = slice_to_start_stop(index, len(self))
+        if isinstance(index.step, int):
+            raise NotImplementedError()
+        hexstring_slice = self._hexstring[start * 2 : stop * 2]
+        step_indexes_slice = self._step_indexes[start:stop]
+        return StorageByteGroup(hexstring_slice, step_indexes_slice)
+
+    def __setitem__(self, index: slice, value: "StorageByteGroup") -> None:
+        start, stop = slice_to_start_stop(index, len(self))
+        self._hexstring = (
+            self._hexstring[: start * 2]
+            + value._hexstring
+            + self._hexstring[stop * 2 :]
+        )
+        self._step_indexes[start:stop] = value._step_indexes
+
+    def __len__(self) -> int:
+        return len(self._hexstring) // 2
+
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, StorageByteGroup)
-            and self.get_hexstring() == value.get_hexstring()
+            isinstance(value, StorageByteGroup) and self._hexstring == value._hexstring
+            # and self._step_indexes == value._step_indexes
         )
+
+    def __str__(self) -> str:
+        groups = self.split_by_dependencies()
+        return (
+            "<"
+            + ",".join(
+                f"({group._hexstring}|#{group._step_indexes[0]})" for group in groups
+            )
+            + ">"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+def slice_to_start_stop(slice: slice, len: int) -> tuple[int, int]:
+    if isinstance(slice.step, int):
+        raise NotImplementedError()
+    start = slice.start if isinstance(slice.start, int) else 0
+    stop = slice.stop if isinstance(slice.stop, int) else len
+    return start, stop

@@ -17,7 +17,7 @@ class Memory:
         return slice
 
     def get_all(self) -> StorageByteGroup:
-        return StorageByteGroup(self._memory)
+        return self._memory.clone()
 
     def set(self, offset: int, value: StorageByteGroup, step_index: int):
         if not value.get_hexstring():

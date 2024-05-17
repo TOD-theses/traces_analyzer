@@ -91,14 +91,21 @@ class TraceEVM:
     def _check_call_context_changes(
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
+        # TODO: refactor, maybe return an enum for the type of call change
+        # and in a second call actually get the call context?
         current_call_context = self.env.current_call_context
         next_call_context = update_call_context(
             self.env.current_call_context, instruction, output_oracle.depth
         )
 
-        if next_call_context.depth > self.env.current_call_context.depth:
+        if next_call_context is current_call_context:
+            return
+
+        assert output_oracle.depth
+
+        if output_oracle.depth > current_call_context.depth:
             self.env.on_call_enter(next_call_context)
-        elif next_call_context.depth < self.env.current_call_context.depth:
+        elif output_oracle.depth < current_call_context.depth:
             self._update_call_context_on_exit(next_call_context)
             call = current_call_context.initiating_instruction
             # update stack and memory
@@ -108,7 +115,7 @@ class TraceEVM:
             else:
                 # for CREATE and CREATE2 and exceptional halts
                 self._apply_stack_oracle(output_oracle)
-        elif next_call_context is not self.env.current_call_context:
+        else:
             # immediate call exit (call to EOA or precompiled contract)
             # we create new call frames so that returndata will point to this call
             # and it shows up in the call tree

@@ -29,9 +29,11 @@ def test_storage_byte_group_concats_hexstrings():
 def test_storage_byte_group_slice_hexstrings():
     group = StorageByteGroup.from_hexstring(HexString("abcd1234"), 1)
 
-    group_slice = group[1:3]
-
-    assert group_slice.get_hexstring() == HexString("cd12")
+    assert group[1:3].get_hexstring() == "cd12"
+    assert group[:3].get_hexstring() == "abcd12"
+    assert group[1:].get_hexstring() == "cd1234"
+    assert group[:].get_hexstring() == "abcd1234"
+    assert group[0:0].get_hexstring() == ""
 
 
 def test_storage_byte_group_assign_slice_hexstrings():
@@ -40,12 +42,6 @@ def test_storage_byte_group_assign_slice_hexstrings():
     group[1:3] = StorageByteGroup.from_hexstring(HexString("11"), 1)
 
     assert group.get_hexstring() == HexString("ab1134")
-
-
-def test_storage_byte_group_iterate_bytes():
-    group = StorageByteGroup.from_hexstring(HexString("abcd"), 1)
-
-    assert all(b._created_at_step_index == 1 for b in group)
 
 
 def test_storage_byte_group_depends_on_instruction_indexes():
@@ -70,3 +66,13 @@ def test_storage_byte_group_split_by_dependencies():
     assert groups[0].depends_on_instruction_indexes() == {1}
     assert groups[1].depends_on_instruction_indexes() == {2}
     assert groups[2].depends_on_instruction_indexes() == {1}
+
+
+def test_storage_byte_group_clone():
+    group = StorageByteGroup.from_hexstring(HexString("abcd"), 1)
+
+    clone = group.clone()
+    assert group == clone
+
+    group[:] = StorageByteGroup()
+    assert group != clone
