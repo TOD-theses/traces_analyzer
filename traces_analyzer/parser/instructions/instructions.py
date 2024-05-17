@@ -89,7 +89,7 @@ class CALL(CallInstruction):
     flow_spec = combine(
         stack_arg(0),
         balance_transfer(current_storage_address(), stack_arg(1), stack_arg(2)),
-        calldata_write(mem_range(stack_peek(3), stack_peek(4))),
+        calldata_write(mem_range(stack_arg(3), stack_arg(4))),
         stack_arg(5),
         stack_arg(6),
     )
@@ -124,16 +124,15 @@ class CALL(CallInstruction):
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
         success = StorageByteGroup.from_hexstring(
-            output_oracle.stack[0], env.current_step_index
+            output_oracle.stack[0],
+            self.step_index,
         )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
             memory=[
                 MemoryWrite(
                     offset,
-                    StorageByteGroup.from_hexstring(
-                        return_data_slice, env.current_step_index
-                    ),
+                    StorageByteGroup.from_hexstring(return_data_slice, self.step_index),
                 )
             ],
         )
@@ -179,16 +178,14 @@ class STATICCALL(CallInstruction):
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
         success = StorageByteGroup.from_hexstring(
-            output_oracle.stack[0], env.current_step_index
+            output_oracle.stack[0], self.step_index
         )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
             memory=[
                 MemoryWrite(
                     offset,
-                    StorageByteGroup.from_hexstring(
-                        return_data_slice, env.current_step_index
-                    ),
+                    StorageByteGroup.from_hexstring(return_data_slice, self.step_index),
                 )
             ],
         )
@@ -237,16 +234,14 @@ class DELEGATECALL(CallInstruction):
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
         success = StorageByteGroup.from_hexstring(
-            output_oracle.stack[0], env.current_step_index
+            output_oracle.stack[0], self.step_index
         )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
             memory=[
                 MemoryWrite(
                     offset,
-                    StorageByteGroup.from_hexstring(
-                        return_data_slice, env.current_step_index
-                    ),
+                    StorageByteGroup.from_hexstring(return_data_slice, self.step_index),
                 )
             ],
         )
@@ -280,6 +275,7 @@ class CALLCODE(CallInstruction):
         size = size_access.value.get_hexstring().as_int()
         if size == 0:
             return StorageWrites()
+        # TODO: also set stack here instead of using the oracle in the trace_evm
         return_data = child_call_context.return_data
         return_data_slice = return_data[:size]
         return StorageWrites(memory=[MemoryWrite(offset, return_data_slice)])
@@ -293,16 +289,14 @@ class CALLCODE(CallInstruction):
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
         success = StorageByteGroup.from_hexstring(
-            output_oracle.stack[0], env.current_step_index
+            output_oracle.stack[0], self.step_index
         )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
             memory=[
                 MemoryWrite(
                     offset,
-                    StorageByteGroup.from_hexstring(
-                        return_data_slice, env.current_step_index
-                    ),
+                    StorageByteGroup.from_hexstring(return_data_slice, self.step_index),
                 )
             ],
         )

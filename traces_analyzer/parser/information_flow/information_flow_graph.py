@@ -6,13 +6,15 @@ from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTA
 from traces_analyzer.parser.instructions.instruction import Instruction
 
 if TYPE_CHECKING:
-    graph_type = MultiDiGraph[int]
+    InformationFlowGraph = MultiDiGraph[int]
 else:
-    graph_type = DiGraph
+    InformationFlowGraph = DiGraph
 
 
-def build_information_flow_graph(instructions: Sequence[Instruction]) -> graph_type:
-    graph: graph_type = MultiDiGraph()
+def build_information_flow_graph(
+    instructions: Sequence[Instruction],
+) -> InformationFlowGraph:
+    graph: InformationFlowGraph = MultiDiGraph()
 
     graph.add_node(PRESTATE, instruction=None)
 

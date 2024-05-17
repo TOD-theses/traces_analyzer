@@ -5,6 +5,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
+from traces_analyzer.parser.information_flow.information_flow_graph import (
+    InformationFlowGraph,
+)
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow
 from traces_analyzer.parser.instructions.instructions import (
     CREATE,
@@ -248,3 +251,28 @@ def _test_mem_access(value: TestVal, offset=0, step_index=-1) -> MemoryAccess:
 
 def _test_stack_pushes(values: Iterable[TestVal], step_index=-1) -> list[StackPush]:
     return [StackPush(_test_group(x, step_index)) for x in values]
+
+
+def assert_flow_dependencies(
+    information_flow_graph: InformationFlowGraph,
+    name_lookup: _TestCounter,
+    expected_dependencies: Iterable[tuple[str, set[int | str]]],
+):
+    """For each tuple (instruction_name, dependencies), assert that this instruction depends exactly on all dependencies"""
+    for name, should_depend_on in expected_dependencies:
+        edges = sorted(information_flow_graph.in_edges(name_lookup.lookup(name)))
+        expected_edges = sorted(
+            [
+                (
+                    name_lookup.lookup(dependency_name)
+                    if isinstance(dependency_name, str)
+                    else dependency_name,
+                    name_lookup.lookup(name),
+                )
+                for dependency_name in should_depend_on
+            ]
+        )
+        assert edges == expected_edges, (
+            f"Instruction '{name}' should depend on '{should_depend_on}."
+            f" Found {edges}, expected {expected_edges}'."
+        )

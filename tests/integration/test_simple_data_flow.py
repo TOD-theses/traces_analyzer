@@ -3,6 +3,7 @@ from tests.test_utils.test_utils import (
     _test_oracle,
     _test_push_steps,
     _test_root,
+    assert_flow_dependencies,
 )
 from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
@@ -53,46 +54,34 @@ def test_simple_information_flow() -> None:
         (InstructionMetadata(LOG1.opcode, step_index.next("log1")), _test_oracle()),
     ]
 
-    instructions = []
-    for instruction_metadata, oracle in steps:
-        instructions.append(evm.step(instruction_metadata, oracle))
-
+    instructions = [evm.step(instr, oracle) for instr, oracle in steps]
     information_flow_graph = build_information_flow_graph(instructions)
 
-    assert len(instructions) == len(steps)
-    assert len(information_flow_graph) == len(steps) + 1
-
-    expected_dependencies: list[tuple[str, set[str]]] = [
-        ("push_mstore_0", set()),
-        ("push_mstore_1", set()),
-        ("mstore", {"push_mstore_0", "push_mstore_1"}),
-        ("push_mcopy_0", set()),
-        ("push_mcopy_1", set()),
-        ("push_mcopy_2", set()),
-        ("mcopy", {"push_mcopy_0", "push_mcopy_1", "push_mcopy_2", "push_mstore_0"}),
-        ("push_keccak256_0", set()),
-        ("push_keccak256_1", set()),
-        ("keccak256", {"push_keccak256_0", "push_keccak256_1", "push_mstore_0"}),
-        ("push_mstore2_0", set()),
-        ("mstore_2", {"push_mstore2_0", "keccak256"}),
-        ("push_log1_0", set()),
-        ("push_log1_1", set()),
-        ("push_log1_2", set()),
-        ("log1", {"push_log1_0", "push_log1_1", "push_log1_2", "keccak256"}),
-    ]
-
-    for name, should_depend_on in expected_dependencies:
-        edges = sorted(information_flow_graph.in_edges(step_index.lookup(name)))
-        expected_edges = sorted(
-            [
-                (step_index.lookup(dependency_name), step_index.lookup(name))
-                for dependency_name in should_depend_on
-            ]
-        )
-        assert edges == expected_edges, (
-            f"Instruction '{name}' should depend on '{should_depend_on}."
-            f" Found {edges}, expected {expected_edges}'."
-        )
+    assert_flow_dependencies(
+        information_flow_graph,
+        step_index,
+        [
+            ("push_mstore_0", set()),
+            ("push_mstore_1", set()),
+            ("mstore", {"push_mstore_0", "push_mstore_1"}),
+            ("push_mcopy_0", set()),
+            ("push_mcopy_1", set()),
+            ("push_mcopy_2", set()),
+            (
+                "mcopy",
+                {"push_mcopy_0", "push_mcopy_1", "push_mcopy_2", "push_mstore_0"},
+            ),
+            ("push_keccak256_0", set()),
+            ("push_keccak256_1", set()),
+            ("keccak256", {"push_keccak256_0", "push_keccak256_1", "push_mstore_0"}),
+            ("push_mstore2_0", set()),
+            ("mstore_2", {"push_mstore2_0", "keccak256"}),
+            ("push_log1_0", set()),
+            ("push_log1_1", set()),
+            ("push_log1_2", set()),
+            ("log1", {"push_log1_0", "push_log1_1", "push_log1_2", "keccak256"}),
+        ],
+    )
 
     # test if edge attributes are set
     keccak_log_edge = information_flow_graph[step_index.lookup("keccak256")][

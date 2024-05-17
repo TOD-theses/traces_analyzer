@@ -4,6 +4,7 @@ from tests.test_utils.test_utils import (
     _test_oracle,
     _test_push_steps,
     _test_root,
+    assert_flow_dependencies,
 )
 from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
@@ -87,37 +88,17 @@ def test_persistent_storage_across_calls() -> None:
         ),
     ]
 
-    instructions = []
-    for instruction_metadata, oracle in steps:
-        instructions.append(evm.step(instruction_metadata, oracle))
-
+    instructions = [evm.step(instr, oracle) for instr, oracle in steps]
     information_flow_graph = build_information_flow_graph(instructions)
 
-    assert len(instructions) == len(steps)
-    assert len(information_flow_graph) == len(steps) + 1
-
-    expected_dependencies: list[tuple[str, set[str | int]]] = [
-        ("sload_root", {"push_sload_root_0", PRESTATE}),
-        ("sload_child", {"push_sload_child_0", "push_sstore_0"}),
-    ]
-
-    for name, should_depend_on in expected_dependencies:
-        edges = sorted(information_flow_graph.in_edges(step_index.lookup(name)))
-        expected_edges = sorted(
-            [
-                (
-                    step_index.lookup(dependency_name)
-                    if isinstance(dependency_name, str)
-                    else dependency_name,
-                    step_index.lookup(name),
-                )
-                for dependency_name in should_depend_on
-            ]
-        )
-        assert edges == expected_edges, (
-            f"Instruction '{name}' should depend on '{should_depend_on}."
-            f" Found {edges}, expected {expected_edges}'."
-        )
+    assert_flow_dependencies(
+        information_flow_graph,
+        step_index,
+        [
+            ("sload_root", {"push_sload_root_0", PRESTATE}),
+            ("sload_child", {"push_sload_child_0", "push_sstore_0"}),
+        ],
+    )
 
 
 def test_persistent_storage_is_dropped_on_revert() -> None:
@@ -175,34 +156,13 @@ def test_persistent_storage_is_dropped_on_revert() -> None:
             _test_oracle(depth=2),
         ),
     ]
-
-    instructions = []
-    for instruction_metadata, oracle in steps:
-        instructions.append(evm.step(instruction_metadata, oracle))
-
+    instructions = [evm.step(instr, oracle) for instr, oracle in steps]
     information_flow_graph = build_information_flow_graph(instructions)
 
-    assert len(instructions) == len(steps)
-    assert len(information_flow_graph) == len(steps) + 1
-
-    expected_dependencies: list[tuple[str, set[str | int]]] = [
-        ("sload", {"push_sload_0", PRESTATE}),
-    ]
-
-    for name, should_depend_on in expected_dependencies:
-        edges = sorted(information_flow_graph.in_edges(step_index.lookup(name)))
-        expected_edges = sorted(
-            [
-                (
-                    step_index.lookup(dependency_name)
-                    if isinstance(dependency_name, str)
-                    else dependency_name,
-                    step_index.lookup(name),
-                )
-                for dependency_name in should_depend_on
-            ]
-        )
-        assert edges == expected_edges, (
-            f"Instruction '{name}' should depend on '{should_depend_on}."
-            f" Found {edges}, expected {expected_edges}'."
-        )
+    assert_flow_dependencies(
+        information_flow_graph,
+        step_index,
+        [
+            ("sload", {"push_sload_0", PRESTATE}),
+        ],
+    )
