@@ -294,7 +294,7 @@ def _oracle_stack_peek_node(
 ):
     index = args[0].result.get_hexstring().as_int()
     value = output_oracle.stack[index]
-    if not len(value) == 64:
+    if value.size() != 64:
         value = value.as_size(32)
     result = StorageByteGroup.from_hexstring(value, env.current_step_index)
 

@@ -18,9 +18,9 @@ class StorageByteGroup:
     def __init__(
         self, hexstring: HexString = HexString(""), step_indexes: list[int] = []
     ) -> None:
-        if len(hexstring) // 2 != len(step_indexes):
+        if hexstring.size() != len(step_indexes):
             raise Exception(
-                f"The hexstring size does not match the step_indexes length: {len(hexstring)//2} vs {len(step_indexes)}"
+                f"The hexstring size does not match the step_indexes length: {hexstring.size()} vs {len(step_indexes)}"
             )
 
         self._hexstring = hexstring
@@ -51,7 +51,7 @@ class StorageByteGroup:
     @staticmethod
     def from_hexstring(hexstring: HexString, creation_step_index: int):
         return StorageByteGroup(
-            hexstring, [creation_step_index for _ in range(len(hexstring) // 2)]
+            hexstring, [creation_step_index for _ in range(hexstring.size())]
         )
 
     @staticmethod
@@ -84,7 +84,7 @@ class StorageByteGroup:
         self._step_indexes[start:stop] = value._step_indexes
 
     def __len__(self) -> int:
-        return len(self._hexstring) // 2
+        return self._hexstring.size()
 
     def __eq__(self, value: object) -> bool:
         return (

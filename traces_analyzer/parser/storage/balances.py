@@ -32,8 +32,8 @@ class Balances(CloneableStorage):
 
     @staticmethod
     def _format_addr(addr: HexString) -> HexString:
-        if len(addr) != 40:
+        if addr.size() != 20:
             raise InvalidAddressException(
-                f"Tried to use address {addr} with length {len(addr) / 2} for balance lookup"
+                f"Tried to use address {addr} with length {addr.size()} for balance lookup"
             )
         return addr.lower()

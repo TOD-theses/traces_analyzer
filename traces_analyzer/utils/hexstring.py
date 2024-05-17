@@ -1,5 +1,4 @@
 from collections import UserString
-from collections.abc import Iterable
 
 
 class HexString(UserString):
@@ -23,15 +22,15 @@ class HexString(UserString):
 
     def as_size(self, n: int) -> "HexString":
         """Return 0-padded last n bytes"""
+        if self.size() == n:
+            return self
         if n == 0:
             return self[0:0]
         return self[-2 * n :].rjust(2 * n, "0")
 
-    def iter_bytes(self) -> Iterable["HexString"]:
-        if not len(self):
-            return
-        for i in range(0, len(self), 2):
-            yield self[i : i + 2]
+    def size(self) -> int:
+        """Size in bytes"""
+        return len(self) // 2
 
     def __int__(self) -> int:
         return int(self.data, 16)

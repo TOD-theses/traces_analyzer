@@ -1,6 +1,9 @@
 # analysis output
 out/
 
+# performance benchmark
+output.prof
+
 # traces
 traces/**/*
 sample_traces/**/*

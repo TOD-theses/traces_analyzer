@@ -60,7 +60,7 @@ def _test_balances(balances: dict[str | HexString, int] = {}) -> Balances:
 def _test_addr(addr: str | HexString) -> HexString:
     if isinstance(addr, str):
         addr = HexString(addr)
-    if len(addr) != 40:
+    if addr.size() != 20:
         addr = addr.as_address()
     return addr
 
@@ -84,8 +84,8 @@ def _test_group32(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
         return hexstring
     if isinstance(hexstring, str):
         hexstring = HexString(hexstring)
-    if len(hexstring) < 32:
-        padding = HexString("0" * (64 - len(hexstring)))
+    if hexstring.size() < 32:
+        padding = HexString("00" * (32 - hexstring.size()))
         hexstring = padding + hexstring
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
