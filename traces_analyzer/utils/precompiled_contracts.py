@@ -17,5 +17,7 @@ def is_precompiled_contract(addr: HexString) -> bool:
     return addr_to_precompiled_contract_name(addr) is not None
 
 
-def addr_to_precompiled_contract_name(addr: HexString, default: str | None = None) -> str | None:
+def addr_to_precompiled_contract_name(
+    addr: HexString, default: str | None = None
+) -> str | None:
     return _ADDR_TO_NAME.get(addr.as_int(), default)

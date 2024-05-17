@@ -22,7 +22,9 @@ class StorageByteGroup(UserList[StorageByte]):
         super().__init__(storage_bytes)
 
     def get_hexstring(self) -> HexString:
-        x: list[str] = [storage_byte._byte.decode("utf-8") for storage_byte in self.data]
+        x: list[str] = [
+            storage_byte._byte.decode("utf-8") for storage_byte in self.data
+        ]
         return HexString("".join(x))
 
     def depends_on_instruction_indexes(self) -> set[int]:
@@ -46,7 +48,10 @@ class StorageByteGroup(UserList[StorageByte]):
 
     @staticmethod
     def from_hexstring(hexstring: HexString, creation_step_index: int):
-        storage_bytes = [StorageByte(b.encode("utf-8"), creation_step_index) for b in hexstring.iter_bytes()]
+        storage_bytes = [
+            StorageByte(b.encode("utf-8"), creation_step_index)
+            for b in hexstring.iter_bytes()
+        ]
         return StorageByteGroup(storage_bytes)
 
     @staticmethod
@@ -54,4 +59,7 @@ class StorageByteGroup(UserList[StorageByte]):
         return StorageByteGroup.from_hexstring(hexstring, -1)
 
     def __eq__(self, value: object) -> bool:
-        return isinstance(value, StorageByteGroup) and self.get_hexstring() == value.get_hexstring()
+        return (
+            isinstance(value, StorageByteGroup)
+            and self.get_hexstring() == value.get_hexstring()
+        )

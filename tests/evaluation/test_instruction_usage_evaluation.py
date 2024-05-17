@@ -1,5 +1,7 @@
 import json
-from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
+from traces_analyzer.evaluation.instruction_usage_evaluation import (
+    InstructionUsageEvaluation,
+)
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 

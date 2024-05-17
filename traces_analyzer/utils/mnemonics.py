@@ -152,7 +152,9 @@ _OPCODE_HEX_TO_NAME = {
     "0xFF": "SELFDESTRUCT",
 }
 
-_OPCODE_TO_NAME = dict((int(opcode_hex, 16), name) for opcode_hex, name in _OPCODE_HEX_TO_NAME.items())
+_OPCODE_TO_NAME = dict(
+    (int(opcode_hex, 16), name) for opcode_hex, name in _OPCODE_HEX_TO_NAME.items()
+)
 
 _NAME_TO_OPCODE = dict((name, opcode) for opcode, name in _OPCODE_TO_NAME.items())
 

@@ -1,9 +1,17 @@
 from typing import Iterable
 from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow
-from traces_analyzer.parser.instructions.instructions import CREATE, CREATE2, PUSH32, CallInstruction
+from traces_analyzer.parser.instructions.instructions import (
+    CREATE,
+    CREATE2,
+    PUSH32,
+    CallInstruction,
+)
 from traces_analyzer.parser.storage.address_key_storage import AddressKeyStorage
 from traces_analyzer.parser.storage.balances import Balances
 from traces_analyzer.parser.storage.memory import Memory
@@ -80,7 +88,9 @@ def _test_mem(memory: TestVal, step_index=-1) -> Memory:
     return mem
 
 
-def _test_address_key_storage(tables: dict[str | HexString, dict[str | HexString, TestVal]], step_index=-1):
+def _test_address_key_storage(
+    tables: dict[str | HexString, dict[str | HexString, TestVal]], step_index=-1
+):
     storage = AddressKeyStorage()
     for addr, table in tables.items():
         addr_hexstring = _test_addr(addr)
@@ -153,8 +163,10 @@ def mock_env(
     stack_contents: list[TestVal] | None = None,
     memory_content: TestVal | None = None,
     balances: dict[str | HexString, int] | None = None,
-    persistent_storage: dict[str | HexString, dict[str | HexString, TestVal]] | None = None,
-    transient_storage: dict[str | HexString, dict[str | HexString, TestVal]] | None = None,
+    persistent_storage: dict[str | HexString, dict[str | HexString, TestVal]]
+    | None = None,
+    transient_storage: dict[str | HexString, dict[str | HexString, TestVal]]
+    | None = None,
 ):
     env = MagicMock(spec=ParsingEnvironment)
     env.current_step_index = step_index
@@ -173,8 +185,14 @@ def mock_env(
     return env
 
 
-def _test_oracle(stack: list[str | HexString] = [], memory: str | HexString = "", depth=1) -> InstructionOutputOracle:
-    return InstructionOutputOracle([_test_hexstring(x).as_size(32) for x in stack], _test_hexstring(memory), depth)
+def _test_oracle(
+    stack: Iterable[str | HexString] = [],
+    memory: str | HexString = "",
+    depth: int | None = 1,
+) -> InstructionOutputOracle:
+    return InstructionOutputOracle(
+        [_test_hexstring(x).as_size(32) for x in stack], _test_hexstring(memory), depth
+    )
 
 
 class _TestCounter:
@@ -194,14 +212,22 @@ class _TestCounter:
 
 
 def _test_push_steps(
-    values: Iterable[str | HexString], counter: _TestCounter, base_name="push", base_oracle=_test_oracle()
+    values: Iterable[str | HexString],
+    counter: _TestCounter,
+    base_name="push",
+    base_oracle=_test_oracle(),
 ) -> list[tuple[InstructionMetadata, InstructionOutputOracle]]:
     pushes: list[tuple[InstructionMetadata, InstructionOutputOracle]] = []
     oracle_stack = list(base_oracle.stack)
     for i, val in enumerate(values):
         oracle_stack = [_test_hexstring(val)] + oracle_stack
         oracle = _test_oracle(oracle_stack, base_oracle.memory, base_oracle.depth)
-        pushes.append((InstructionMetadata(PUSH32.opcode, counter.next(f"{base_name}_{i}")), oracle))
+        pushes.append(
+            (
+                InstructionMetadata(PUSH32.opcode, counter.next(f"{base_name}_{i}")),
+                oracle,
+            )
+        )
     return pushes
 
 

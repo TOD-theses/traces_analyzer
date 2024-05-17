@@ -7,13 +7,19 @@ from traces_analyzer.parser.environment.call_context import CallContext
 
 
 class Storage(ABC):
-    def on_call_enter(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_enter(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         pass
 
-    def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_exit(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         pass
 
-    def on_revert(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_revert(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         pass
 
 
@@ -30,17 +36,23 @@ class ContextSpecificStorage(Storage, Generic[StorageContent]):
         self._content_stack: list[StorageContent] = [content_factory()]
 
     @override
-    def on_call_enter(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_enter(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_call_enter(current_call_context, next_call_context)
         self._content_stack.append(self._factory())
 
     @override
-    def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_exit(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_call_exit(current_call_context, next_call_context)
         self._call_exit()
 
     @override
-    def on_revert(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_revert(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_revert(current_call_context, next_call_context)
         self._call_exit()
 
@@ -70,17 +82,23 @@ class RevertableStorage(Storage, Generic[CloneableStorageType]):
         self._snapshots: list[CloneableStorageType] = []
 
     @override
-    def on_call_enter(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_enter(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_call_enter(current_call_context, next_call_context)
         self._snapshots.append(self._storage.clone())
 
     @override
-    def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_exit(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_call_exit(current_call_context, next_call_context)
         self._snapshots.pop()
 
     @override
-    def on_revert(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_revert(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_revert(current_call_context, next_call_context)
         self._storage = self._snapshots.pop()
 

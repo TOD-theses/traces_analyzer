@@ -48,7 +48,11 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
         self._instructions_two: list[Instruction] = []
 
     @override
-    def on_instructions(self, first_instruction: Instruction | None, second_instruction: Instruction | None):
+    def on_instructions(
+        self,
+        first_instruction: Instruction | None,
+        second_instruction: Instruction | None,
+    ):
         if first_instruction:
             self._instructions_one.append(first_instruction)
 
@@ -59,7 +63,10 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
         self,
     ) -> tuple[list[Instruction], list[Instruction]]:
         comparison = _compare_instructions(
-            self._instructions_one, self._instructions_two, _get_location_opcode_key, _get_location_opcode_key
+            self._instructions_one,
+            self._instructions_two,
+            _get_location_opcode_key,
+            _get_location_opcode_key,
         )
         only_first: list[Instruction] = []
         only_second: list[Instruction] = []
@@ -70,7 +77,10 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
 
     def get_instructions_with_different_inputs(self) -> list[InstructionInputChange]:
         comparison = _compare_instructions(
-            self._instructions_one, self._instructions_two, _get_location_opcode_key, _get_location_opcode_inputs_key
+            self._instructions_one,
+            self._instructions_two,
+            _get_location_opcode_key,
+            _get_location_opcode_inputs_key,
         )
         changes = []
         for x in comparison:
@@ -79,12 +89,15 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
         return changes
 
 
-def _create_input_change(instruction_one: Instruction, instruction_two: Instruction) -> InstructionInputChange:
+def _create_input_change(
+    instruction_one: Instruction, instruction_two: Instruction
+) -> InstructionInputChange:
     stack_input_changes = _create_stack_input_changes(
         instruction_one.get_accesses().stack, instruction_two.get_accesses().stack
     )
     memory_change = _create_memory_input_change(
-        _get_mem_accesses_hexstring(instruction_one), _get_mem_accesses_hexstring(instruction_two)
+        _get_mem_accesses_hexstring(instruction_one),
+        _get_mem_accesses_hexstring(instruction_two),
     )
 
     return InstructionInputChange(
@@ -115,19 +128,32 @@ def _create_stack_input_changes(
     return changes
 
 
-def _create_memory_input_change(memory_one: HexString | None, memory_two: HexString | None) -> MemoryInputChange | None:
+def _create_memory_input_change(
+    memory_one: HexString | None, memory_two: HexString | None
+) -> MemoryInputChange | None:
     if memory_one == memory_two:
         return None
     return MemoryInputChange(memory_one, memory_two)
 
 
 def _get_location_opcode_key(instruction: Instruction) -> tuple:
-    return (instruction.call_context.code_address, instruction.program_counter, instruction.opcode)
+    return (
+        instruction.call_context.code_address,
+        instruction.program_counter,
+        instruction.opcode,
+    )
 
 
 def _get_location_opcode_inputs_key(instruction: Instruction) -> tuple:
-    stack_inputs_tuple = tuple(stack_access.value.get_hexstring() for stack_access in instruction.get_accesses().stack)
-    return (*_get_location_opcode_key(instruction), stack_inputs_tuple, _get_mem_accesses_hexstring(instruction))
+    stack_inputs_tuple = tuple(
+        stack_access.value.get_hexstring()
+        for stack_access in instruction.get_accesses().stack
+    )
+    return (
+        *_get_location_opcode_key(instruction),
+        stack_inputs_tuple,
+        _get_mem_accesses_hexstring(instruction),
+    )
 
 
 def _get_mem_accesses_hexstring(instruction: Instruction) -> HexString | None:
@@ -193,7 +219,10 @@ def _compare_groups_by(
         changes: list[tuple[Instruction, Instruction]] = []
 
         for i in range(common_length):
-            if get_key(items_first[i]).__hash__() != get_key(items_second[i]).__hash__():
+            if (
+                get_key(items_first[i]).__hash__()
+                != get_key(items_second[i]).__hash__()
+            ):
                 changes.append((items_first[i], items_second[i]))
         if len(items_first) != len(items_second) or changes:
             all_changes.append(

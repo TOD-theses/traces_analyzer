@@ -5,7 +5,10 @@ from typing import Mapping, TypedDict
 from typing_extensions import override
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
     balance_transfer,
@@ -38,7 +41,11 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
 from traces_analyzer.parser.information_flow.information_flow_spec import FlowSpec
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import MemoryWrite, StackPush, StorageWrites
+from traces_analyzer.parser.storage.storage_writes import (
+    MemoryWrite,
+    StackPush,
+    StorageWrites,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 CallDataNew = TypedDict(
@@ -116,17 +123,30 @@ class CALL(CallInstruction):
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
+        success = StorageByteGroup.from_hexstring(
+            output_oracle.stack[0], env.current_step_index
+        )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
-            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
+            memory=[
+                MemoryWrite(
+                    offset,
+                    StorageByteGroup.from_hexstring(
+                        return_data_slice, env.current_step_index
+                    ),
+                )
+            ],
         )
 
 
 @dataclass(frozen=True, repr=False, eq=False)
 class STATICCALL(CallInstruction):
     flow_spec = combine(
-        stack_arg(0), stack_arg(1), calldata_write(mem_range(stack_arg(2), stack_arg(3))), stack_arg(4), stack_arg(5)
+        stack_arg(0),
+        stack_arg(1),
+        calldata_write(mem_range(stack_arg(2), stack_arg(3))),
+        stack_arg(4),
+        stack_arg(5),
     )
 
     @override
@@ -158,17 +178,30 @@ class STATICCALL(CallInstruction):
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
+        success = StorageByteGroup.from_hexstring(
+            output_oracle.stack[0], env.current_step_index
+        )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
-            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
+            memory=[
+                MemoryWrite(
+                    offset,
+                    StorageByteGroup.from_hexstring(
+                        return_data_slice, env.current_step_index
+                    ),
+                )
+            ],
         )
 
 
 @dataclass(frozen=True, repr=False, eq=False)
 class DELEGATECALL(CallInstruction):
     flow_spec = combine(
-        stack_arg(0), stack_arg(1), calldata_write(mem_range(stack_arg(2), stack_arg(3))), stack_arg(4), stack_arg(5)
+        stack_arg(0),
+        stack_arg(1),
+        calldata_write(mem_range(stack_arg(2), stack_arg(3))),
+        stack_arg(4),
+        stack_arg(5),
     )
 
     @override
@@ -203,10 +236,19 @@ class DELEGATECALL(CallInstruction):
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
+        success = StorageByteGroup.from_hexstring(
+            output_oracle.stack[0], env.current_step_index
+        )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
-            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
+            memory=[
+                MemoryWrite(
+                    offset,
+                    StorageByteGroup.from_hexstring(
+                        return_data_slice, env.current_step_index
+                    ),
+                )
+            ],
         )
 
 
@@ -222,7 +264,9 @@ class CALLCODE(CallInstruction):
 
     @override
     def get_data(self) -> CallDataNew:
-        assert self.flow.writes.calldata is not None, f"Tried to get CALLCODE data but contains no memory: {self.flow}"
+        assert (
+            self.flow.writes.calldata is not None
+        ), f"Tried to get CALLCODE data but contains no memory: {self.flow}"
         return {
             "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
             "value": self.flow.accesses.stack[2].value,
@@ -248,10 +292,19 @@ class CALLCODE(CallInstruction):
         offset = offset_access.value.get_hexstring().as_int()
         size = size_access.value.get_hexstring().as_int()
         return_data_slice = output_oracle.memory[offset * 2 : (offset + size) * 2]
-        success = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
+        success = StorageByteGroup.from_hexstring(
+            output_oracle.stack[0], env.current_step_index
+        )
         return StorageWrites(
             stack_pushes=[StackPush(success)],
-            memory=[MemoryWrite(offset, StorageByteGroup.from_hexstring(return_data_slice, env.current_step_index))],
+            memory=[
+                MemoryWrite(
+                    offset,
+                    StorageByteGroup.from_hexstring(
+                        return_data_slice, env.current_step_index
+                    ),
+                )
+            ],
         )
 
 
@@ -275,10 +328,16 @@ SDIV = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_
 
 MOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 SMOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
-ADDMOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2)))
-MULMOD = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2)))
+ADDMOD = _make_flow(
+    combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2))
+)
+MULMOD = _make_flow(
+    combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1), stack_arg(2))
+)
 EXP = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
-SIGNEXTEND = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
+SIGNEXTEND = _make_flow(
+    combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1))
+)
 LT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 GT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 SLT = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
@@ -294,21 +353,32 @@ SHL = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_a
 SHR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 SAR = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0), stack_arg(1)))
 
-KECCAK256 = _make_flow(combine(stack_push(oracle_stack_peek(0)), mem_range(stack_arg(0), stack_arg(1))))
+KECCAK256 = _make_flow(
+    combine(stack_push(oracle_stack_peek(0)), mem_range(stack_arg(0), stack_arg(1)))
+)
 ADDRESS = _make_flow(stack_push(current_storage_address()))
-BALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(to_size(stack_arg(0), 20))))
+BALANCE = _make_flow(
+    combine(stack_push(oracle_stack_peek(0)), balance_of(to_size(stack_arg(0), 20)))
+)
 ORIGIN = _make_flow(stack_push(oracle_stack_peek(0)))
 CALLER = _make_flow(stack_push(oracle_stack_peek(0)))
 CALLVALUE = _make_flow(stack_push(callvalue()))
 CALLDATALOAD = _make_flow(stack_push(calldata_range(stack_arg(0), 32)))
 CALLDATASIZE = _make_flow(stack_push(calldata_size()))
-CALLDATACOPY = _make_flow(mem_write(stack_arg(0), calldata_range(stack_arg(1), stack_arg(2))))
+CALLDATACOPY = _make_flow(
+    mem_write(stack_arg(0), calldata_range(stack_arg(1), stack_arg(2)))
+)
 
 CODESIZE = _make_flow(combine(stack_push(oracle_stack_peek(0))))
 
-CODECOPY = _make_flow(mem_write(stack_arg(0), oracle_mem_range_peek(stack_arg(1), stack_arg(2))))
+CODECOPY = _make_flow(
+    mem_write(stack_arg(0), oracle_mem_range_peek(stack_arg(1), stack_arg(2)))
+)
 EXTCODECOPY = _make_flow(
-    combine(stack_arg(0), mem_write(stack_arg(1), oracle_mem_range_peek(stack_arg(2), stack_arg(3))))
+    combine(
+        stack_arg(0),
+        mem_write(stack_arg(1), oracle_mem_range_peek(stack_arg(2), stack_arg(3))),
+    )
 )
 
 
@@ -316,7 +386,9 @@ GASPRICE = _make_flow(stack_push(oracle_stack_peek(0)))
 EXTCODESIZE = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
 
 RETURNDATASIZE = _make_flow(stack_push(return_data_size()))
-RETURNDATACOPY = _make_flow(mem_write(stack_arg(0), return_data_range(stack_arg(1), stack_arg(2))))
+RETURNDATACOPY = _make_flow(
+    mem_write(stack_arg(0), return_data_range(stack_arg(1), stack_arg(2)))
+)
 
 
 EXTCODEHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
@@ -327,7 +399,9 @@ NUMBER = _make_flow(stack_push(oracle_stack_peek(0)))
 PREVRANDAO = _make_flow(stack_push(oracle_stack_peek(0)))
 GASLIMIT = _make_flow(stack_push(oracle_stack_peek(0)))
 CHAINID = _make_flow(stack_push(oracle_stack_peek(0)))
-SELFBALANCE = _make_flow(combine(stack_push(oracle_stack_peek(0)), balance_of(current_storage_address())))
+SELFBALANCE = _make_flow(
+    combine(stack_push(oracle_stack_peek(0)), balance_of(current_storage_address()))
+)
 BASEFEE = _make_flow(stack_push(oracle_stack_peek(0)))
 BLOBHASH = _make_flow(combine(stack_push(oracle_stack_peek(0)), stack_arg(0)))
 BLOBBASEFEE = _make_flow(stack_push(oracle_stack_peek(0)))
@@ -421,10 +495,22 @@ SWAP16 = _make_flow(combine(stack_set(0, stack_peek(16)), stack_set(16, stack_pe
 
 LOG0 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1))))
 LOG1 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2)))
-LOG2 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3)))
-LOG3 = _make_flow(combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3), stack_arg(4)))
+LOG2 = _make_flow(
+    combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3))
+)
+LOG3 = _make_flow(
+    combine(
+        mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3), stack_arg(4)
+    )
+)
 LOG4 = _make_flow(
-    combine(mem_range(stack_arg(0), stack_arg(1)), stack_arg(2), stack_arg(3), stack_arg(4), stack_arg(5))
+    combine(
+        mem_range(stack_arg(0), stack_arg(1)),
+        stack_arg(2),
+        stack_arg(3),
+        stack_arg(4),
+        stack_arg(5),
+    )
 )
 
 
@@ -433,7 +519,8 @@ class CREATE(Instruction):
     # NOTE: we don't use the correct creation address here,
     # but we probably should sync it with how we compute it later on
     flow_spec = combine(
-        balance_transfer(current_storage_address(), "abcd1234" * 8, stack_arg(0)), mem_range(stack_arg(1), stack_arg(2))
+        balance_transfer(current_storage_address(), "abcd1234" * 8, stack_arg(0)),
+        mem_range(stack_arg(1), stack_arg(2)),
     )
 
     def get_return_writes(self, child_call_context: CallContext) -> StorageWrites:

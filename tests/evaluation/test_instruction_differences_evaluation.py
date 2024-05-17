@@ -13,8 +13,9 @@ from traces_analyzer.features.extractors.instruction_differences import (
     StackInputChange,
     InstructionInputChange,
 )
-from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
-from traces_analyzer.parser.environment.call_context import CallContext
+from traces_analyzer.evaluation.instruction_differences_evaluation import (
+    InstructionDifferencesEvaluation,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CALL, SLOAD
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
@@ -36,7 +37,8 @@ def test_instruction_differences_evaluation() -> None:
                 call_context,
                 _test_flow(
                     accesses=StorageAccesses(
-                        stack=_test_stack_accesses(["val_1", "val_2", "val_3"]), memory=[_test_mem_access("1111")]
+                        stack=_test_stack_accesses(["val_1", "val_2", "val_3"]),
+                        memory=[_test_mem_access("1111")],
                     )
                 ),
             ),
@@ -48,13 +50,22 @@ def test_instruction_differences_evaluation() -> None:
                 call_context,
                 _test_flow(
                     accesses=StorageAccesses(
-                        stack=_test_stack_accesses(["val_1", "val_2_x", "val_3_x"]), memory=[_test_mem_access("2222")]
+                        stack=_test_stack_accesses(["val_1", "val_2_x", "val_3_x"]),
+                        memory=[_test_mem_access("2222")],
                     )
                 ),
             ),
             stack_input_changes=[
-                StackInputChange(index=1, first_value=HexString("val_2"), second_value=HexString("val_2_x")),
-                StackInputChange(index=2, first_value=HexString("val_3"), second_value=HexString("val_3_x")),
+                StackInputChange(
+                    index=1,
+                    first_value=HexString("val_2"),
+                    second_value=HexString("val_2_x"),
+                ),
+                StackInputChange(
+                    index=2,
+                    first_value=HexString("val_3"),
+                    second_value=HexString("val_3_x"),
+                ),
             ],
             memory_input_change=MemoryInputChange(HexString("1111"), HexString("2222")),
         )
@@ -131,7 +142,10 @@ def test_instruction_differences_evaluation() -> None:
                             "address": _test_hash_addr("0xtest").with_prefix(),
                             "pc": 10,
                         },
-                        "instruction": {"opcode": SLOAD.opcode, "stack_inputs": ("0x0key",)},
+                        "instruction": {
+                            "opcode": SLOAD.opcode,
+                            "stack_inputs": ("0x0key",),
+                        },
                     }
                 ],
                 "only_in_second_trace": [],

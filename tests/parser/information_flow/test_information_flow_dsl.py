@@ -8,7 +8,10 @@ from tests.test_utils.test_utils import (
     _test_root,
     mock_env,
 )
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
@@ -30,7 +33,6 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     return_data_range,
     return_data_size,
     return_data_write,
-    selfdestruct,
     stack_arg,
     stack_peek,
     stack_push,
@@ -40,13 +42,15 @@ from traces_analyzer.parser.information_flow.information_flow_dsl import (
     transient_storage_set,
 )
 from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import (
-    FlowNode,
     FlowNodeWithResult,
     FlowWithResult,
 )
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import ReturnDataAccess, StorageAccesses, StorageWrites
+from traces_analyzer.parser.storage.storage_writes import (
+    ReturnDataAccess,
+    StorageAccesses,
+    StorageWrites,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -56,7 +60,10 @@ class _TestFlowNode(FlowNodeWithResult):
         self.value = value
 
     def _get_result(
-        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+        self,
+        args: tuple[FlowWithResult, ...],
+        env: ParsingEnvironment,
+        output_oracle: InstructionOutputOracle,
     ) -> FlowWithResult:
         return FlowWithResult(
             accesses=StorageAccesses(),
@@ -65,7 +72,9 @@ class _TestFlowNode(FlowNodeWithResult):
         )
 
 
-def _test_node(value: StorageByteGroup | HexString | str, step_index=-1) -> FlowNodeWithResult:
+def _test_node(
+    value: StorageByteGroup | HexString | str, step_index=-1
+) -> FlowNodeWithResult:
     return _TestFlowNode(value=_test_group(value, step_index))
 
 
@@ -163,7 +172,9 @@ def test_mem_range_stack_args():
 
 
 def test_mem_size():
-    content = _test_group32("aa", 0) + _test_group("bb" * 28, 1) + _test_group("cc" * 4, 2)
+    content = (
+        _test_group32("aa", 0) + _test_group("bb" * 28, 1) + _test_group("cc" * 4, 2)
+    )
     env = mock_env(memory_content=content, step_index=1234)
 
     flow = mem_size().compute(env, _test_oracle())
@@ -182,16 +193,25 @@ def test_persistent_storage_known():
     call_context = _test_child()
     address = call_context.storage_address
     key = HexString("1234").as_size(32)
-    env = mock_env(current_call_context=call_context, persistent_storage={address: {key: _test_group32("00112233", 1)}})
+    env = mock_env(
+        current_call_context=call_context,
+        persistent_storage={address: {key: _test_group32("00112233", 1)}},
+    )
 
     flow = persistent_storage_get(_test_node(key, 2)).compute(env, _test_oracle())
 
     assert len(flow.accesses.persistent_storage) == 1
     assert flow.accesses.persistent_storage[0].address == address
     assert flow.accesses.persistent_storage[0].key.get_hexstring() == key
-    assert flow.accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
-    assert flow.accesses.persistent_storage[0].value.get_hexstring() == HexString("00112233").as_size(32)
-    assert flow.accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {1}
+    assert flow.accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {
+        2
+    }
+    assert flow.accesses.persistent_storage[0].value.get_hexstring() == HexString(
+        "00112233"
+    ).as_size(32)
+    assert flow.accesses.persistent_storage[
+        0
+    ].value.depends_on_instruction_indexes() == {1}
 
     assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
     assert flow.result.depends_on_instruction_indexes() == {1}
@@ -202,7 +222,11 @@ def test_persistent_storage_unknown():
     address = call_context.storage_address
     value = HexString("00112233").as_size(32)
     key = HexString("1234").as_size(32)
-    env = mock_env(current_call_context=call_context, step_index=1, persistent_storage={address: {}})
+    env = mock_env(
+        current_call_context=call_context,
+        step_index=1,
+        persistent_storage={address: {}},
+    )
     oracle = _test_oracle(stack=[value])
 
     flow = persistent_storage_get(_test_node(key, 2)).compute(env, oracle)
@@ -210,9 +234,13 @@ def test_persistent_storage_unknown():
     assert len(flow.accesses.persistent_storage) == 1
     assert flow.accesses.persistent_storage[0].address == address
     assert flow.accesses.persistent_storage[0].key.get_hexstring() == key
-    assert flow.accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
+    assert flow.accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {
+        2
+    }
     assert flow.accesses.persistent_storage[0].value.get_hexstring() == value
-    assert flow.accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {PRESTATE}
+    assert flow.accesses.persistent_storage[
+        0
+    ].value.depends_on_instruction_indexes() == {PRESTATE}
 
     assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
     assert flow.result.depends_on_instruction_indexes() == {1}
@@ -222,16 +250,25 @@ def test_transient_storage_get():
     call_context = _test_child()
     address = call_context.storage_address
     key = HexString("1234").as_size(32)
-    env = mock_env(current_call_context=call_context, transient_storage={address: {key: _test_group32("00112233", 1)}})
+    env = mock_env(
+        current_call_context=call_context,
+        transient_storage={address: {key: _test_group32("00112233", 1)}},
+    )
 
     flow = transient_storage_get(_test_node(key, 2)).compute(env, _test_oracle())
 
     assert len(flow.accesses.transient_storage) == 1
     assert flow.accesses.transient_storage[0].address == address
     assert flow.accesses.transient_storage[0].key.get_hexstring() == key
-    assert flow.accesses.transient_storage[0].key.depends_on_instruction_indexes() == {2}
-    assert flow.accesses.transient_storage[0].value.get_hexstring() == HexString("00112233").as_size(32)
-    assert flow.accesses.transient_storage[0].value.depends_on_instruction_indexes() == {1}
+    assert flow.accesses.transient_storage[0].key.depends_on_instruction_indexes() == {
+        2
+    }
+    assert flow.accesses.transient_storage[0].value.get_hexstring() == HexString(
+        "00112233"
+    ).as_size(32)
+    assert flow.accesses.transient_storage[
+        0
+    ].value.depends_on_instruction_indexes() == {1}
 
     assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
     assert flow.result.depends_on_instruction_indexes() == {1}
@@ -247,14 +284,18 @@ def test_transient_storage_set():
         transient_storage={},
     )
 
-    flow = transient_storage_set(_test_node(key, 2), _test_node(value, 1)).compute(env, _test_oracle())
+    flow = transient_storage_set(_test_node(key, 2), _test_node(value, 1)).compute(
+        env, _test_oracle()
+    )
 
     assert len(flow.writes.transient_storage) == 1
     assert flow.writes.transient_storage[0].address == address
     assert flow.writes.transient_storage[0].key.get_hexstring() == key
     assert flow.writes.transient_storage[0].key.depends_on_instruction_indexes() == {2}
     assert flow.writes.transient_storage[0].value.get_hexstring() == value
-    assert flow.writes.transient_storage[0].value.depends_on_instruction_indexes() == {1}
+    assert flow.writes.transient_storage[0].value.depends_on_instruction_indexes() == {
+        1
+    }
 
 
 def test_stack_push_const():
@@ -327,10 +368,15 @@ def test_current_address():
 def test_balance_of_known_address():
     env = mock_env(balances={"abcd": 1234})
 
-    flow = balance_of(_test_node(HexString("abcd").as_address(), 2)).compute(env, _test_oracle())
+    flow = balance_of(_test_node(HexString("abcd").as_address(), 2)).compute(
+        env, _test_oracle()
+    )
 
     assert len(flow.accesses.balance) == 1
-    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert (
+        flow.accesses.balance[0].address.get_hexstring()
+        == HexString("abcd").as_address()
+    )
     assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {2}
     assert flow.accesses.balance[0].last_modified_step_index == 1234
 
@@ -338,10 +384,15 @@ def test_balance_of_known_address():
 def test_balance_of_unknown_address():
     env = mock_env(balances={})
 
-    flow = balance_of(_test_node(HexString("abcd").as_address(), 2)).compute(env, _test_oracle())
+    flow = balance_of(_test_node(HexString("abcd").as_address(), 2)).compute(
+        env, _test_oracle()
+    )
 
     assert len(flow.accesses.balance) == 1
-    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert (
+        flow.accesses.balance[0].address.get_hexstring()
+        == HexString("abcd").as_address()
+    )
     assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {2}
     assert flow.accesses.balance[0].last_modified_step_index == -1
 
@@ -355,13 +406,20 @@ def test_balance_transfer():
     flow = balance_transfer(from_node, to_node, value_node).compute(env, _test_oracle())
 
     assert len(flow.accesses.balance) == 1
-    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert (
+        flow.accesses.balance[0].address.get_hexstring()
+        == HexString("abcd").as_address()
+    )
     assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {1}
     assert flow.accesses.balance[0].last_modified_step_index == 4
 
     assert len(flow.writes.balance_transfers) == 1
-    assert flow.writes.balance_transfers[0].address_from.get_hexstring() == _test_addr("abcd")
-    assert flow.writes.balance_transfers[0].address_to.get_hexstring() == _test_addr("cdef")
+    assert flow.writes.balance_transfers[0].address_from.get_hexstring() == _test_addr(
+        "abcd"
+    )
+    assert flow.writes.balance_transfers[0].address_to.get_hexstring() == _test_addr(
+        "cdef"
+    )
     assert flow.writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
 
 
@@ -373,15 +431,22 @@ def test_selfdestruct():
     flow = selfdestruct(from_node, to_node).compute(env, _test_oracle())
 
     assert len(flow.accesses.balance) == 1
-    assert flow.accesses.balance[0].address.get_hexstring() == HexString("abcd").as_address()
+    assert (
+        flow.accesses.balance[0].address.get_hexstring()
+        == HexString("abcd").as_address()
+    )
     assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {1}
     assert flow.accesses.balance[0].last_modified_step_index == 4
 
     assert len(flow.writes.selfdestruct) == 1
-    assert flow.writes.selfdestruct[0].address_from.get_hexstring() == _test_addr("abcd")
+    assert flow.writes.selfdestruct[0].address_from.get_hexstring() == _test_addr(
+        "abcd"
+    )
     assert flow.writes.selfdestruct[0].address_to.get_hexstring() == _test_addr("cdef")
 
-    assert env.balances.last_modified_at_step_index(HexString("cdef").as_address()) == 1234
+    assert (
+        env.balances.last_modified_at_step_index(HexString("cdef").as_address()) == 1234
+    )
 
 
 def test_to_size_noop():
@@ -418,31 +483,43 @@ def test_return_data_range_noop():
     env = mock_env()
     env.last_executed_sub_context.return_data = _test_group("1234", 1)
 
-    flow = return_data_range(_test_node("2"), _test_node("0")).compute(env, _test_oracle())
+    flow = return_data_range(_test_node("2"), _test_node("0")).compute(
+        env, _test_oracle()
+    )
 
     assert len(flow.result) == 0
-    assert flow.accesses.return_data == None
+    assert flow.accesses.return_data is None
 
 
 def test_return_data_range_if_not_set():
     env = mock_env()
     env.last_executed_sub_context.return_data = _test_group("", 1234)
 
-    flow = return_data_range(_test_node("2"), _test_node("4")).compute(env, _test_oracle())
+    flow = return_data_range(_test_node("2"), _test_node("4")).compute(
+        env, _test_oracle()
+    )
 
     assert len(flow.result) == 0
-    assert flow.accesses.return_data == ReturnDataAccess(2, 4, _test_group(""))
+    assert flow.accesses.return_data
+    assert flow.accesses.return_data.offset == 2
+    assert flow.accesses.return_data.size == 4
+    assert flow.accesses.return_data.value.get_hexstring() == ""
     assert len(flow.accesses.return_data.value.depends_on_instruction_indexes()) == 0
 
 
 def test_return_data_range():
     env = mock_env()
-    env.last_executed_sub_context.return_data = _test_group("11223344556677889900", 1234)
+    env.last_executed_sub_context.return_data = _test_group(
+        "11223344556677889900", 1234
+    )
 
-    flow = return_data_range(_test_node("2"), _test_node("4")).compute(env, _test_oracle())
+    flow = return_data_range(_test_node("2"), _test_node("4")).compute(
+        env, _test_oracle()
+    )
 
     assert len(flow.result) == 4
     assert flow.result == _test_group("33445566")
+    assert flow.accesses.return_data
     assert flow.accesses.return_data == ReturnDataAccess(2, 4, _test_group("33445566"))
     assert flow.accesses.return_data.value.depends_on_instruction_indexes() == {1234}
 

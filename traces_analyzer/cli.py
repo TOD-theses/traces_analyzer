@@ -9,28 +9,58 @@ from networkx import ancestors
 from tqdm import tqdm
 
 from traces_analyzer.evaluation.evaluation import Evaluation
-from traces_analyzer.evaluation.instruction_differences_evaluation import InstructionDifferencesEvaluation
-from traces_analyzer.evaluation.instruction_usage_evaluation import InstructionUsageEvaluation
+from traces_analyzer.evaluation.instruction_differences_evaluation import (
+    InstructionDifferencesEvaluation,
+)
+from traces_analyzer.evaluation.instruction_usage_evaluation import (
+    InstructionUsageEvaluation,
+)
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
-from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
-from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
+from traces_analyzer.features.extractors.instruction_differences import (
+    InstructionDifferencesFeatureExtractor,
+)
+from traces_analyzer.features.extractors.instruction_usages import (
+    InstructionUsagesFeatureExtractor,
+)
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
-from traces_analyzer.features.feature_extraction_runner import FeatureExtractionRunner, RunInfo
-from traces_analyzer.features.feature_extractor import SingleToDoubleInstructionFeatureExtractor
+from traces_analyzer.features.feature_extraction_runner import (
+    FeatureExtractionRunner,
+    RunInfo,
+)
+from traces_analyzer.features.feature_extractor import (
+    SingleToDoubleInstructionFeatureExtractor,
+)
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import TraceBundle
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.events_parser import parse_events
-from traces_analyzer.parser.information_flow.information_flow_graph import build_information_flow_graph
-from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, STATICCALL
-from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
+from traces_analyzer.parser.information_flow.information_flow_graph import (
+    build_information_flow_graph,
+)
+from traces_analyzer.parser.instructions.instructions import (
+    CALL,
+    LOG0,
+    LOG1,
+    LOG2,
+    LOG3,
+    STATICCALL,
+)
+from traces_analyzer.parser.instructions_parser import (
+    TransactionParsingInfo,
+    parse_instructions,
+)
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 
 def main():  # pragma: no cover
     parser = ArgumentParser(description="Analyze bundles of transaction traces")
-    parser.add_argument("--out", type=Path, default=Path("out"), help="The directory where the reports should be saved")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=Path("out"),
+        help="The directory where the reports should be saved",
+    )
     parser.add_argument(
         "--bundles",
         type=Path,
@@ -74,8 +104,12 @@ def analyze_transactions_in_dir(bundle: TraceBundle, out_dir: Path, verbose: boo
         verbose,
     )
 
-    save_evaluations(evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json")
-    save_evaluations(evaluations_attacker, out_dir / f"{bundle.id}_{bundle.tx_attack.hash}.json")
+    save_evaluations(
+        evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json"
+    )
+    save_evaluations(
+        evaluations_attacker, out_dir / f"{bundle.id}_{bundle.tx_attack.hash}.json"
+    )
 
     if verbose:
         print(f"Transaction: {bundle.tx_victim.hash}")
@@ -101,12 +135,20 @@ def compare_traces(
         InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
 
-    transaction_one = parse_instructions(TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[0]))
-    transaction_two = parse_instructions(TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[1]))
+    transaction_one = parse_instructions(
+        TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[0])
+    )
+    transaction_two = parse_instructions(
+        TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[1])
+    )
 
     runner = FeatureExtractionRunner(
         RunInfo(
-            feature_extractors=[tod_source_analyzer, instruction_changes_analyzer, instruction_usage_analyzers],
+            feature_extractors=[
+                tod_source_analyzer,
+                instruction_changes_analyzer,
+                instruction_usage_analyzers,
+            ],
             transactions=(transaction_one, transaction_two),
         )
     )
@@ -124,17 +166,25 @@ def compare_traces(
         print()
         all_instructions = transaction_one.instructions
         tod_source_instruction = tod_source_analyzer.get_tod_source().instruction_one
-        changed_instructions = instruction_changes_analyzer.get_instructions_with_different_inputs()
+        changed_instructions = (
+            instruction_changes_analyzer.get_instructions_with_different_inputs()
+        )
         # only memory input changes for CALL/LOGs
         potential_sinks = [
             i
             for i in changed_instructions
-            if i.opcode in [CALL.opcode, LOG0.opcode, LOG1.opcode, LOG2.opcode, LOG3.opcode] and i.memory_input_change
+            if i.opcode
+            in [CALL.opcode, LOG0.opcode, LOG1.opcode, LOG2.opcode, LOG3.opcode]
+            and i.memory_input_change
         ]
-        potential_sink_instructions = [change.instruction_one for change in potential_sinks]
+        potential_sink_instructions = [
+            change.instruction_one for change in potential_sinks
+        ]
 
         tod_source_instruction_index = all_instructions.index(tod_source_instruction)
-        potential_sink_instruction_indexes = [all_instructions.index(instr) for instr in potential_sink_instructions]
+        potential_sink_instruction_indexes = [
+            all_instructions.index(instr) for instr in potential_sink_instructions
+        ]
         sink_instruction_index = min(potential_sink_instruction_indexes)
         sink_instruction = all_instructions[sink_instruction_index]
 
@@ -145,8 +195,13 @@ def compare_traces(
         source_to_sink_contexts: list[CallContext] = []
 
         # NOTE: call contexts will go up and down and repeat themselves
-        for instr in all_instructions[tod_source_instruction_index : sink_instruction_index + 1]:
-            if not source_to_sink_contexts or instr.call_context is not source_to_sink_contexts[-1]:
+        for instr in all_instructions[
+            tod_source_instruction_index : sink_instruction_index + 1
+        ]:
+            if (
+                not source_to_sink_contexts
+                or instr.call_context is not source_to_sink_contexts[-1]
+            ):
                 source_to_sink_contexts.append(instr.call_context)
 
         """
@@ -163,7 +218,10 @@ def compare_traces(
         print(f"{source_indent}> {tod_source_instruction}")
         for context in source_to_sink_contexts:
             # print(context)
-            signature = signature_lookup.lookup_by_hex(context.calldata[:8].get_hexstring()) or context.calldata[:8]
+            signature = (
+                signature_lookup.lookup_by_hex(context.calldata[:8].get_hexstring())
+                or context.calldata[:8]
+            )
             indent = "  " * (context.depth - min_depth)
             print(f"{indent}> {context.code_address}.{signature}")
         print(f"{sink_indent}> {sink_instruction}")

@@ -1,6 +1,19 @@
-from tests.test_utils.test_utils import _TestCounter, _test_group, _test_oracle, _test_push_steps, _test_root, mock_env
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.instructions.instructions import MLOAD, MSTORE, PUSH32, STATICCALL
+from tests.test_utils.test_utils import (
+    _TestCounter,
+    _test_oracle,
+    _test_push_steps,
+    _test_root,
+    mock_env,
+)
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
+from traces_analyzer.parser.instructions.instructions import (
+    MLOAD,
+    MSTORE,
+    STATICCALL,
+)
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
 
@@ -32,8 +45,16 @@ def test_trace_evm_staticcall_precompiled() -> None:
     step_index = _TestCounter(0)
 
     steps: list[tuple[InstructionMetadata, InstructionOutputOracle]] = [
-        *_test_push_steps(reversed(["0x2", "0xabcdef" + "00" * 29]), step_index, "push_mstore", _test_oracle()),
-        (InstructionMetadata(MSTORE.opcode, step_index.next("mstore")), _test_oracle(memory="0000abcdef")),
+        *_test_push_steps(
+            reversed(["0x2", "0xabcdef" + "00" * 29]),
+            step_index,
+            "push_mstore",
+            _test_oracle(),
+        ),
+        (
+            InstructionMetadata(MSTORE.opcode, step_index.next("mstore")),
+            _test_oracle(memory="0000abcdef"),
+        ),
         *_test_push_steps(
             reversed([hex(1234), hex(2), hex(2), hex(3), hex(10), hex(32)]),
             step_index,

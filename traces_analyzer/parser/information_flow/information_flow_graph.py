@@ -19,7 +19,16 @@ def build_information_flow_graph(instructions: Sequence[Instruction]) -> graph_t
     for instruction in instructions:
         graph.add_node(instruction.step_index, instruction=instruction)
 
-        for step_index, access, storage_byte_group in instruction.get_accesses().get_dependencies():
-            graph.add_edge(step_index, instruction.step_index, access=access, storage_byte_group=storage_byte_group)
+        for (
+            step_index,
+            access,
+            storage_byte_group,
+        ) in instruction.get_accesses().get_dependencies():
+            graph.add_edge(
+                step_index,
+                instruction.step_index,
+                access=access,
+                storage_byte_group=storage_byte_group,
+            )
 
     return graph

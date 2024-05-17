@@ -52,21 +52,28 @@ class CallTree:
                 parent_node = tree
 
         if not parent_node:
-            raise Exception(f"Could not find parent tree node to add callcontext. {self} - {call_context}")
+            raise Exception(
+                f"Could not find parent tree node to add callcontext. {self} - {call_context}"
+            )
         new_node = CallTree(call_context)
         parent_node.children.append(new_node)
-        new_node.parent = parent_node
+        new_node.parent = parent_node  # type: ignore
 
     def __str__(self) -> str:
         hex_signature = self.call_context.calldata[:8]
-        signature = signature_lookup.lookup_by_hex(hex_signature.get_hexstring()) or hex_signature
+        signature = (
+            signature_lookup.lookup_by_hex(hex_signature.get_hexstring())
+            or hex_signature
+        )
         s = f"> {self.call_context.code_address}.{signature}(...)\n"
         for child in self.children:
             s += "  " + "  ".join(str(child).splitlines(True))
         return s
 
 
-def build_call_tree(root_call_context: CallContext, instructions: Sequence[Instruction]) -> CallTree:
+def build_call_tree(
+    root_call_context: CallContext, instructions: Sequence[Instruction]
+) -> CallTree:
     current_call_context = root_call_context
     call_tree = CallTree(current_call_context)
 
@@ -104,7 +111,9 @@ def update_call_context(
         call_config = instruction.get_data()
         code_address = call_config["address"]
         storage_address = (
-            call_config["address"] if call_config["updates_storage_address"] else current_call_context.storage_address
+            call_config["address"]
+            if call_config["updates_storage_address"]
+            else current_call_context.storage_address
         )
         caller = current_call_context.storage_address
         if isinstance(instruction, DELEGATECALL):
@@ -122,7 +131,12 @@ def update_call_context(
         )
     elif creates_contract(instruction, current_call_context.depth, next_depth):
         # NOTE: we currently do not compute the correct addresses
-        created_contract_addr = "0x" + sha256(current_call_context.code_address.with_prefix().encode()).hexdigest()[12:]
+        created_contract_addr = (
+            "0x"
+            + sha256(
+                current_call_context.code_address.with_prefix().encode()
+            ).hexdigest()[12:]
+        )
         next_call_context = CallContext(
             parent=current_call_context,
             initiating_instruction=instruction,
@@ -135,9 +149,9 @@ def update_call_context(
             storage_address=HexString(created_contract_addr),
             is_contract_initialization=True,
         )
-    elif makes_normal_halt(instruction, current_call_context.depth, next_depth) or makes_exceptional_halt(
+    elif makes_normal_halt(
         instruction, current_call_context.depth, next_depth
-    ):
+    ) or makes_exceptional_halt(instruction, current_call_context.depth, next_depth):
         if not current_call_context.parent:
             raise UnexpectedDepthChange(
                 "Tried to return to parent call context, while already being at the root."
@@ -183,16 +197,28 @@ def update_call_context(
 def enters_call_context(
     instruction: Instruction, current_depth: int, next_depth: int
 ) -> TypeGuard[CALL | STATICCALL | DELEGATECALL | CALLCODE]:
-    return current_depth + 1 == next_depth and isinstance(instruction, (CALL, STATICCALL, DELEGATECALL, CALLCODE))
+    return current_depth + 1 == next_depth and isinstance(
+        instruction, (CALL, STATICCALL, DELEGATECALL, CALLCODE)
+    )
 
 
-def creates_contract(instruction: Instruction, current_depth: int, next_depth: int) -> TypeGuard[CREATE | CREATE2]:
-    return current_depth + 1 == next_depth and isinstance(instruction, (CREATE, CREATE2))
+def creates_contract(
+    instruction: Instruction, current_depth: int, next_depth: int
+) -> TypeGuard[CREATE | CREATE2]:
+    return current_depth + 1 == next_depth and isinstance(
+        instruction, (CREATE, CREATE2)
+    )
 
 
 def makes_normal_halt(instruction: Instruction, current_depth: int, next_depth: int):
-    return current_depth - 1 == next_depth and isinstance(instruction, (STOP, REVERT, RETURN, SELFDESTRUCT))
+    return current_depth - 1 == next_depth and isinstance(
+        instruction, (STOP, REVERT, RETURN, SELFDESTRUCT)
+    )
 
 
-def makes_exceptional_halt(instruction: Instruction, current_depth: int, next_depth: int):
-    return current_depth - 1 == next_depth and not isinstance(instruction, (STOP, REVERT, RETURN, SELFDESTRUCT))
+def makes_exceptional_halt(
+    instruction: Instruction, current_depth: int, next_depth: int
+):
+    return current_depth - 1 == next_depth and not isinstance(
+        instruction, (STOP, REVERT, RETURN, SELFDESTRUCT)
+    )

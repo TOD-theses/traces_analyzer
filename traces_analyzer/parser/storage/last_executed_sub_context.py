@@ -13,17 +13,23 @@ class LastExecutedSubContextStorage(Storage):
         self._last_executed_sub_context_stack: list[CallContext | None] = [None]
 
     @override
-    def on_call_enter(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_enter(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_call_enter(current_call_context, next_call_context)
         self._last_executed_sub_context_stack.append(None)
 
     @override
-    def on_call_exit(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_call_exit(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_call_exit(current_call_context, next_call_context)
         self._call_exit(current_call_context)
 
     @override
-    def on_revert(self, current_call_context: CallContext, next_call_context: CallContext):
+    def on_revert(
+        self, current_call_context: CallContext, next_call_context: CallContext
+    ):
         super().on_revert(current_call_context, next_call_context)
         self._call_exit(current_call_context)
 

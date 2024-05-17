@@ -13,7 +13,9 @@ class InstructionUsagesFeatureExtractor(SingleInstructionFeatureExtractor):
 
     def __init__(self) -> None:
         super().__init__()
-        self._used_opcodes_per_contract: dict[HexString, set[int]] = defaultdict(lambda: set())
+        self._used_opcodes_per_contract: dict[HexString, set[int]] = defaultdict(
+            lambda: set()
+        )
 
     @override
     def on_instruction(self, instruction: Instruction):

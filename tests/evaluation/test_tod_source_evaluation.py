@@ -11,8 +11,12 @@ from traces_analyzer.parser.instructions.instructions import SLOAD
 def test_tod_source_evaluation_found():
     tod_source = TODSource(
         found=True,
-        instruction_one=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]),
-        instruction_two=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]),
+        instruction_one=make_instruction(
+            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]
+        ),
+        instruction_two=make_instruction(
+            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]
+        ),
     )
 
     evaluation = TODSourceEvaluation(tod_source)
@@ -43,8 +47,12 @@ def test_tod_source_evaluation_found():
 def test_tod_source_serializable():
     tod_source = TODSource(
         found=True,
-        instruction_one=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]),
-        instruction_two=make_instruction(SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]),
+        instruction_one=make_instruction(
+            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x10"]
+        ),
+        instruction_two=make_instruction(
+            SLOAD, pc=1234, stack=_test_stack(["0x1122"]), stack_after=["0x20"]
+        ),
     )
 
     evaluation = TODSourceEvaluation(tod_source)

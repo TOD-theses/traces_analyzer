@@ -8,8 +8,15 @@ from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 class InstructionUsageEvaluation(Evaluation):
-    _type_key = "instruction_usage"
-    _type_name = "Instruction usage"
+    @property
+    @override
+    def _type_key(self):
+        return "instruction_usage"
+
+    @property
+    @override
+    def _type_name(self):
+        return "Instruction usage"
 
     def __init__(
         self,
@@ -40,10 +47,17 @@ class InstructionUsageEvaluation(Evaluation):
 
         return result
 
-    def _sorted_opcodes(self, opcodes: Mapping[HexString, Iterable[int]]) -> Mapping[HexString, list[str]]:
-        return dict((addr, [hex(op).upper().replace("X", "x") for op in sorted(ops)]) for addr, ops in opcodes.items())
+    def _sorted_opcodes(
+        self, opcodes: Mapping[HexString, Iterable[int]]
+    ) -> Mapping[HexString, list[str]]:
+        return dict(
+            (addr, [hex(op).upper().replace("X", "x") for op in sorted(ops)])
+            for addr, ops in opcodes.items()
+        )
 
-    def _relevant_opcodes(self, opcodes: Mapping[HexString, Iterable[int]]) -> Mapping[HexString, list[str]]:
+    def _relevant_opcodes(
+        self, opcodes: Mapping[HexString, Iterable[int]]
+    ) -> Mapping[HexString, list[str]]:
         relevant_opcodes: dict[HexString, Iterable[int]] = dict(
             (addr, self._filter_relevant_opcodes(ops)) for addr, ops in opcodes.items()
         )
@@ -58,6 +72,9 @@ class InstructionUsageEvaluation(Evaluation):
         merged: dict[HexString, Iterable[int]] = {}
 
         for addr in list(self._opcodes_one.keys()) + list(self._opcodes_two.keys()):
-            merged[addr] = set(list(self._opcodes_one.get(addr, set())) + list(self._opcodes_two.get(addr, set())))
+            merged[addr] = set(
+                list(self._opcodes_one.get(addr, set()))
+                + list(self._opcodes_two.get(addr, set()))
+            )
 
         return merged

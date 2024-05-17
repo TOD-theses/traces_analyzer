@@ -188,7 +188,9 @@ class StorageAccesses:
     callvalue: Sequence[CallvalueAccess] = ()
     return_data: ReturnDataAccess | None = None
 
-    def get_dependencies(self) -> Iterable[tuple[int, StorageAccess, StorageByteGroup | None]]:
+    def get_dependencies(
+        self,
+    ) -> Iterable[tuple[int, StorageAccess, StorageByteGroup | None]]:
         # TODO: unit test
         for stack_access in self.stack:
             for group in stack_access.value.split_by_dependencies():

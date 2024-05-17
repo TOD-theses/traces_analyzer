@@ -1,8 +1,14 @@
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_child, _test_hash_addr, _test_stack
-from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
-from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.instructions.instructions import JUMPDEST, POP, PUSH0, RETURN, REVERT, STOP
+from tests.test_utils.test_utils import _test_child, _test_stack
+from traces_analyzer.features.extractors.instruction_usages import (
+    InstructionUsagesFeatureExtractor,
+)
+from traces_analyzer.parser.instructions.instructions import (
+    JUMPDEST,
+    POP,
+    PUSH0,
+    STOP,
+)
 
 
 def test_instruction_usage_analyzer():
@@ -15,7 +21,9 @@ def test_instruction_usage_analyzer():
         make_instruction(STOP),
         make_instruction(JUMPDEST),
         make_instruction(PUSH0, stack_after=["0x0", "0x0"], call_context=child_context),
-        make_instruction(POP, stack=_test_stack(["0x0", "0x0"]), call_context=child_context),
+        make_instruction(
+            POP, stack=_test_stack(["0x0", "0x0"]), call_context=child_context
+        ),
         make_instruction(POP, stack=_test_stack(["0x0"]), call_context=child_context),
     ]
 

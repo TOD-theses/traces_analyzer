@@ -9,11 +9,167 @@ from tests.test_utils.test_utils import (
     _test_root,
     mock_env,
 )
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import *
+from traces_analyzer.parser.instructions.instructions import (
+    ADD,
+    ADDMOD,
+    ADDRESS,
+    AND,
+    BALANCE,
+    BASEFEE,
+    BLOBBASEFEE,
+    BLOBHASH,
+    BLOCKHASH,
+    BYTE,
+    CALL,
+    CALLCODE,
+    CALLDATACOPY,
+    CALLDATALOAD,
+    CALLDATASIZE,
+    CALLER,
+    CALLVALUE,
+    CHAINID,
+    CODECOPY,
+    CODESIZE,
+    COINBASE,
+    CREATE,
+    CREATE2,
+    DELEGATECALL,
+    DIV,
+    DUP1,
+    DUP10,
+    DUP11,
+    DUP12,
+    DUP13,
+    DUP14,
+    DUP15,
+    DUP16,
+    DUP2,
+    DUP3,
+    DUP4,
+    DUP5,
+    DUP6,
+    DUP7,
+    DUP8,
+    DUP9,
+    EQ,
+    EXP,
+    EXTCODECOPY,
+    EXTCODEHASH,
+    EXTCODESIZE,
+    GAS,
+    GASLIMIT,
+    GASPRICE,
+    GT,
+    INVALID,
+    ISZERO,
+    JUMP,
+    JUMPDEST,
+    JUMPI,
+    KECCAK256,
+    LOG0,
+    LOG1,
+    LOG2,
+    LOG3,
+    LOG4,
+    LT,
+    MCOPY,
+    MLOAD,
+    MOD,
+    MSIZE,
+    MSTORE,
+    MSTORE8,
+    MUL,
+    MULMOD,
+    NOT,
+    NUMBER,
+    OR,
+    ORIGIN,
+    PC,
+    POP,
+    PREVRANDAO,
+    PUSH0,
+    PUSH1,
+    PUSH10,
+    PUSH11,
+    PUSH12,
+    PUSH13,
+    PUSH14,
+    PUSH15,
+    PUSH16,
+    PUSH17,
+    PUSH18,
+    PUSH19,
+    PUSH2,
+    PUSH20,
+    PUSH21,
+    PUSH22,
+    PUSH23,
+    PUSH24,
+    PUSH25,
+    PUSH26,
+    PUSH27,
+    PUSH28,
+    PUSH29,
+    PUSH3,
+    PUSH30,
+    PUSH31,
+    PUSH32,
+    PUSH4,
+    PUSH5,
+    PUSH6,
+    PUSH7,
+    PUSH8,
+    PUSH9,
+    RETURN,
+    RETURNDATACOPY,
+    RETURNDATASIZE,
+    REVERT,
+    SAR,
+    SDIV,
+    SELFBALANCE,
+    SELFDESTRUCT,
+    SGT,
+    SHL,
+    SHR,
+    SIGNEXTEND,
+    SLOAD,
+    SLT,
+    SMOD,
+    SSTORE,
+    STATICCALL,
+    STOP,
+    SUB,
+    SWAP1,
+    SWAP10,
+    SWAP11,
+    SWAP12,
+    SWAP13,
+    SWAP14,
+    SWAP15,
+    SWAP16,
+    SWAP2,
+    SWAP3,
+    SWAP4,
+    SWAP5,
+    SWAP6,
+    SWAP7,
+    SWAP8,
+    SWAP9,
+    TIMESTAMP,
+    TLOAD,
+    TSTORE,
+    XOR,
+    get_instruction_class,
+)
 from traces_analyzer.parser.instructions_parser import InstructionMetadata
 from traces_analyzer.parser.trace_evm.trace_evm import parse_instruction
+from traces_analyzer.utils.hexstring import HexString
 
 
 _opcodes_to_instruction = [
@@ -180,9 +336,14 @@ InstructionType = TypeVar("InstructionType", bound=Instruction)
 
 
 def _test_parse_instruction(
-    instr: type[InstructionType], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    instr: type[InstructionType],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> InstructionType:
-    return cast(InstructionType, parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle))
+    return cast(
+        InstructionType,
+        parse_instruction(env, InstructionMetadata(instr.opcode, 0), output_oracle),
+    )
 
 
 simple_stack_instructions = [
@@ -267,22 +428,45 @@ def test_simple_stack_instructions() -> None:
         assert len(writes.stack_pops) == stack_inputs_n
         for i in range(stack_inputs_n):
             assert accesses.stack[i].index == i
-            assert accesses.stack[i].value.get_hexstring() == HexString(str(i)).as_size(32)
+            assert accesses.stack[i].value.get_hexstring() == HexString(str(i)).as_size(
+                32
+            )
 
         assert len(writes.stack_pushes) == stack_outputs_n
         for i in range(stack_outputs_n):
-            assert writes.stack_pushes[i].value.get_hexstring() == HexString(str(i)).as_size(32)
+            assert writes.stack_pushes[i].value.get_hexstring() == HexString(
+                str(i)
+            ).as_size(32)
             assert writes.stack_pushes[i].value.depends_on_instruction_indexes() == {3}
 
 
-DUP_N = [DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16]
+DUP_N = [
+    DUP1,
+    DUP2,
+    DUP3,
+    DUP4,
+    DUP5,
+    DUP6,
+    DUP7,
+    DUP8,
+    DUP9,
+    DUP10,
+    DUP11,
+    DUP12,
+    DUP13,
+    DUP14,
+    DUP15,
+    DUP16,
+]
 
 
 def test_dupn() -> None:
     for n, dup_type in enumerate(DUP_N):
         env = mock_env(
             step_index=3,
-            stack_contents=[_test_group(HexString(str(i)).as_size(32), i) for i in range(n + 1)],
+            stack_contents=[
+                _test_group(HexString(str(i)).as_size(32), i) for i in range(n + 1)
+            ],
         )
 
         dupn = _test_parse_instruction(dup_type, env, _test_oracle())
@@ -293,7 +477,9 @@ def test_dupn() -> None:
         assert accesses.stack[0].index == n
 
         assert len(writes.stack_pushes) == 1
-        assert writes.stack_pushes[0].value.get_hexstring() == HexString(str(n)).as_size(32)
+        assert writes.stack_pushes[0].value.get_hexstring() == HexString(
+            str(n)
+        ).as_size(32)
         assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {n}
 
 
@@ -322,7 +508,9 @@ def test_swapn() -> None:
         n += 1
         env = mock_env(
             step_index=3,
-            stack_contents=[_test_group(HexString(str(i)).as_size(32), i) for i in range(n + 1)],
+            stack_contents=[
+                _test_group(HexString(str(i)).as_size(32), i) for i in range(n + 1)
+            ],
         )
 
         swapn = _test_parse_instruction(swap_type, env, _test_oracle())
@@ -335,10 +523,14 @@ def test_swapn() -> None:
 
         assert len(writes.stack_sets) == 2
         assert writes.stack_sets[0].index == 0
-        assert writes.stack_sets[0].value.get_hexstring() == HexString(str(n)).as_size(32)
+        assert writes.stack_sets[0].value.get_hexstring() == HexString(str(n)).as_size(
+            32
+        )
         assert writes.stack_sets[0].value.depends_on_instruction_indexes() == {n}
         assert writes.stack_sets[1].index == n
-        assert writes.stack_sets[1].value.get_hexstring() == HexString(str(0)).as_size(32)
+        assert writes.stack_sets[1].value.get_hexstring() == HexString(str(0)).as_size(
+            32
+        )
         assert writes.stack_sets[1].value.depends_on_instruction_indexes() == {0}
 
 
@@ -349,7 +541,10 @@ def test_logn() -> None:
     for n, log_type in enumerate(LOG_N):
         env = mock_env(
             step_index=3,
-            stack_contents=([_test_group("2"), _test_group("4")] + [_test_group(HexString(str(i)).as_size(32), i) for i in range(n)]),  # type: ignore
+            stack_contents=(
+                [_test_group("2"), _test_group("4")]
+                + [_test_group(HexString(str(i)).as_size(32), i) for i in range(n)]
+            ),  # type: ignore
             memory_content="001122334455667788",
         )
 
@@ -363,7 +558,9 @@ def test_logn() -> None:
         assert accesses.stack[1].value.get_hexstring() == HexString("4").as_size(32)
         for i in range(n):
             assert accesses.stack[2 + i].index == 2 + i
-            assert accesses.stack[2 + i].value.get_hexstring() == HexString(str(i)).as_size(32)
+            assert accesses.stack[2 + i].value.get_hexstring() == HexString(
+                str(i)
+            ).as_size(32)
 
 
 def test_keccak256() -> None:
@@ -437,7 +634,9 @@ def test_mstore8() -> None:
 
 
 def test_msize() -> None:
-    content = _test_group32("aa", 0) + _test_group("bb" * 28, 1) + _test_group("cc" * 4, 2)
+    content = (
+        _test_group32("aa", 0) + _test_group("bb" * 28, 1) + _test_group("cc" * 4, 2)
+    )
     env = mock_env(memory_content=content, step_index=1234)
 
     msize = _test_parse_instruction(MSIZE, env, _test_oracle())
@@ -482,7 +681,11 @@ def test_sload_known() -> None:
     address = call_context.storage_address
     key = _test_group32("1234", 2)
     value = _test_group32("00112233", 1)
-    env = mock_env(step_index=3, stack_contents=[key], persistent_storage={address: {key.get_hexstring(): value}})
+    env = mock_env(
+        step_index=3,
+        stack_contents=[key],
+        persistent_storage={address: {key.get_hexstring(): value}},
+    )
 
     sload = _test_parse_instruction(SLOAD, env, _test_oracle())
 
@@ -519,7 +722,9 @@ def test_sload_unknown() -> None:
     assert accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
     assert accesses.persistent_storage[0].value.get_hexstring() == value
     # the value has not been set in this transaction, thus PRESTATE
-    assert accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {PRESTATE}
+    assert accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {
+        PRESTATE
+    }
 
     writes = sload.get_writes()
     assert len(writes.stack_pushes) == 1
@@ -553,7 +758,11 @@ def test_tload() -> None:
     address = call_context.storage_address
     key = _test_group32("1234", 2)
     value = _test_group32("00112233", 1)
-    env = mock_env(step_index=3, stack_contents=[key], transient_storage={address: {key.get_hexstring(): value}})
+    env = mock_env(
+        step_index=3,
+        stack_contents=[key],
+        transient_storage={address: {key.get_hexstring(): value}},
+    )
 
     tload = _test_parse_instruction(TLOAD, env, _test_oracle())
 
@@ -604,7 +813,10 @@ def test_address() -> None:
 
     writes = address.get_writes()
     assert len(writes.stack_pushes) == 1
-    assert writes.stack_pushes[0].value.get_hexstring().as_address() == call_context.storage_address
+    assert (
+        writes.stack_pushes[0].value.get_hexstring().as_address()
+        == call_context.storage_address
+    )
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
 
@@ -671,7 +883,9 @@ def test_origin() -> None:
 
     writes = origin.get_writes()
     assert len(writes.stack_pushes) == 1
-    assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr("origin")
+    assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr(
+        "origin"
+    )
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
 
@@ -685,7 +899,9 @@ def test_caller() -> None:
 
     writes = caller.get_writes()
     assert len(writes.stack_pushes) == 1
-    assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr("sender")
+    assert writes.stack_pushes[0].value.get_hexstring().as_address() == _test_hash_addr(
+        "sender"
+    )
     assert writes.stack_pushes[0].value.depends_on_instruction_indexes() == {2}
 
 
@@ -937,10 +1153,19 @@ def test_call_enter() -> None:
     assert writes.calldata.value.get_hexstring() == "33445566"
     assert writes.calldata.value.depends_on_instruction_indexes() == {1}
     assert len(writes.balance_transfers) == 1
-    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
-    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
-    assert writes.balance_transfers[0].address_to.get_hexstring() == _test_hash_addr("call target")
-    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {1}
+    assert (
+        writes.balance_transfers[0].address_from.get_hexstring()
+        == call_context.storage_address
+    )
+    assert writes.balance_transfers[
+        0
+    ].address_from.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].address_to.get_hexstring() == _test_hash_addr(
+        "call target"
+    )
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {
+        1
+    }
     assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x10
     assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
 
@@ -1019,10 +1244,19 @@ def test_callcode_enter() -> None:
     assert writes.calldata
     assert writes.calldata.value.get_hexstring() == "33445566"
     assert writes.calldata.value.depends_on_instruction_indexes() == {1}
-    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
-    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
-    assert writes.balance_transfers[0].address_to.get_hexstring() == _test_hash_addr("call target")
-    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {1}
+    assert (
+        writes.balance_transfers[0].address_from.get_hexstring()
+        == call_context.storage_address
+    )
+    assert writes.balance_transfers[
+        0
+    ].address_from.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].address_to.get_hexstring() == _test_hash_addr(
+        "call target"
+    )
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {
+        1
+    }
     assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x10
     assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
 
@@ -1092,10 +1326,17 @@ def test_create() -> None:
     assert accesses.balance[0].last_modified_step_index == 1
 
     writes = create.get_writes()
-    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
-    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
+    assert (
+        writes.balance_transfers[0].address_from.get_hexstring()
+        == call_context.storage_address
+    )
+    assert writes.balance_transfers[
+        0
+    ].address_from.depends_on_instruction_indexes() == {2}
     # NOTE: we don't compute the created address properly, so we don't test it here
-    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {
+        2
+    }
     assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
     assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
 
@@ -1124,10 +1365,17 @@ def test_create2() -> None:
     assert accesses.balance[0].last_modified_step_index == 1
 
     writes = create2.get_writes()
-    assert writes.balance_transfers[0].address_from.get_hexstring() == call_context.storage_address
-    assert writes.balance_transfers[0].address_from.depends_on_instruction_indexes() == {2}
+    assert (
+        writes.balance_transfers[0].address_from.get_hexstring()
+        == call_context.storage_address
+    )
+    assert writes.balance_transfers[
+        0
+    ].address_from.depends_on_instruction_indexes() == {2}
     # NOTE: we don't compute the created address properly, so we don't test it here
-    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {2}
+    assert writes.balance_transfers[0].address_to.depends_on_instruction_indexes() == {
+        2
+    }
     assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x1000
     assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
 
@@ -1154,7 +1402,12 @@ def test_selfdestruct() -> None:
 
     writes = selfdestruct.get_writes()
     assert len(writes.selfdestruct) == 1
-    assert writes.selfdestruct[0].address_from.get_hexstring() == call_context.storage_address
+    assert (
+        writes.selfdestruct[0].address_from.get_hexstring()
+        == call_context.storage_address
+    )
     assert writes.selfdestruct[0].address_from.depends_on_instruction_indexes() == {2}
-    assert writes.selfdestruct[0].address_to.get_hexstring() == _test_hash_addr("recipient")
+    assert writes.selfdestruct[0].address_to.get_hexstring() == _test_hash_addr(
+        "recipient"
+    )
     assert writes.selfdestruct[0].address_to.depends_on_instruction_indexes() == {1}

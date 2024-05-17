@@ -1,7 +1,5 @@
 from tests.test_utils.test_utils import _test_group, _test_mem
 from traces_analyzer.parser.storage.memory import Memory
-from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.utils.hexstring import HexString
 
 
 def test_memory_empty():

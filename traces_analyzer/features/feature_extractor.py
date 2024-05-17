@@ -15,7 +15,11 @@ class SingleInstructionFeatureExtractor(ABC):
 
 class DoulbeInstructionFeatureExtractor(ABC):
     @abstractmethod
-    def on_instructions(self, first_instruction: Instruction | None, second_instruction: Instruction | None):
+    def on_instructions(
+        self,
+        first_instruction: Instruction | None,
+        second_instruction: Instruction | None,
+    ):
         """Hook each instruction of two traces"""
         pass
 
@@ -23,7 +27,9 @@ class DoulbeInstructionFeatureExtractor(ABC):
 A = TypeVar("A", bound=SingleInstructionFeatureExtractor)
 
 
-class SingleToDoubleInstructionFeatureExtractor(DoulbeInstructionFeatureExtractor, Generic[A]):
+class SingleToDoubleInstructionFeatureExtractor(
+    DoulbeInstructionFeatureExtractor, Generic[A]
+):
     def __init__(self, feature_extractor_one: A, feature_extractor_two: A) -> None:
         super().__init__()
 
@@ -31,8 +37,12 @@ class SingleToDoubleInstructionFeatureExtractor(DoulbeInstructionFeatureExtracto
         self.two = feature_extractor_two
 
     @override
-    def on_instructions(self, instruction_one: Instruction | None, instruction_two: Instruction | None):
-        if instruction_one:
-            self.one.on_instruction(instruction_one)
-        if instruction_two:
-            self.two.on_instruction(instruction_two)
+    def on_instructions(
+        self,
+        first_instruction: Instruction | None,
+        second_instruction: Instruction | None,
+    ):
+        if first_instruction:
+            self.one.on_instruction(first_instruction)
+        if second_instruction:
+            self.two.on_instruction(second_instruction)

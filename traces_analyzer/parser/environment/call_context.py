@@ -10,7 +10,11 @@ from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
 
 if TYPE_CHECKING:
-    from traces_analyzer.parser.instructions.instructions import CREATE, CREATE2, CallInstruction
+    from traces_analyzer.parser.instructions.instructions import (
+        CREATE,
+        CREATE2,
+        CallInstruction,
+    )
 
 
 class HaltType(Enum):
@@ -28,7 +32,9 @@ class CallContext:
     msg_sender: HexString
     code_address: HexString
     storage_address: HexString
-    initiating_instruction: CallInstruction | CREATE | CREATE2 | None = field(default=None, compare=False, hash=False)
+    initiating_instruction: CallInstruction | CREATE | CREATE2 | None = field(
+        default=None, compare=False, hash=False
+    )
     return_data: StorageByteGroup = field(default_factory=StorageByteGroup)
     reverted: bool = False
     halt_type: HaltType | None = None

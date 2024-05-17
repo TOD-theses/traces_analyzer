@@ -1,6 +1,17 @@
-from tests.test_utils.test_utils import _TestCounter, _test_hash_addr, _test_oracle, _test_push_steps, _test_root
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
-from traces_analyzer.parser.information_flow.information_flow_graph import build_information_flow_graph
+from tests.test_utils.test_utils import (
+    _TestCounter,
+    _test_hash_addr,
+    _test_oracle,
+    _test_push_steps,
+    _test_root,
+)
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
+from traces_analyzer.parser.information_flow.information_flow_graph import (
+    build_information_flow_graph,
+)
 from traces_analyzer.parser.instructions.instructions import (
     CALL,
     CALLDATACOPY,
@@ -27,16 +38,32 @@ def test_call_data_flow() -> None:
     steps: list[tuple[InstructionMetadata, InstructionOutputOracle]] = [
         # write to memory
         *_test_push_steps(reversed(["0x20", "0xabcdef"]), step_index, "push_mstore"),
-        (InstructionMetadata(MSTORE.opcode, step_index.next("mstore")), _test_oracle(memory=initial_root_memory)),
+        (
+            InstructionMetadata(MSTORE.opcode, step_index.next("mstore")),
+            _test_oracle(memory=initial_root_memory),
+        ),
         # call with abcdef as calldata and value 0x1234
         # writes 16 bytes from the call return data to 0x0
         *_test_push_steps(
-            reversed(["0x0", _test_hash_addr("target address"), "0x1234", hex(0x20 + 29), "3", "0x0", "0x10"]),
+            reversed(
+                [
+                    "0x0",
+                    _test_hash_addr("target address"),
+                    "0x1234",
+                    hex(0x20 + 29),
+                    "3",
+                    "0x0",
+                    "0x10",
+                ]
+            ),
             step_index,
             "push_call",
             base_oracle=_test_oracle(memory=initial_root_memory),
         ),
-        (InstructionMetadata(CALL.opcode, step_index.next("call")), _test_oracle(depth=2)),
+        (
+            InstructionMetadata(CALL.opcode, step_index.next("call")),
+            _test_oracle(depth=2),
+        ),
         # take calldata and callvalue and return them
         *_test_push_steps(
             reversed(["0x0", "0x0", "0x3"]),
@@ -56,7 +83,9 @@ def test_call_data_flow() -> None:
             reversed(["0x5"]),
             step_index,
             "push_mstore8",
-            base_oracle=_test_oracle(depth=2, stack=["0x1234"], memory=calldata_child_memory),
+            base_oracle=_test_oracle(
+                depth=2, stack=["0x1234"], memory=calldata_child_memory
+            ),
         ),
         (
             InstructionMetadata(MSTORE8.opcode, step_index.next("mstore8")),
@@ -118,12 +147,15 @@ def test_call_data_flow() -> None:
         expected_edges = sorted(
             [
                 (
-                    step_index.lookup(dependency_name) if isinstance(dependency_name, str) else dependency_name,
+                    step_index.lookup(dependency_name)
+                    if isinstance(dependency_name, str)
+                    else dependency_name,
                     step_index.lookup(name),
                 )
                 for dependency_name in should_depend_on
             ]
         )
         assert edges == expected_edges, (
-            f"Instruction '{name}' should depend on '{should_depend_on}." f" Found {edges}, expected {expected_edges}'."
+            f"Instruction '{name}' should depend on '{should_depend_on}."
+            f" Found {edges}, expected {expected_edges}'."
         )

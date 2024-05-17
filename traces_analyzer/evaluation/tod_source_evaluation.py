@@ -7,8 +7,15 @@ from traces_analyzer.utils.hexstring import HexString
 
 
 class TODSourceEvaluation(Evaluation):
-    _type_key = "tod_source"
-    _type_name = "TOD source"
+    @property
+    @override
+    def _type_key(self):
+        return "tod_source"
+
+    @property
+    @override
+    def _type_name(self):
+        return "TOD source"
 
     def __init__(self, tod_source: TODSource):
         super().__init__()
@@ -38,7 +45,10 @@ class TODSourceEvaluation(Evaluation):
     def _cli_report(self) -> str:
         if not self._tod_source.found:
             return "TOD source not found."
-        instr_one, instr_two = self._tod_source.instruction_one, self._tod_source.instruction_two
+        instr_one, instr_two = (
+            self._tod_source.instruction_one,
+            self._tod_source.instruction_two,
+        )
 
         return (
             f"{instr_one.name} at {instr_one.call_context.code_address}:{instr_one.program_counter}\n"

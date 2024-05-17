@@ -3,16 +3,34 @@ from dataclasses import asdict
 from typing_extensions import override
 
 from traces_analyzer.evaluation.evaluation import Evaluation
-from traces_analyzer.features.extractors.instruction_differences import InstructionInputChange
+from traces_analyzer.features.extractors.instruction_differences import (
+    InstructionInputChange,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import CALL, LOG0, LOG1, LOG2, LOG3, LOG4, STATICCALL
+from traces_analyzer.parser.instructions.instructions import (
+    CALL,
+    LOG0,
+    LOG1,
+    LOG2,
+    LOG3,
+    LOG4,
+    STATICCALL,
+)
 from traces_analyzer.utils.hexstring import HexString
 from traces_analyzer.utils.mnemonics import opcode_to_name
 
 
 class InstructionDifferencesEvaluation(Evaluation):
-    _type_key = "instruction_differences"
-    _type_name = "Instruction differences"
+    @property
+    @override
+    def _type_key(self):
+        return "instruction_differences"
+
+    @property
+    @override
+    def _type_name(self):
+        return "Instruction differences"
+
     _CLI_REPORTED_OPCODES = [
         CALL.opcode,
         STATICCALL.opcode,
@@ -36,21 +54,36 @@ class InstructionDifferencesEvaluation(Evaluation):
     @override
     def _dict_report(self) -> dict:
         return {
-            "input_changes": [instruction_input_change_to_dict(c) for c in self._input_changes],
+            "input_changes": [
+                instruction_input_change_to_dict(c) for c in self._input_changes
+            ],
             "occurrence_changes": {
-                "only_in_first_trace": [occurence_change_to_dict(c) for c in self._only_first],
-                "only_in_second_trace": [occurence_change_to_dict(c) for c in self._only_second],
+                "only_in_first_trace": [
+                    occurence_change_to_dict(c) for c in self._only_first
+                ],
+                "only_in_second_trace": [
+                    occurence_change_to_dict(c) for c in self._only_second
+                ],
             },
         }
 
     @override
     def _cli_report(self) -> str:
-        relevant_input_changes = [c for c in self._input_changes if c.opcode in self._CLI_REPORTED_OPCODES]
-        relevant_only_first = [c for c in self._only_first if c.opcode in self._CLI_REPORTED_OPCODES]
-        relevant_only_second = [c for c in self._only_second if c.opcode in self._CLI_REPORTED_OPCODES]
+        relevant_input_changes = [
+            c for c in self._input_changes if c.opcode in self._CLI_REPORTED_OPCODES
+        ]
+        relevant_only_first = [
+            c for c in self._only_first if c.opcode in self._CLI_REPORTED_OPCODES
+        ]
+        relevant_only_second = [
+            c for c in self._only_second if c.opcode in self._CLI_REPORTED_OPCODES
+        ]
 
-        relevant_opcodes_note = "NOTE: for clarity the CLI only reports following instructions: " + ", ".join(
-            [opcode_to_name(op, str(op)) for op in self._CLI_REPORTED_OPCODES]  # type: ignore
+        relevant_opcodes_note = (
+            "NOTE: for clarity the CLI only reports following instructions: "
+            + ", ".join(
+                [opcode_to_name(op, str(op)) for op in self._CLI_REPORTED_OPCODES]  # type: ignore
+            )
         )
 
         input_changes_report = self._cli_report_input_changes(relevant_input_changes)
@@ -76,7 +109,12 @@ class InstructionDifferencesEvaluation(Evaluation):
             else:
                 result += (
                     "> common stack input: "
-                    + str(tuple(x.value.get_hexstring() for x in change.instruction_one.get_accesses().stack))
+                    + str(
+                        tuple(
+                            x.value.get_hexstring()
+                            for x in change.instruction_one.get_accesses().stack
+                        )
+                    )
                     + "\n"
                 )
             if change.memory_input_change:
@@ -106,7 +144,10 @@ def occurence_change_to_dict(changed_instruction: Instruction) -> dict:
         },
         "instruction": {
             "opcode": changed_instruction.opcode,
-            "stack_inputs": tuple(x.value.get_hexstring() for x in changed_instruction.get_accesses().stack),
+            "stack_inputs": tuple(
+                x.value.get_hexstring()
+                for x in changed_instruction.get_accesses().stack
+            ),
         },
     }
 
@@ -122,16 +163,26 @@ def instruction_input_change_to_dict(input_change: InstructionInputChange) -> di
         },
         "inputs": [
             {
-                "stack": tuple(x.value.get_hexstring() for x in input_change.instruction_one.get_accesses().stack),
+                "stack": tuple(
+                    x.value.get_hexstring()
+                    for x in input_change.instruction_one.get_accesses().stack
+                ),
                 "memory": get_mem_input(input_change.instruction_one),
             },
             {
-                "stack": tuple(x.value.get_hexstring() for x in input_change.instruction_two.get_accesses().stack),
+                "stack": tuple(
+                    x.value.get_hexstring()
+                    for x in input_change.instruction_two.get_accesses().stack
+                ),
                 "memory": get_mem_input(input_change.instruction_two),
             },
         ],
-        "stack_input_changes": [asdict(change) for change in input_change.stack_input_changes],
-        "memory_input_change": asdict(input_change.memory_input_change) if input_change.memory_input_change else None,
+        "stack_input_changes": [
+            asdict(change) for change in input_change.stack_input_changes
+        ],
+        "memory_input_change": asdict(input_change.memory_input_change)
+        if input_change.memory_input_change
+        else None,
     }
 
 

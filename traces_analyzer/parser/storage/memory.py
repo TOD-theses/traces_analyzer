@@ -11,7 +11,9 @@ class Memory:
         Return 0s belonging to step_index if accessing out of range memory, without expanding"""
         slice = self._memory[offset : offset + size]
         if len(slice) < size:
-            slice += StorageByteGroup.from_hexstring(HexString("00" * (size - len(slice))), step_index)
+            slice += StorageByteGroup.from_hexstring(
+                HexString("00" * (size - len(slice))), step_index
+            )
         return slice
 
     def get_all(self) -> StorageByteGroup:
@@ -31,7 +33,9 @@ class Memory:
             self._expand(step_index)
 
     def _expand(self, step_index: int):
-        self._memory += StorageByteGroup.from_hexstring(HexString("00" * 32), step_index)
+        self._memory += StorageByteGroup.from_hexstring(
+            HexString("00" * 32), step_index
+        )
 
     def size(self) -> int:
         """Get size in bytes"""

@@ -1,9 +1,19 @@
 from itertools import zip_longest
 from tests.conftest import TEST_ROOT_CALLCONTEXT, make_instruction
-from tests.test_utils.test_utils import _test_call_context, _test_child, _test_mem, _test_stack
-from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
-from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.instructions.instructions import CALL, JUMPDEST, LOG1, POP, STOP
+from tests.test_utils.test_utils import (
+    _test_child,
+    _test_mem,
+    _test_stack,
+)
+from traces_analyzer.features.extractors.instruction_differences import (
+    InstructionDifferencesFeatureExtractor,
+)
+from traces_analyzer.parser.instructions.instructions import (
+    CALL,
+    JUMPDEST,
+    LOG1,
+    STOP,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -57,18 +67,28 @@ def test_instruction_input_analyzer():
         feature_extractor.on_instructions(a, b)
 
     # check if it detected the different CALL values
-    instruction_input_changes = feature_extractor.get_instructions_with_different_inputs()
+    instruction_input_changes = (
+        feature_extractor.get_instructions_with_different_inputs()
+    )
     assert len(instruction_input_changes) == 1
     assert len(instruction_input_changes[0].stack_input_changes) == 1
 
     assert instruction_input_changes[0].address == TEST_ROOT_CALLCONTEXT.code_address
     assert len(instruction_input_changes[0].stack_input_changes) == 1
     assert instruction_input_changes[0].stack_input_changes[0].index == 2
-    assert instruction_input_changes[0].stack_input_changes[0].first_value == first_call_value
-    assert instruction_input_changes[0].stack_input_changes[0].second_value == second_call_value
+    assert (
+        instruction_input_changes[0].stack_input_changes[0].first_value
+        == first_call_value
+    )
+    assert (
+        instruction_input_changes[0].stack_input_changes[0].second_value
+        == second_call_value
+    )
 
     # check if it detected the additional POP instruction in the 2nd trace
-    only_first_executions, only_second_executions = feature_extractor.get_instructions_only_executed_by_one_trace()
+    only_first_executions, only_second_executions = (
+        feature_extractor.get_instructions_only_executed_by_one_trace()
+    )
     assert only_first_executions == []
     assert len(only_second_executions) == 1
     assert only_second_executions[0].opcode == JUMPDEST.opcode
@@ -83,12 +103,18 @@ def test_instruction_input_analyzer_reports_stack_differences():
 
     feature_extractor = InstructionDifferencesFeatureExtractor()
     feature_extractor.on_instructions(
-        make_instruction(CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_one)),
-        make_instruction(CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_two)),
+        make_instruction(
+            CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_one)
+        ),
+        make_instruction(
+            CALL, stack=_test_stack(common_stack), memory=_test_mem(memory_two)
+        ),
     )
 
     # check if it detected the different CALL inputs
-    instruction_input_changes = feature_extractor.get_instructions_with_different_inputs()
+    instruction_input_changes = (
+        feature_extractor.get_instructions_with_different_inputs()
+    )
     assert len(instruction_input_changes) == 1
     change = instruction_input_changes[0]
 
@@ -108,12 +134,18 @@ def test_instruction_input_analyzer_reports_log_changes():
 
     feature_extractor = InstructionDifferencesFeatureExtractor()
     feature_extractor.on_instructions(
-        make_instruction(LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_one)),
-        make_instruction(LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_two)),
+        make_instruction(
+            LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_one)
+        ),
+        make_instruction(
+            LOG1, stack=_test_stack(common_stack), memory=_test_mem(memory_two)
+        ),
     )
 
     # check if it detected the different CALL inputs
-    instruction_input_changes = feature_extractor.get_instructions_with_different_inputs()
+    instruction_input_changes = (
+        feature_extractor.get_instructions_with_different_inputs()
+    )
     assert len(instruction_input_changes) == 1
     change = instruction_input_changes[0]
 

@@ -21,7 +21,9 @@ class AddressKeyStorage(CloneableStorage):
 
     def get(self, address: HexString, key: HexString) -> StorageByteGroup:
         if not self.knows_key(address, key):
-            raise Exception(f"Tried to access storage at {address} with key {key}, but key or address is not known")
+            raise Exception(
+                f"Tried to access storage at {address} with key {key}, but key or address is not known"
+            )
 
         return self._tables[address][key]
 

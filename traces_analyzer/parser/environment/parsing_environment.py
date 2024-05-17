@@ -3,10 +3,16 @@ from dataclasses import dataclass
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.storage.address_key_storage import AddressKeyStorage
 from traces_analyzer.parser.storage.balances import Balances
-from traces_analyzer.parser.storage.last_executed_sub_context import LastExecutedSubContextStorage
+from traces_analyzer.parser.storage.last_executed_sub_context import (
+    LastExecutedSubContextStorage,
+)
 from traces_analyzer.parser.storage.memory import Memory
 from traces_analyzer.parser.storage.stack import Stack
-from traces_analyzer.parser.storage.storage import ContextSpecificStorage, RevertableStorage, Storage
+from traces_analyzer.parser.storage.storage import (
+    ContextSpecificStorage,
+    RevertableStorage,
+    Storage,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 

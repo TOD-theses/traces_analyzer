@@ -25,17 +25,15 @@ install:          ## Install the project in dev mode.
 	$(ENV_PREFIX)pip install -e .[test]
 
 .PHONY: fmt
-fmt:              ## Format code using black & isort.
-	$(ENV_PREFIX)isort traces_analyzer/
-	$(ENV_PREFIX)black -l 120 traces_analyzer/
-	$(ENV_PREFIX)black -l 120 tests/
+fmt:              ## Format/auto-lint code using ruff.
+	$(ENV_PREFIX)ruff format
+	$(ENV_PREFIX)ruff check --fix --unsafe-fixes
 
 .PHONY: lint
-lint:             ## Run pep8, black, mypy linters.
-	$(ENV_PREFIX)flake8 --max-line-length 120 --ignore=E203,W503,E704 traces_analyzer/
-	$(ENV_PREFIX)black -l 120 --check traces_analyzer/
-	$(ENV_PREFIX)black -l 120 --check tests/
-	$(ENV_PREFIX)mypy --ignore-missing-imports --check-untyped-defs traces_analyzer/ tests/
+lint:             ## Run ruff check and pyright
+	$(ENV_PREFIX)ruff format --check
+	$(ENV_PREFIX)ruff check
+	$(ENV_PREFIX)pyright
 
 .PHONY: test
 test: lint        ## Run tests and generate coverage report.
@@ -55,7 +53,6 @@ clean:            ## Clean unused files.
 	@find ./ -name '*~' -exec rm -f {} \;
 	@rm -rf .cache
 	@rm -rf .pytest_cache
-	@rm -rf .mypy_cache
 	@rm -rf build
 	@rm -rf dist
 	@rm -rf *.egg-info
@@ -92,21 +89,3 @@ docs:             ## Build the documentation.
 	@echo "building documentation ..."
 	@$(ENV_PREFIX)mkdocs build
 	URL="site/index.html"; xdg-open $$URL || sensible-browser $$URL || x-www-browser $$URL || gnome-open $$URL || open $$URL
-
-.PHONY: switch-to-poetry
-switch-to-poetry: ## Switch to poetry package manager.
-	@echo "Switching to poetry ..."
-	@if ! poetry --version > /dev/null; then echo 'poetry is required, install from https://python-poetry.org/'; exit 1; fi
-	@rm -rf .venv
-	@poetry init --no-interaction --name=a_flask_test --author=rochacbruno
-	@echo "" >> pyproject.toml
-	@echo "[tool.poetry.scripts]" >> pyproject.toml
-	@echo "traces_analyzer = 'traces_analyzer.__main__:main'" >> pyproject.toml
-	@cat requirements.txt | while read in; do poetry add --no-interaction "$${in}"; done
-	@cat requirements-test.txt | while read in; do poetry add --no-interaction "$${in}" --dev; done
-	@poetry install --no-interaction
-	@mkdir -p .github/backup
-	@mv requirements* .github/backup
-	@mv setup.py .github/backup
-	@echo "You have switched to https://python-poetry.org/ package manager."
-	@echo "Please run 'poetry shell' or 'poetry run traces_analyzer'"

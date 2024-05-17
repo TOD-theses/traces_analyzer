@@ -4,9 +4,14 @@ from typing import ClassVar
 from typing_extensions import Mapping
 
 from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.information_flow.information_flow_dsl import FlowSpec, noop
-from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import Flow
+from traces_analyzer.parser.information_flow.information_flow_dsl_implementation import (
+    Flow,
+)
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 
 
@@ -31,7 +36,9 @@ class Instruction:
         return {}
 
     @classmethod
-    def parse_flow(cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+    def parse_flow(
+        cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> Flow:
         return cls.flow_spec.compute(env, output_oracle)
 
     def __eq__(self, other) -> bool:

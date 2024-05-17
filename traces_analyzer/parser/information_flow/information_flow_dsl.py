@@ -47,7 +47,9 @@ def stack_push(value: FlowNodeWithResult | str) -> WritingFlowNode:
     return _stack_push_node(value)
 
 
-def stack_set(index: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
+def stack_set(
+    index: FlowNodeWithResult | int, value: FlowNodeWithResult | str
+) -> WritingFlowNode:
     return _stack_set_node(index, value)
 
 
@@ -55,15 +57,21 @@ def oracle_stack_peek(index: int) -> FlowNodeWithResult:
     return _oracle_stack_peek_node(index)
 
 
-def oracle_mem_range_peek(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) -> FlowNodeWithResult:
+def oracle_mem_range_peek(
+    offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int
+) -> FlowNodeWithResult:
     return _oracle_mem_range_peek_node(offset, size)
 
 
-def mem_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) -> FlowNodeWithResult:
+def mem_range(
+    offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int
+) -> FlowNodeWithResult:
     return _mem_range_node(offset, size)
 
 
-def mem_write(offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str) -> WritingFlowNode:
+def mem_write(
+    offset: FlowNodeWithResult | int, value: FlowNodeWithResult | str
+) -> WritingFlowNode:
     return _mem_write_node(offset, value)
 
 
@@ -75,7 +83,9 @@ def persistent_storage_get(key: FlowNodeWithResult) -> FlowNodeWithResult:
     return _persistent_storage_get_node(key)
 
 
-def persistent_storage_set(key: FlowNodeWithResult, value: FlowNodeWithResult) -> WritingFlowNode:
+def persistent_storage_set(
+    key: FlowNodeWithResult, value: FlowNodeWithResult
+) -> WritingFlowNode:
     return _persistent_storage_set_node(key, value)
 
 
@@ -83,7 +93,9 @@ def transient_storage_get(key: FlowNodeWithResult) -> FlowNodeWithResult:
     return _transient_storage_get_node(key)
 
 
-def transient_storage_set(key: FlowNodeWithResult, value: FlowNodeWithResult) -> WritingFlowNode:
+def transient_storage_set(
+    key: FlowNodeWithResult, value: FlowNodeWithResult
+) -> WritingFlowNode:
     return _transient_storage_set_node(key, value)
 
 
@@ -100,16 +112,22 @@ def balance_of(value: FlowNodeWithResult) -> FlowNodeWithResult:
 
 
 def balance_transfer(
-    from_addr: FlowNodeWithResult, to_addr: FlowNodeWithResult | str, value: FlowNodeWithResult
-) -> WritingFlowNode:
+    from_addr: FlowNodeWithResult,
+    to_addr: FlowNodeWithResult | str,
+    value: FlowNodeWithResult,
+) -> FlowNodeWithResult:
     return _balance_transfer_node(from_addr, to_addr, value)
 
 
-def selfdestruct(from_addr: FlowNodeWithResult, to_addr: FlowNodeWithResult) -> WritingFlowNode:
+def selfdestruct(
+    from_addr: FlowNodeWithResult, to_addr: FlowNodeWithResult
+) -> FlowNodeWithResult:
     return _selfdestruct_node(from_addr, to_addr)
 
 
-def calldata_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int) -> FlowNodeWithResult:
+def calldata_range(
+    offset: FlowNodeWithResult | int, size: FlowNodeWithResult | int
+) -> FlowNodeWithResult:
     return _calldata_range_node(offset, size)
 
 
@@ -125,7 +143,9 @@ def callvalue() -> FlowNodeWithResult:
     return _callvalue_node()
 
 
-def return_data_range(offset: FlowNodeWithResult | int, size: FlowNodeWithResult) -> FlowNodeWithResult:
+def return_data_range(
+    offset: FlowNodeWithResult | int, size: FlowNodeWithResult
+) -> FlowNodeWithResult:
     return _return_data_range_node(offset, size)
 
 

@@ -22,20 +22,26 @@ class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
         self._previous_instructions: tuple[Instruction, Instruction] | None = None
 
     @override
-    def on_instructions(self, instruction_one: Instruction | None, instruction_two: Instruction | None):
+    def on_instructions(
+        self,
+        first_instruction: Instruction | None,
+        second_instruction: Instruction | None,
+    ):
         if self._tod_source_instructions:
             return
 
-        if not instruction_one or not instruction_two:
+        if not first_instruction or not second_instruction:
             # TODO: simply take previous instruction?
-            raise Exception("Instructions from one trace stopped before the TOD source was found")
+            raise Exception(
+                "Instructions from one trace stopped before the TOD source was found"
+            )
 
-        if instruction_one.get_writes() != instruction_two.get_writes():
-            self._tod_source_instructions = instruction_one, instruction_two
-        elif instruction_one != instruction_two:
+        if first_instruction.get_writes() != second_instruction.get_writes():
+            self._tod_source_instructions = first_instruction, second_instruction
+        elif first_instruction != second_instruction:
             self._tod_source_instructions = self._previous_instructions
 
-        self._previous_instructions = (instruction_one, instruction_two)
+        self._previous_instructions = (first_instruction, second_instruction)
 
     def get_tod_source(self) -> TODSource:
         if not self._tod_source_instructions:

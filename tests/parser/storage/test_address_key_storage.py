@@ -1,5 +1,9 @@
 import pytest
-from tests.test_utils.test_utils import _test_addr, _test_group32, _test_address_key_storage
+from tests.test_utils.test_utils import (
+    _test_addr,
+    _test_group32,
+    _test_address_key_storage,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 

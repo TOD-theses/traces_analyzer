@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
-import pytest
-from tests.test_utils.test_utils import _test_addr, _test_call_context, _test_group32, _test_address_key_storage
+from tests.test_utils.test_utils import (
+    _test_call_context,
+)
 from traces_analyzer.parser.storage.storage import RevertableStorage
-from traces_analyzer.utils.hexstring import HexString
 
 
 def test_revertable_storage_returns_current():

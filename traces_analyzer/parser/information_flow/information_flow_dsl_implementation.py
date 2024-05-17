@@ -3,7 +3,10 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Callable
 
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow, FlowSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
@@ -38,7 +41,9 @@ class FlowWithResult(Flow):
 
 
 class NoopNode(FlowSpec):
-    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+    def compute(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> Flow:
         return Flow(
             accesses=StorageAccesses(),
             writes=StorageWrites(),
@@ -51,12 +56,16 @@ class FlowNode(FlowSpec):
         self.arguments = arguments
 
     @abstractmethod
-    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+    def compute(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> Flow:
         pass
 
 
 class FlowNodeWithResult(FlowNode):
-    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> FlowWithResult:
+    def compute(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> FlowWithResult:
         args = tuple(arg.compute(env, output_oracle) for arg in self.arguments)
 
         flow_step = self._get_result(args, env, output_oracle)
@@ -72,13 +81,18 @@ class FlowNodeWithResult(FlowNode):
 
     @abstractmethod
     def _get_result(
-        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+        self,
+        args: tuple[FlowWithResult, ...],
+        env: ParsingEnvironment,
+        output_oracle: InstructionOutputOracle,
     ) -> FlowWithResult:
         pass
 
 
 class WritingFlowNode(FlowNode):
-    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+    def compute(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> Flow:
         args = tuple(arg.compute(env, output_oracle) for arg in self.arguments)
 
         flow_writes = self._get_writes(args, env, output_oracle)
@@ -93,7 +107,10 @@ class WritingFlowNode(FlowNode):
 
     @abstractmethod
     def _get_writes(
-        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+        self,
+        args: tuple[FlowWithResult, ...],
+        env: ParsingEnvironment,
+        output_oracle: InstructionOutputOracle,
     ) -> StorageWrites:
         pass
 
@@ -104,12 +121,17 @@ class ConstNode(FlowNodeWithResult):
         self.hexstring = hexstring
 
     def _get_result(
-        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+        self,
+        args: tuple[FlowWithResult, ...],
+        env: ParsingEnvironment,
+        output_oracle: InstructionOutputOracle,
     ) -> FlowWithResult:
         return FlowWithResult(
             accesses=StorageAccesses(),
             writes=StorageWrites(),
-            result=StorageByteGroup.from_hexstring(self.hexstring, env.current_step_index),
+            result=StorageByteGroup.from_hexstring(
+                self.hexstring, env.current_step_index
+            ),
         )
 
 
@@ -118,7 +140,9 @@ class CombineNode(FlowSpec):
         super().__init__()
         self.arguments = arguments
 
-    def compute(self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle) -> Flow:
+    def compute(
+        self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    ) -> Flow:
         args = tuple(arg.compute(env, output_oracle) for arg in self.arguments)
 
         return Flow(
@@ -131,19 +155,28 @@ class CallbackNodeWithResult(FlowNodeWithResult):
     def __init__(
         self,
         arguments: tuple[FlowNodeWithResult, ...],
-        callback: Callable[[tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle], FlowWithResult],
+        callback: Callable[
+            [tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle],
+            FlowWithResult,
+        ],
     ) -> None:
         super().__init__(arguments)
         self.callback = callback
 
     def _get_result(
-        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+        self,
+        args: tuple[FlowWithResult, ...],
+        env: ParsingEnvironment,
+        output_oracle: InstructionOutputOracle,
     ) -> FlowWithResult:
         return self.callback(args, env, output_oracle)
 
 
 def node_with_results(
-    callback: Callable[[tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle], FlowWithResult]
+    callback: Callable[
+        [tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle],
+        FlowWithResult,
+    ],
 ):
     @wraps(callback)
     def factory(*arguments: FlowNodeWithResult | str | int):
@@ -157,19 +190,28 @@ class CallbackNodeWithWrites(WritingFlowNode):
     def __init__(
         self,
         arguments: tuple[FlowNodeWithResult, ...],
-        callback: Callable[[tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle], StorageWrites],
+        callback: Callable[
+            [tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle],
+            StorageWrites,
+        ],
     ) -> None:
         super().__init__(arguments)
         self.callback = callback
 
     def _get_writes(
-        self, args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+        self,
+        args: tuple[FlowWithResult, ...],
+        env: ParsingEnvironment,
+        output_oracle: InstructionOutputOracle,
     ) -> StorageWrites:
         return self.callback(args, env, output_oracle)
 
 
 def node_with_writes(
-    callback: Callable[[tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle], StorageWrites]
+    callback: Callable[
+        [tuple[FlowWithResult, ...], ParsingEnvironment, InstructionOutputOracle],
+        StorageWrites,
+    ],
 ):
     @wraps(callback)
     def factory(*arguments: FlowNodeWithResult | str | int):
@@ -188,7 +230,11 @@ def as_node(node_or_value: FlowNodeWithResult | int | str) -> FlowNodeWithResult
 
 
 @node_with_results
-def _stack_arg_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _stack_arg_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     index = args[0].result.get_hexstring().as_int()
     result = env.stack.peek(index)
 
@@ -202,7 +248,11 @@ def _stack_arg_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, o
 
 
 @node_with_results
-def _stack_peek_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _stack_peek_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     index = args[0].result.get_hexstring().as_int()
     result = env.stack.peek(index)
 
@@ -216,12 +266,20 @@ def _stack_peek_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, 
 
 
 @node_with_writes
-def _stack_push_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _stack_push_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     return StorageWrites(stack_pushes=[StackPush(args[0].result)])
 
 
 @node_with_writes
-def _stack_set_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _stack_set_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     index = args[0].result.get_hexstring().as_int()
     return StorageWrites(
         stack_sets=[StackSet(index, args[1].result)],
@@ -230,7 +288,9 @@ def _stack_set_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, o
 
 @node_with_results
 def _oracle_stack_peek_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     index = args[0].result.get_hexstring().as_int()
     value = output_oracle.stack[index]
@@ -247,7 +307,9 @@ def _oracle_stack_peek_node(
 
 @node_with_results
 def _oracle_mem_range_peek_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     offset = args[0].result.get_hexstring().as_int()
     size = args[1].result.get_hexstring().as_int()
@@ -265,7 +327,11 @@ def _oracle_mem_range_peek_node(
 
 
 @node_with_results
-def _mem_range_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _mem_range_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     offset = args[0].result.get_hexstring().as_int()
     size = args[1].result.get_hexstring().as_int()
     result = env.memory.get(offset, size, env.current_step_index)
@@ -279,9 +345,15 @@ def _mem_range_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, o
 
 
 @node_with_results
-def _mem_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _mem_size_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     size = env.memory.size()
-    result = StorageByteGroup.from_hexstring(HexString.from_int(size).as_size(32), env.current_step_index)
+    result = StorageByteGroup.from_hexstring(
+        HexString.from_int(size).as_size(32), env.current_step_index
+    )
 
     # it depends on the last 32 bytes, which are essential for the memory size
     if size == 0:
@@ -302,21 +374,29 @@ def _mem_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, ou
 
 @node_with_writes
 def _mem_write_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> StorageWrites:
     offset = args[0].result.get_hexstring().as_int()
     return StorageWrites(memory=(MemoryWrite(offset, args[1].result),))
 
 
 @node_with_results
-def _to_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle):
+def _to_size_node(
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
+):
     value = args[0].result
     size = args[1].result.get_hexstring().as_int()
     if len(value) > size:
         value = value[-size:]
     elif len(value) < size:
         missing_bytes = size - len(value)
-        padding = StorageByteGroup.from_hexstring(HexString("00" * missing_bytes), env.current_step_index)
+        padding = StorageByteGroup.from_hexstring(
+            HexString("00" * missing_bytes), env.current_step_index
+        )
         value = padding + value
 
     return FlowWithResult(
@@ -328,7 +408,9 @@ def _to_size_node(args: tuple[FlowWithResult, ...], env: ParsingEnvironment, out
 
 @node_with_results
 def _persistent_storage_get_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     key = args[0].result
     hex_key = key.get_hexstring()
@@ -337,9 +419,13 @@ def _persistent_storage_get_node(
         result = env.persistent_storage.get(address, key.get_hexstring())
         access = PersistentStorageAccess(address, key, result)
     else:
-        result = StorageByteGroup.from_hexstring(output_oracle.stack[0], env.current_step_index)
+        result = StorageByteGroup.from_hexstring(
+            output_oracle.stack[0], env.current_step_index
+        )
         access = PersistentStorageAccess(
-            address, key, StorageByteGroup.from_hexstring(output_oracle.stack[0], PRESTATE)
+            address,
+            key,
+            StorageByteGroup.from_hexstring(output_oracle.stack[0], PRESTATE),
         )
 
     return FlowWithResult(
@@ -351,26 +437,34 @@ def _persistent_storage_get_node(
 
 @node_with_writes
 def _persistent_storage_set_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     key = args[0].result
     value = args[1].result
     address = env.current_call_context.storage_address
     env.persistent_storage.set(address, key.get_hexstring(), value)
 
-    return StorageWrites(persistent_storage=(PersistentStorageWrite(address, key, value),))
+    return StorageWrites(
+        persistent_storage=(PersistentStorageWrite(address, key, value),)
+    )
 
 
 @node_with_results
 def _transient_storage_get_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     key = args[0].result
     address = env.current_call_context.storage_address
     result = env.transient_storage.get(address, key.get_hexstring())
 
     return FlowWithResult(
-        accesses=StorageAccesses(transient_storage=(TransientStorageAccess(address, key, result),)),
+        accesses=StorageAccesses(
+            transient_storage=(TransientStorageAccess(address, key, result),)
+        ),
         writes=StorageWrites(),
         result=result,
     )
@@ -378,21 +472,29 @@ def _transient_storage_get_node(
 
 @node_with_writes
 def _transient_storage_set_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     key = args[0].result
     value = args[1].result
     address = env.current_call_context.storage_address
     env.transient_storage.set(address, key.get_hexstring(), value)
 
-    return StorageWrites(transient_storage=(TransientStorageWrite(address, key, value),))
+    return StorageWrites(
+        transient_storage=(TransientStorageWrite(address, key, value),)
+    )
 
 
 @node_with_results
 def _current_storage_address_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
-    address = StorageByteGroup.from_hexstring(env.current_call_context.storage_address, env.current_step_index)
+    address = StorageByteGroup.from_hexstring(
+        env.current_call_context.storage_address, env.current_step_index
+    )
 
     return FlowWithResult(
         accesses=StorageAccesses(),
@@ -403,13 +505,19 @@ def _current_storage_address_node(
 
 @node_with_results
 def _balance_of_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
     addr = args[0].result[-20:]
-    last_modified_at_step_index = env.balances.last_modified_at_step_index(addr.get_hexstring())
+    last_modified_at_step_index = env.balances.last_modified_at_step_index(
+        addr.get_hexstring()
+    )
 
     return FlowWithResult(
-        accesses=StorageAccesses(balance=(BalanceAccess(addr, last_modified_at_step_index),)),
+        accesses=StorageAccesses(
+            balance=(BalanceAccess(addr, last_modified_at_step_index),)
+        ),
         writes=StorageWrites(),
         result=StorageByteGroup(),
     )
@@ -417,32 +525,46 @@ def _balance_of_node(
 
 @node_with_results
 def _balance_transfer_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
     from_addr = args[0].result[-20:]
     to_addr = args[1].result[-20:]
     value = args[2].result
-    from_addr_last_modified = env.balances.last_modified_at_step_index(from_addr.get_hexstring())
+    from_addr_last_modified = env.balances.last_modified_at_step_index(
+        from_addr.get_hexstring()
+    )
 
     return FlowWithResult(
-        accesses=StorageAccesses(balance=(BalanceAccess(from_addr, from_addr_last_modified),)),
-        writes=StorageWrites(balance_transfers=(BalanceTransferWrite(from_addr, to_addr, value),)),
+        accesses=StorageAccesses(
+            balance=(BalanceAccess(from_addr, from_addr_last_modified),)
+        ),
+        writes=StorageWrites(
+            balance_transfers=(BalanceTransferWrite(from_addr, to_addr, value),)
+        ),
         result=StorageByteGroup(),
     )
 
 
 @node_with_results
 def _selfdestruct_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
     from_addr = args[0].result[-20:]
     to_addr = args[1].result[-20:]
-    from_addr_last_modified = env.balances.last_modified_at_step_index(from_addr.get_hexstring())
+    from_addr_last_modified = env.balances.last_modified_at_step_index(
+        from_addr.get_hexstring()
+    )
 
     env.balances.modified_at_step_index(to_addr.get_hexstring(), env.current_step_index)
 
     return FlowWithResult(
-        accesses=StorageAccesses(balance=(BalanceAccess(from_addr, from_addr_last_modified),)),
+        accesses=StorageAccesses(
+            balance=(BalanceAccess(from_addr, from_addr_last_modified),)
+        ),
         writes=StorageWrites(selfdestruct=(SelfdestructWrite(from_addr, to_addr),)),
         result=StorageByteGroup(),
     )
@@ -450,7 +572,9 @@ def _selfdestruct_node(
 
 @node_with_results
 def _return_data_range_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
     offset = args[0].result.get_hexstring().as_int()
     size = args[1].result.get_hexstring().as_int()
@@ -479,14 +603,18 @@ def _return_data_range_node(
 
 @node_with_results
 def _calldata_range_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     offset = args[0].result.get_hexstring().as_int()
     size = args[1].result.get_hexstring().as_int()
     result = env.current_call_context.calldata[offset : offset + size]
     if len(result) < size:
         missing_hexstring = HexString("00" * (size - len(result)))
-        result += StorageByteGroup.from_hexstring(missing_hexstring, env.current_step_index)
+        result += StorageByteGroup.from_hexstring(
+            missing_hexstring, env.current_step_index
+        )
 
     return FlowWithResult(
         accesses=StorageAccesses(calldata=(CalldataAccess(offset, result),)),
@@ -497,7 +625,9 @@ def _calldata_range_node(
 
 @node_with_results
 def _calldata_size_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ):
     calldata = env.current_call_context.calldata
     size = HexString.from_int(len(calldata)).as_size(32)
@@ -512,7 +642,9 @@ def _calldata_size_node(
 
 @node_with_writes
 def _calldata_write_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> StorageWrites:
     return StorageWrites(
         calldata=CalldataWrite(args[0].result),
@@ -521,7 +653,9 @@ def _calldata_write_node(
 
 @node_with_results
 def _callvalue_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
     value = env.current_call_context.value
 
@@ -534,7 +668,9 @@ def _callvalue_node(
 
 @node_with_writes
 def _return_data_write_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> StorageWrites:
     return StorageWrites(
         return_data=ReturnWrite(args[0].result),
@@ -543,11 +679,15 @@ def _return_data_write_node(
 
 @node_with_results
 def _return_data_size_node(
-    args: tuple[FlowWithResult, ...], env: ParsingEnvironment, output_oracle: InstructionOutputOracle
+    args: tuple[FlowWithResult, ...],
+    env: ParsingEnvironment,
+    output_oracle: InstructionOutputOracle,
 ) -> FlowWithResult:
     if not env.last_executed_sub_context:
         # Return 0 if called without a sub context (and thus no return data is available)
-        return_data = StorageByteGroup.from_hexstring(HexString("0").as_size(32), env.current_step_index)
+        return_data = StorageByteGroup.from_hexstring(
+            HexString("0").as_size(32), env.current_step_index
+        )
         size = 0
     else:
         return_data = env.last_executed_sub_context.return_data
@@ -556,5 +696,7 @@ def _return_data_size_node(
     return FlowWithResult(
         accesses=StorageAccesses(return_data=ReturnDataAccess(0, size, return_data)),
         writes=StorageWrites(),
-        result=StorageByteGroup.from_hexstring(HexString.from_int(size).as_size(32), env.current_step_index),
+        result=StorageByteGroup.from_hexstring(
+            HexString.from_int(size).as_size(32), env.current_step_index
+        ),
     )

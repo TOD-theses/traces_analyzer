@@ -1,9 +1,15 @@
 from dataclasses import dataclass
 
 from traces_analyzer.parser.environment.call_context_manager import update_call_context
-from traces_analyzer.parser.environment.parsing_environment import InstructionOutputOracle, ParsingEnvironment
+from traces_analyzer.parser.environment.parsing_environment import (
+    InstructionOutputOracle,
+    ParsingEnvironment,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import CallInstruction, get_instruction_class
+from traces_analyzer.parser.instructions.instructions import (
+    CallInstruction,
+    get_instruction_class,
+)
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import StorageWrites
 from traces_analyzer.utils.mnemonics import opcode_to_name
@@ -20,7 +26,11 @@ class TraceEVM:
         self.env = env
         self._should_verify_storages = verify_storages
 
-    def step(self, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle) -> Instruction:
+    def step(
+        self,
+        instruction_metadata: InstructionMetadata,
+        output_oracle: InstructionOutputOracle,
+    ) -> Instruction:
         instruction = parse_instruction(self.env, instruction_metadata, output_oracle)
 
         self.env.current_step_index += 1
@@ -35,21 +45,31 @@ class TraceEVM:
 
         return instruction
 
-    def _update_storages(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+    def _update_storages(
+        self, instruction: Instruction, output_oracle: InstructionOutputOracle
+    ):
         # NOTE: memory expansion on access is done by the io flow parsing. Maybe it should also be moved here.
         self._apply_storage_writes(instruction.get_writes(), instruction, output_oracle)
 
-        if isinstance(instruction, CallInstruction) and not self._changes_depth(output_oracle):
+        if isinstance(instruction, CallInstruction) and not self._changes_depth(
+            output_oracle
+        ):
             self._apply_storage_writes(
-                instruction.get_immediate_return_writes(self.env, output_oracle), instruction, output_oracle
+                instruction.get_immediate_return_writes(self.env, output_oracle),
+                instruction,
+                output_oracle,
             )
 
     def _changes_depth(self, output_oracle: InstructionOutputOracle) -> bool:
         return self.env.current_call_context.depth != output_oracle.depth
 
-    def _update_call_context(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+    def _update_call_context(
+        self, instruction: Instruction, output_oracle: InstructionOutputOracle
+    ):
         current_call_context = self.env.current_call_context
-        next_call_context = update_call_context(self.env.current_call_context, instruction, output_oracle.depth)
+        next_call_context = update_call_context(
+            self.env.current_call_context, instruction, output_oracle.depth
+        )
 
         if next_call_context.depth > self.env.current_call_context.depth:
             self.env.on_call_enter(next_call_context)
@@ -65,12 +85,19 @@ class TraceEVM:
                 return_writes = call.get_return_writes(current_call_context)
                 self._apply_storage_writes(return_writes, call, output_oracle)
 
-    def _apply_stack_oracle(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+    def _apply_stack_oracle(
+        self, instruction: Instruction, output_oracle: InstructionOutputOracle
+    ):
         self.env.stack.clear()
-        self.env.stack.push_all([StorageByteGroup.from_hexstring(val, -1) for val in output_oracle.stack])
+        self.env.stack.push_all(
+            [StorageByteGroup.from_hexstring(val, -1) for val in output_oracle.stack]
+        )
 
     def _apply_storage_writes(
-        self, storage_writes: StorageWrites, instruction: Instruction, output_oracle: InstructionOutputOracle
+        self,
+        storage_writes: StorageWrites,
+        instruction: Instruction,
+        output_oracle: InstructionOutputOracle,
     ):
         for _ in storage_writes.stack_pops:
             self.env.stack.pop()
@@ -79,15 +106,23 @@ class TraceEVM:
         for stack_set in storage_writes.stack_sets:
             self.env.stack.set(stack_set.index, stack_set.value)
         for mem_write in storage_writes.memory:
-            self.env.memory.set(mem_write.offset, mem_write.value, instruction.step_index)
+            self.env.memory.set(
+                mem_write.offset, mem_write.value, instruction.step_index
+            )
         if storage_writes.return_data:
             self.env.current_call_context.return_data = storage_writes.return_data.value
 
-    def _apply_balance_transfers(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+    def _apply_balance_transfers(
+        self, instruction: Instruction, output_oracle: InstructionOutputOracle
+    ):
         for transfer in instruction.get_writes().balance_transfers:
-            self.env.balances.modified_at_step_index(transfer.address_to.get_hexstring(), instruction.step_index)
+            self.env.balances.modified_at_step_index(
+                transfer.address_to.get_hexstring(), instruction.step_index
+            )
 
-    def _verify_storage(self, instruction: Instruction, output_oracle: InstructionOutputOracle):
+    def _verify_storage(
+        self, instruction: Instruction, output_oracle: InstructionOutputOracle
+    ):
         """Verify that current storages match the output oracle"""
         """
         TODO also check for trailing zeros
@@ -127,7 +162,9 @@ class TraceEVM:
 
 
 def parse_instruction(
-    env: ParsingEnvironment, instruction_metadata: InstructionMetadata, output_oracle: InstructionOutputOracle
+    env: ParsingEnvironment,
+    instruction_metadata: InstructionMetadata,
+    output_oracle: InstructionOutputOracle,
 ) -> Instruction:
     opcode = instruction_metadata.opcode
     name = opcode_to_name(opcode) or "UNKNOWN"

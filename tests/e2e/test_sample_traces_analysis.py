@@ -1,15 +1,27 @@
 from pathlib import Path
 
-from traces_analyzer.features.feature_extraction_runner import FeatureExtractionRunner, RunInfo
-from traces_analyzer.features.feature_extractor import SingleToDoubleInstructionFeatureExtractor
-from traces_analyzer.features.extractors.instruction_differences import InstructionDifferencesFeatureExtractor
+from traces_analyzer.features.feature_extraction_runner import (
+    FeatureExtractionRunner,
+    RunInfo,
+)
+from traces_analyzer.features.feature_extractor import (
+    SingleToDoubleInstructionFeatureExtractor,
+)
+from traces_analyzer.features.extractors.instruction_differences import (
+    InstructionDifferencesFeatureExtractor,
+)
 
-from traces_analyzer.features.extractors.instruction_usages import InstructionUsagesFeatureExtractor
+from traces_analyzer.features.extractors.instruction_usages import (
+    InstructionUsagesFeatureExtractor,
+)
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.parser.events_parser import parse_events
 from traces_analyzer.parser.instructions.instructions import LOG3, SLOAD
-from traces_analyzer.parser.instructions_parser import TransactionParsingInfo, parse_instructions
+from traces_analyzer.parser.instructions_parser import (
+    TransactionParsingInfo,
+    parse_instructions,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -21,13 +33,19 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
 
     transactions_actual = parse_instructions(
         TransactionParsingInfo(
-            bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata, bundle.tx_attack.value
+            bundle.tx_attack.caller,
+            bundle.tx_attack.to,
+            bundle.tx_attack.calldata,
+            bundle.tx_attack.value,
         ),
         parse_events(bundle.tx_attack.trace_actual),
     )
     transactions_reverse = parse_instructions(
         TransactionParsingInfo(
-            bundle.tx_attack.caller, bundle.tx_attack.to, bundle.tx_attack.calldata, bundle.tx_attack.value
+            bundle.tx_attack.caller,
+            bundle.tx_attack.to,
+            bundle.tx_attack.calldata,
+            bundle.tx_attack.value,
         ),
         parse_events(bundle.tx_attack.trace_reverse),
     )
@@ -39,7 +57,11 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     instruction_input_analyzer = InstructionDifferencesFeatureExtractor()
 
     run_info = RunInfo(
-        feature_extractors=[instruction_usage_analyzer, tod_source_analyzer, instruction_input_analyzer],
+        feature_extractors=[
+            instruction_usage_analyzer,
+            tod_source_analyzer,
+            instruction_input_analyzer,
+        ],
         # TODO: why is the reverse one first? check this and document it
         transactions=(transactions_reverse, transactions_actual),
     )
@@ -47,7 +69,10 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     runner = FeatureExtractionRunner(run_info)
     runner.run()
 
-    assert bundle.tx_attack.hash.with_prefix() == "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0"
+    assert (
+        bundle.tx_attack.hash.with_prefix()
+        == "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0"
+    )
 
     # Instruction usage has found 4 contracts
     assert len(instruction_usage_analyzer.one.get_used_opcodes_per_contract()) == 4
@@ -68,15 +93,21 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
         instruction_input_analyzer.get_instructions_only_executed_by_one_trace()
     )
     assert len(only_first_executions) == 0
-    assert len(only_second_executions) == 178  # the trace files differ exactly by 178 lines
+    assert (
+        len(only_second_executions) == 178
+    )  # the trace files differ exactly by 178 lines
 
-    instruction_input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
+    instruction_input_changes = (
+        instruction_input_analyzer.get_instructions_with_different_inputs()
+    )
     assert len(instruction_input_changes) > 0
 
     input_changes = instruction_input_analyzer.get_instructions_with_different_inputs()
     assert len(input_changes) > 0
 
-    changed_logs_with_3_topics = [change for change in input_changes if change.opcode == LOG3.opcode]
+    changed_logs_with_3_topics = [
+        change for change in input_changes if change.opcode == LOG3.opcode
+    ]
     assert len(changed_logs_with_3_topics) == 2
     # event Transfer(address indexed _from, address indexed _to, uint256 _value)
     # TODO: the order of the changed inputs is non-deterministc. Should we change it to be deterministic somehow?
@@ -86,21 +117,34 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
         else changed_logs_with_3_topics[1]
     )
     assert transfer_log.stack_input_changes == []
-    assert transfer_log.instruction_one.get_accesses().stack == transfer_log.instruction_two.get_accesses().stack
-    assert transfer_log.instruction_one.get_accesses().memory != transfer_log.instruction_two.get_accesses().memory
+    assert (
+        transfer_log.instruction_one.get_accesses().stack
+        == transfer_log.instruction_two.get_accesses().stack
+    )
+    assert (
+        transfer_log.instruction_one.get_accesses().memory
+        != transfer_log.instruction_two.get_accesses().memory
+    )
     accesses = transfer_log.instruction_one.get_accesses()
     assert accesses.stack[0].value.get_hexstring().as_int() == 0x60
     assert accesses.stack[1].value.get_hexstring().as_int() == 0x20
     assert accesses.stack[2].value.get_hexstring() == HexString(
         "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     ).as_size(32)
-    assert accesses.stack[3].value.get_hexstring() == HexString("6da0fd433c1a5d7a4faa01111c044910a184553").as_size(32)
-    assert accesses.stack[4].value.get_hexstring() == HexString("822beb1cd1bd7148d07e4107b636fd15118913bc").as_size(32)
+    assert accesses.stack[3].value.get_hexstring() == HexString(
+        "6da0fd433c1a5d7a4faa01111c044910a184553"
+    ).as_size(32)
+    assert accesses.stack[4].value.get_hexstring() == HexString(
+        "822beb1cd1bd7148d07e4107b636fd15118913bc"
+    ).as_size(32)
 
     assert transfer_log.instruction_one.step_index == 1921
     assert transfer_log.instruction_two.step_index == 1921
     assert transfer_log.program_counter == 10748
-    assert transfer_log.address.with_prefix() == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    assert (
+        transfer_log.address.with_prefix()
+        == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    )
     # NOTE: The value does not match the etherscan logs
     # the reason is likely, that the transaction is executed at the beginning of the block
     # but there are many other transac 45th transaction also makes a transfer of Tether: USDT Stablecoin (influencing the price)
@@ -120,20 +164,56 @@ def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     call_tree_normal = runner.get_call_trees()[0]
     assert not any(c.call_context.reverted for c in call_tree_normal.recurse())
     assert len(call_tree_normal.children) == 4
-    weth9_call, weth9_transfer, uniswap_staticcall, uniswap_swap = call_tree_normal.children
-    assert len(weth9_call.children) == len(weth9_transfer.children) == len(uniswap_staticcall.children) == 0
+    weth9_call, weth9_transfer, uniswap_staticcall, uniswap_swap = (
+        call_tree_normal.children
+    )
+    assert (
+        len(weth9_call.children)
+        == len(weth9_transfer.children)
+        == len(uniswap_staticcall.children)
+        == 0
+    )
     assert len(uniswap_swap.children) == 3
     tether_transfer, weth_balance, tether_balance = uniswap_swap.children
-    assert len(tether_transfer.children) == len(weth_balance.children) == len(tether_balance.children) == 0
+    assert (
+        len(tether_transfer.children)
+        == len(weth_balance.children)
+        == len(tether_balance.children)
+        == 0
+    )
 
-    assert call_tree_normal.call_context.code_address.with_prefix() == "0x11111112542d85b3ef69ae05771c2dccff4faa26"
-    assert weth9_call.call_context.code_address.with_prefix() == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    assert weth9_transfer.call_context.code_address.with_prefix() == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    assert uniswap_staticcall.call_context.code_address.with_prefix() == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
-    assert uniswap_swap.call_context.code_address.with_prefix() == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
-    assert tether_transfer.call_context.code_address.with_prefix() == "0xdac17f958d2ee523a2206206994597c13d831ec7"
-    assert weth_balance.call_context.code_address.with_prefix() == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    assert tether_balance.call_context.code_address.with_prefix() == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    assert (
+        call_tree_normal.call_context.code_address.with_prefix()
+        == "0x11111112542d85b3ef69ae05771c2dccff4faa26"
+    )
+    assert (
+        weth9_call.call_context.code_address.with_prefix()
+        == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    )
+    assert (
+        weth9_transfer.call_context.code_address.with_prefix()
+        == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    )
+    assert (
+        uniswap_staticcall.call_context.code_address.with_prefix()
+        == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
+    )
+    assert (
+        uniswap_swap.call_context.code_address.with_prefix()
+        == "0x06da0fd433c1a5d7a4faa01111c044910a184553"
+    )
+    assert (
+        tether_transfer.call_context.code_address.with_prefix()
+        == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    )
+    assert (
+        weth_balance.call_context.code_address.with_prefix()
+        == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    )
+    assert (
+        tether_balance.call_context.code_address.with_prefix()
+        == "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    )
 
     assert (
         call_tree_normal.call_context.calldata.get_hexstring()
