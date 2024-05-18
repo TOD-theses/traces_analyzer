@@ -37,25 +37,26 @@ class TraceEVM:
         instruction_metadata: InstructionMetadata,
         output_oracle: InstructionOutputOracle,
     ) -> Instruction:
-        self._check_exceptional_halt(instruction_metadata, output_oracle)
-
         instruction = parse_instruction(self.env, instruction_metadata, output_oracle)
 
-        self.env.current_step_index += 1
-        self._update_storages(instruction, output_oracle)
-        self._check_call_context_changes(instruction, output_oracle)
-        # we apply balance transfers after potential call context changes
-        # such that they are not part of state snapshots and can be reverted properly
-        self._apply_balance_transfers(instruction)
+        made_exceptional_halt = self._check_exceptional_halt(
+            instruction_metadata, output_oracle
+        )
+        if not made_exceptional_halt:
+            self._update_storages(instruction)
+            self._check_call_context_changes(instruction, output_oracle)
+            # we apply balance transfers after potential call context changes
+            # such that they are not part of state snapshots and can be reverted properly
+            self._apply_balance_transfers(instruction)
 
         if self._should_verify_storages:
             self._verify_storage(instruction, output_oracle)
 
+        self.env.current_step_index += 1
+
         return instruction
 
-    def _update_storages(
-        self, instruction: Instruction, output_oracle: InstructionOutputOracle
-    ):
+    def _update_storages(self, instruction: Instruction):
         self._apply_storage_accesses(instruction.get_accesses(), instruction)
         self._apply_storage_writes(instruction.get_writes(), instruction)
 
@@ -66,9 +67,10 @@ class TraceEVM:
         self,
         instruction_metadata: InstructionMetadata,
         output_oracle: InstructionOutputOracle,
-    ):
+    ) -> bool:
+        """Return True if it is an exceptional halt"""
         if not output_oracle.depth:
-            return
+            return False
         if makes_exceptional_halt(
             instruction_metadata.opcode,
             self.env.current_call_context.depth,
@@ -87,6 +89,8 @@ class TraceEVM:
                     HexString("0").as_size(32), call.step_index
                 )
             )
+            return True
+        return False
 
     def _check_call_context_changes(
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
@@ -230,7 +234,13 @@ def parse_instruction(
     name = opcode_to_name(opcode) or "UNKNOWN"
 
     cls = get_instruction_class(opcode) or Instruction
-    flow = cls.parse_flow(env, output_oracle)
+
+    try:
+        flow = cls.parse_flow(env, output_oracle)
+    except Exception as e:
+        raise Exception(
+            f"Could not parse {name} flow at step {env.current_step_index}: {instruction_metadata}"
+        ) from e
 
     return cls(
         opcode,

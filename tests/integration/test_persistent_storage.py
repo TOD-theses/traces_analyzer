@@ -16,6 +16,7 @@ from traces_analyzer.parser.information_flow.information_flow_graph import (
 )
 from traces_analyzer.parser.instructions.instructions import (
     CALL,
+    JUMPDEST,
     POP,
     SLOAD,
     SSTORE,
@@ -135,6 +136,11 @@ def test_persistent_storage_is_dropped_on_revert() -> None:
             _test_oracle(depth=2),
         ),
         # exceptional halt as call depth changed unexpectedly back to 1; eg out of gas
+        (
+            InstructionMetadata(JUMPDEST.opcode, step_index.next("jumpdest")),
+            _test_oracle(stack=["0x0"]),
+        ),
+        # remove return value
         (InstructionMetadata(POP.opcode, step_index.next("pop")), _test_oracle()),
         # and enter child context again
         *_test_push_steps(
