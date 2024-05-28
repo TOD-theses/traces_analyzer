@@ -155,7 +155,7 @@
 </div>
 <h4 id="call-changes">Call changes</h4>
 <p>A TOD occurs, if the existence of a call instruction, or its stack and memory inputs, depend on the transaction order.</p>
-<p>Type of calls: CALL, STATICCALL, </p>
+<p>Type of calls: CALL, STATICCALL, CALLCODE, DELEGATECALL. However, mostly CALL is relevant, as the others do not impact state of other contracts (except CALLCODE value I guess).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Should we include selfdestruct here?</p>
