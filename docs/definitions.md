@@ -47,7 +47,7 @@ A TOD occurs, when the first transactions modifies a value and the second transa
 
 A TOD occurs, if the existence of a call instruction, or its stack and memory inputs, depend on the transaction order.
 
-Type of calls: CALL, STATICCALL, 
+Type of calls: CALL, STATICCALL, CALLCODE, DELEGATECALL. However, mostly CALL is relevant, as the others do not impact state of other contracts (except CALLCODE value I guess).
 
 !!! note
 
