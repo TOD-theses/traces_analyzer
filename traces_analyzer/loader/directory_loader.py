@@ -18,36 +18,24 @@ class DirectoryLoader(TraceLoader):
             metadata = json.load(metadata_file)
 
             id = metadata["id"]
-            transactions_actual = metadata["transaction_replays"]["actual"][
-                "transactions"
-            ]
-            transactions_reverse = metadata["transaction_replays"]["reverse"][
-                "transactions"
-            ]
-            return self._load_trace_bundle(
-                id, transactions_actual, transactions_reverse
+            victim_tx_hash: str = metadata["transactions_order"][-1]
+            victim_tx: dict[str, str] = metadata["transactions"][victim_tx_hash]
+            metadata["transaction_replays"]["actual"]
+            metadata["transaction_replays"]["reverse"]
+            return self._load_potential_attack(
+                id,
+                victim_tx,
             )
 
-    def _load_trace_bundle(
-        self, id: str, transactions_actual: list[dict], transactions_reverse: list[dict]
+    def _load_potential_attack(
+        self, id: str, victim_tx: dict[str, str]
     ) -> PotentialAttack:
         return PotentialAttack(
             id=id,
-            tx_attack=self._load_transaction_bundle(
-                transactions_actual[0], transactions_reverse[1]
-            ),
-            tx_victim=self._load_transaction_bundle(
-                transactions_actual[1], transactions_reverse[0]
-            ),
+            tx_victim=self._load_transaction_bundle(victim_tx),
         )
 
-    def _load_transaction_bundle(
-        self, tx_actual: dict, tx_reverse: dict
-    ) -> TraceBundle:
-        assert (
-            tx_actual["hash"] == tx_reverse["hash"]
-        ), f"Tried to compare traces with different transaction hashes: {tx_actual['hash']} {tx_reverse['hash']}"
-        tx = tx_actual["tx"]
+    def _load_transaction_bundle(self, tx: dict[str, str]) -> TraceBundle:
         hash = HexString(tx["hash"])
 
         return TraceBundle(

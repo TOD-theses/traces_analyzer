@@ -22,7 +22,6 @@ class TraceBundle:
 class PotentialAttack:
     id: str
     tx_victim: TraceBundle
-    tx_attack: TraceBundle
 
 
 class TraceLoader(ABC):

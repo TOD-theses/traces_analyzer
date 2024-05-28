@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 
 
@@ -12,27 +13,6 @@ def test_directory_loader(sample_traces_path: Path):
     bundle = directory_loader.load()
 
     assert bundle.id == id
-
-    assert (
-        bundle.tx_attack.hash.with_prefix()
-        == "0x5bc779188a1a4f701c33980a97e902fc097dc48393a01c61f363fce09f33e4a0"
-    )
-    assert (
-        bundle.tx_attack.caller.with_prefix()
-        == "0x822beb1cd1bd7148d07e4107b636fd15118913bc"
-    )
-    assert (
-        bundle.tx_attack.to.with_prefix()
-        == "0x11111112542d85b3ef69ae05771c2dccff4faa26"
-    )
-    assert (
-        bundle.tx_attack.calldata
-        == "2e95b6c8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000062884461f1460000000000000000000000000000000000000000000000000000000000069082020f0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000100000000000000003b6d034006da0fd433c1a5d7a4faa01111c044910a184553e26b9977"
-    )
-    assert bundle.tx_attack.value.as_int() == 7100000000000000000
-
-    assert len(list(bundle.tx_attack.trace_actual)) == 3284
-    assert len(list(bundle.tx_attack.trace_reverse)) == 3106
 
     assert (
         bundle.tx_victim.hash.with_prefix()
@@ -52,5 +32,5 @@ def test_directory_loader(sample_traces_path: Path):
     )
     assert bundle.tx_victim.value.as_int() == 0
 
-    assert len(list(bundle.tx_victim.trace_actual)) == 91211
-    assert len(list(bundle.tx_victim.trace_reverse)) == 91389
+    assert len(list(bundle.tx_victim.trace_actual)) == 90075
+    assert len(list(bundle.tx_victim.trace_reverse)) == 90075

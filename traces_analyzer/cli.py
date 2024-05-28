@@ -94,29 +94,14 @@ def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose:
         (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
         verbose,
     )
-    evaluations_attacker = compare_traces(
-        bundle.tx_attack.hash,
-        bundle.tx_attack.caller,
-        bundle.tx_attack.to,
-        bundle.tx_attack.calldata,
-        bundle.tx_attack.value,
-        (bundle.tx_attack.trace_actual, bundle.tx_attack.trace_reverse),
-        verbose,
-    )
 
     save_evaluations(
         evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json"
-    )
-    save_evaluations(
-        evaluations_attacker, out_dir / f"{bundle.id}_{bundle.tx_attack.hash}.json"
     )
 
     if verbose:
         print(f"Transaction: {bundle.tx_victim.hash}")
         for evaluation in evaluations_victim:
-            print(evaluation.cli_report())
-        print(f"Transaction: {bundle.tx_attack.hash}")
-        for evaluation in evaluations_attacker:
             print(evaluation.cli_report())
 
 
