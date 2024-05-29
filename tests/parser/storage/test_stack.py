@@ -21,7 +21,7 @@ def test_stack_peek():
 def test_stack_push():
     stack = Stack()
 
-    stack.push(_test_group("1234"))
+    stack.push(_test_group32("1234"))
 
     assert stack.size() == 1
     assert stack.peek(0).get_hexstring() == HexString("1234").as_size(32)
@@ -30,7 +30,7 @@ def test_stack_push():
 def test_stack_push_all():
     stack = Stack()
 
-    stack.push_all([_test_group("1234"), _test_group("5678")])
+    stack.push_all([_test_group32("1234"), _test_group32("5678")])
 
     assert stack.size() == 2
     assert stack.peek(0).get_hexstring() == HexString("1234").as_size(32)

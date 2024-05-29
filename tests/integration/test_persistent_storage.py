@@ -10,7 +10,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
@@ -100,7 +102,7 @@ def test_persistent_storage_across_calls() -> None:
         information_flow_graph,
         step_index,
         [
-            ("sload_root", {"push_sload_root_0", PRESTATE}),
+            ("sload_root", {"push_sload_root_0", SPECIAL_STEP_INDEXES.PRESTATE}),
             ("sload_child", {"push_sload_child_0", "push_sstore_0"}),
         ],
     )
@@ -174,6 +176,6 @@ def test_persistent_storage_is_dropped_on_revert() -> None:
         information_flow_graph,
         step_index,
         [
-            ("sload", {"push_sload_0", PRESTATE}),
+            ("sload", {"push_sload_0", SPECIAL_STEP_INDEXES.PRESTATE}),
         ],
     )

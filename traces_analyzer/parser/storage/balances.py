@@ -1,5 +1,8 @@
 from typing_extensions import Self, override
 
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.storage.storage import CloneableStorage
 from traces_analyzer.utils.hexstring import HexString
 
@@ -15,7 +18,9 @@ class Balances(CloneableStorage):
         self._balances: dict[HexString, int] = {}
 
     def last_modified_at_step_index(self, addr: HexString) -> int:
-        return self._balances.get(self._format_addr(addr), -1)
+        return self._balances.get(
+            self._format_addr(addr), SPECIAL_STEP_INDEXES.PRESTATE
+        )
 
     def modified_at_step_index(
         self, addr: HexString, modified_at_step_index: int

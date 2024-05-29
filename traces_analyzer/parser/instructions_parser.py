@@ -12,7 +12,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     ParsingEnvironment,
 )
 from traces_analyzer.parser.events_parser import TraceEvent
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
@@ -54,8 +56,10 @@ def _create_root_call_context(
 ) -> CallContext:
     return CallContext(
         parent=None,
-        calldata=StorageByteGroup.from_hexstring(calldata, PRESTATE),
-        value=StorageByteGroup.from_hexstring(value, PRESTATE),
+        calldata=StorageByteGroup.from_hexstring(
+            calldata, SPECIAL_STEP_INDEXES.PRESTATE
+        ),
+        value=StorageByteGroup.from_hexstring(value, SPECIAL_STEP_INDEXES.PRESTATE),
         depth=1,
         msg_sender=sender,
         code_address=to,

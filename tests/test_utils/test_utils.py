@@ -5,6 +5,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.information_flow.information_flow_graph import (
     InformationFlowGraph,
 )
@@ -43,7 +46,9 @@ def _test_hash_addr(name: str) -> HexString:
     return HexString.from_int(abs(hash(name))).as_address()
 
 
-def _test_stack(items: Iterable[TestVal], step_index=-1) -> Stack:
+def _test_stack(
+    items: Iterable[TestVal], step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> Stack:
     stack = Stack()
     stack.push_all([_test_group32(val, step_index) for val in items])
     return stack
@@ -71,7 +76,9 @@ def _test_hexstring(val: str | HexString):
     return HexString(val)
 
 
-def _test_group(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
+def _test_group(
+    hexstring: TestVal, step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> StorageByteGroup:
     if isinstance(hexstring, StorageByteGroup):
         return hexstring
     if isinstance(hexstring, str):
@@ -79,7 +86,9 @@ def _test_group(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
 
-def _test_group32(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
+def _test_group32(
+    hexstring: TestVal, step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> StorageByteGroup:
     if isinstance(hexstring, StorageByteGroup):
         return hexstring
     if isinstance(hexstring, str):
@@ -90,14 +99,15 @@ def _test_group32(hexstring: TestVal, step_index=-1) -> StorageByteGroup:
     return StorageByteGroup.from_hexstring(hexstring, step_index)
 
 
-def _test_mem(memory: TestVal, step_index=-1) -> Memory:
+def _test_mem(memory: TestVal, step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT) -> Memory:
     mem = Memory()
     mem.set(0, _test_group(memory, step_index), step_index)
     return mem
 
 
 def _test_address_key_storage(
-    tables: dict[str | HexString, dict[str | HexString, TestVal]], step_index=-1
+    tables: dict[str | HexString, dict[str | HexString, TestVal]],
+    step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT,
 ):
     storage = AddressKeyStorage()
     for addr, table in tables.items():
@@ -164,8 +174,8 @@ def _test_grandchild():
 
 
 def mock_env(
-    step_index=-1,
-    storage_step_index=-1,
+    step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT,
+    storage_step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT,
     current_call_context=_test_root(),
     last_executed_sub_context=_test_child(),
     stack_contents: list[TestVal] | None = None,
@@ -246,21 +256,29 @@ def _test_flow(accesses=StorageAccesses(), writes=StorageWrites()) -> Flow:
     )
 
 
-def _test_flow_stack_accesses(vals: Iterable[TestVal], step_index=-1) -> Flow:
+def _test_flow_stack_accesses(
+    vals: Iterable[TestVal], step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> Flow:
     return _test_flow(
         accesses=StorageAccesses(stack=_test_stack_accesses(vals, step_index))
     )
 
 
-def _test_stack_accesses(values: Iterable[TestVal], step_index=-1) -> list[StackAccess]:
+def _test_stack_accesses(
+    values: Iterable[TestVal], step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> list[StackAccess]:
     return [StackAccess(i, _test_group32(x, step_index)) for i, x in enumerate(values)]
 
 
-def _test_mem_access(value: TestVal, offset=0, step_index=-1) -> MemoryAccess:
+def _test_mem_access(
+    value: TestVal, offset=0, step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> MemoryAccess:
     return MemoryAccess(offset, _test_group(value, step_index))
 
 
-def _test_stack_pushes(values: Iterable[TestVal], step_index=-1) -> list[StackPush]:
+def _test_stack_pushes(
+    values: Iterable[TestVal], step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT
+) -> list[StackPush]:
     return [StackPush(_test_group32(x, step_index)) for x in values]
 
 

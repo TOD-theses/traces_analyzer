@@ -2,7 +2,9 @@ from typing import TYPE_CHECKING, Sequence
 
 from networkx import DiGraph, MultiDiGraph
 
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 
 if TYPE_CHECKING:
@@ -16,7 +18,7 @@ def build_information_flow_graph(
 ) -> InformationFlowGraph:
     graph: InformationFlowGraph = MultiDiGraph()
 
-    graph.add_node(PRESTATE, instruction=None)
+    graph.add_node(SPECIAL_STEP_INDEXES.PRESTATE, instruction=None)
 
     for instruction in instructions:
         graph.add_node(instruction.step_index, instruction=instruction)

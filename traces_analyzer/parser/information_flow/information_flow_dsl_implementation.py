@@ -7,7 +7,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.information_flow.information_flow_spec import Flow, FlowSpec
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.parser.storage.storage_writes import (
@@ -271,7 +273,14 @@ def _stack_push_node(
     env: ParsingEnvironment,
     output_oracle: InstructionOutputOracle,
 ):
-    return StorageWrites(stack_pushes=[StackPush(args[0].result)])
+    value = args[0].result
+    if len(value) < 32:
+        padding = StorageByteGroup.from_hexstring(
+            HexString.zeros(32 - len(value)),
+            env.current_step_index,
+        )
+        value = padding + value
+    return StorageWrites(stack_pushes=[StackPush(value)])
 
 
 @node_with_writes
@@ -361,7 +370,8 @@ def _mem_size_node(
         value = StorageByteGroup()
     else:
         offset = size - 32
-        value = env.memory.get(offset, 32, -1)
+        # should not expand the memory, thus we use INVALID as step index
+        value = env.memory.get(offset, 32, SPECIAL_STEP_INDEXES.INVALID)
 
     mem_access = MemoryAccess(offset, value)
 
@@ -425,7 +435,9 @@ def _persistent_storage_get_node(
         access = PersistentStorageAccess(
             address,
             key,
-            StorageByteGroup.from_hexstring(output_oracle.stack[0], PRESTATE),
+            StorageByteGroup.from_hexstring(
+                output_oracle.stack[0], SPECIAL_STEP_INDEXES.PRESTATE
+            ),
         )
 
     return FlowWithResult(

@@ -118,7 +118,7 @@ class TraceEVM:
                 self._apply_storage_writes(return_writes, call)
             else:
                 # for CREATE and CREATE2 and exceptional halts
-                self._apply_stack_oracle(output_oracle)
+                self._apply_stack_oracle(instruction, output_oracle)
         else:
             # immediate call exit (call to EOA or precompiled contract)
             # we create new call frames so that returndata will point to this call
@@ -133,7 +133,7 @@ class TraceEVM:
                 self._apply_storage_writes(return_writes, instruction)
             else:
                 # for CREATE and CREATE2 and exceptional halts
-                self._apply_stack_oracle(output_oracle)
+                self._apply_stack_oracle(instruction, output_oracle)
 
     def _update_call_context_on_exit(self, next_call_context: CallContext):
         if self.env.current_call_context.reverted:
@@ -141,10 +141,15 @@ class TraceEVM:
         else:
             self.env.on_call_exit(next_call_context)
 
-    def _apply_stack_oracle(self, output_oracle: InstructionOutputOracle):
+    def _apply_stack_oracle(
+        self, instruction: Instruction, output_oracle: InstructionOutputOracle
+    ):
         self.env.stack.clear()
         self.env.stack.push_all(
-            [StorageByteGroup.from_hexstring(val, -1) for val in output_oracle.stack]
+            [
+                StorageByteGroup.from_hexstring(val, instruction.step_index)
+                for val in output_oracle.stack
+            ]
         )
 
     def _apply_storage_accesses(

@@ -54,10 +54,6 @@ class StorageByteGroup:
             hexstring, [creation_step_index for _ in range(hexstring.size())]
         )
 
-    @staticmethod
-    def deprecated_from_hexstring(hexstring: HexString) -> "StorageByteGroup":
-        return StorageByteGroup.from_hexstring(hexstring, -1)
-
     def clone(self) -> "StorageByteGroup":
         return StorageByteGroup(self._hexstring, list(self._step_indexes))
 

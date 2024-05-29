@@ -143,7 +143,9 @@ def update_call_context(
             initiating_instruction=instruction,
             calldata=StorageByteGroup(),
             # TODO: correct value
-            value=StorageByteGroup.deprecated_from_hexstring(HexString.from_int(0)),
+            value=StorageByteGroup.from_hexstring(
+                HexString.from_int(0), instruction.step_index
+            ),
             depth=current_call_context.depth + 1,
             msg_sender=current_call_context.code_address,
             code_address=HexString(created_contract_addr),

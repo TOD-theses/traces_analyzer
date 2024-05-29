@@ -29,9 +29,9 @@ def test_memory_set_expands_with_step_index():
 
     mem.set(10, _test_group32("00", 1), 2)
 
-    mem_expanded_1 = mem.get(0, 10, -1)
-    mem_set = mem.get(10, 32, -1)
-    mem_expanded_2 = mem.get(42, 22, -1)
+    mem_expanded_1 = mem.get(0, 10, -1234)
+    mem_set = mem.get(10, 32, -1234)
+    mem_expanded_2 = mem.get(42, 22, -1234)
 
     assert mem_expanded_1.depends_on_instruction_indexes() == {2}
     assert mem_set.depends_on_instruction_indexes() == {1}
@@ -39,9 +39,9 @@ def test_memory_set_expands_with_step_index():
 
 
 def test_memory_get():
-    mem = _test_mem("11223344" + "00" * 28, -1)
+    mem = _test_mem("11223344" + "00" * 28)
 
-    result = mem.get(2, 4, -1)
+    result = mem.get(2, 4, -1234)
 
     assert result.get_hexstring() == "33440000"
 
@@ -49,15 +49,15 @@ def test_memory_get():
 def test_memory_get_does_not_expand():
     mem = Memory()
 
-    mem.get(50, 20, -1)
+    mem.get(50, 20, -1234)
 
     assert mem.size() == 0
 
 
 def test_memory_expands():
-    mem = _test_mem("11" * 64, -1)
+    mem = _test_mem("11" * 64, -1234)
 
     mem.check_expansion(50, 20, 1)
 
     assert mem.size() == 96
-    assert mem.get(64, 32, -1).depends_on_instruction_indexes() == {1}
+    assert mem.get(64, 32, -1234).depends_on_instruction_indexes() == {1}

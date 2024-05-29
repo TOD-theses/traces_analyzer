@@ -12,7 +12,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.information_flow.information_flow_dsl import (
     balance_of,
     balance_transfer,
@@ -73,7 +75,8 @@ class _TestFlowNode(FlowNodeWithResult):
 
 
 def _test_node(
-    value: StorageByteGroup | HexString | str, step_index=-1
+    value: StorageByteGroup | HexString | str,
+    step_index=SPECIAL_STEP_INDEXES.TEST_DEFAULT,
 ) -> FlowNodeWithResult:
     return _TestFlowNode(value=_test_group(value, step_index))
 
@@ -240,7 +243,7 @@ def test_persistent_storage_unknown():
     assert flow.accesses.persistent_storage[0].value.get_hexstring() == value
     assert flow.accesses.persistent_storage[
         0
-    ].value.depends_on_instruction_indexes() == {PRESTATE}
+    ].value.depends_on_instruction_indexes() == {SPECIAL_STEP_INDEXES.PRESTATE}
 
     assert flow.result.get_hexstring() == HexString("00112233").as_size(32)
     assert flow.result.depends_on_instruction_indexes() == {1}
@@ -304,19 +307,26 @@ def test_stack_push_const():
     flow = stack_push("123456").compute(env, _test_oracle())
 
     assert len(flow.writes.stack_pushes) == 1
-    assert flow.writes.stack_pushes[0].value.get_hexstring() == "123456"
+    assert flow.writes.stack_pushes[0].value.get_hexstring() == HexString(
+        "123456"
+    ).as_size(32)
     assert flow.writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1234}
 
 
 def test_stack_push_node():
-    env = mock_env()
+    env = mock_env(step_index=5678)
     input = _test_node(_test_group("123456", 1234))
 
     flow = stack_push(input).compute(env, _test_oracle())
 
     assert len(flow.writes.stack_pushes) == 1
-    assert flow.writes.stack_pushes[0].value.get_hexstring() == "123456"
-    assert flow.writes.stack_pushes[0].value.depends_on_instruction_indexes() == {1234}
+    assert flow.writes.stack_pushes[0].value.get_hexstring() == HexString(
+        "123456"
+    ).as_size(32)
+    assert flow.writes.stack_pushes[0].value.depends_on_instruction_indexes() == {
+        1234,
+        5678,
+    }
 
 
 def test_stack_set_const():
@@ -394,7 +404,10 @@ def test_balance_of_unknown_address():
         == HexString("abcd").as_address()
     )
     assert flow.accesses.balance[0].address.depends_on_instruction_indexes() == {2}
-    assert flow.accesses.balance[0].last_modified_step_index == -1
+    assert (
+        flow.accesses.balance[0].last_modified_step_index
+        == SPECIAL_STEP_INDEXES.PRESTATE
+    )
 
 
 def test_balance_transfer():

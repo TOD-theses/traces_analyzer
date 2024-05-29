@@ -13,7 +13,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
@@ -34,7 +36,9 @@ from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, Trac
 
 
 def test_delegatecall_with_persisten_storage_writes() -> None:
-    root = _test_call_context(value=_test_group32("0x1234", PRESTATE))
+    root = _test_call_context(
+        value=_test_group32("0x1234", SPECIAL_STEP_INDEXES.PRESTATE)
+    )
     env = ParsingEnvironment(root)
     evm = TraceEVM(env, verify_storages=True)
     step_index = _TestCounter(0)
@@ -164,7 +168,7 @@ def test_delegatecall_with_persisten_storage_writes() -> None:
                     # memory expansion to 0x40 (0x20 + the padded abcdef is only 0x30 big, memory is multiples of 0x20)
                     "mstore",
                     # 0x1234 implicitly passed from the initial call context
-                    PRESTATE,
+                    SPECIAL_STEP_INDEXES.PRESTATE,
                     # memory expansion 0x20
                     "calldatacopy",
                     # stack args for LOG0

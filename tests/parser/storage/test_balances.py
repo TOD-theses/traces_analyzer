@@ -1,5 +1,8 @@
 import pytest
 from tests.test_utils.test_utils import _test_addr, _test_balances
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.storage.balances import InvalidAddressException
 from traces_analyzer.utils.hexstring import HexString
 
@@ -21,7 +24,7 @@ def test_balances_last_modified_at_step_index_for_unknown_address():
         HexString("abcd").as_address()
     )
 
-    assert last_modified_step_index == -1
+    assert last_modified_step_index == SPECIAL_STEP_INDEXES.PRESTATE
 
 
 def test_balances_modified_at_step_index_updates_last_modified():

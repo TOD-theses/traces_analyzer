@@ -1,5 +1,8 @@
 from typing import Sequence
 
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.storage.storage_value import StorageByteGroup
 from traces_analyzer.utils.hexstring import HexString
 
@@ -15,8 +18,10 @@ class Stack:
     def push(self, value: StorageByteGroup):
         """Push a single value to the top of the stack"""
         if len(value) < 32:
-            padding = StorageByteGroup.deprecated_from_hexstring(
-                HexString.zeros(32 - len(value))
+            raise Exception(f"Invalid size for stack push: {len(value)}")
+            padding = StorageByteGroup.from_hexstring(
+                HexString.zeros(32 - len(value)),
+                SPECIAL_STEP_INDEXES.DEPRECATED,
             )
             value = padding + value
         self._stack.append(value)

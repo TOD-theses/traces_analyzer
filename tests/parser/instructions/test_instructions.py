@@ -15,7 +15,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import (
     ADD,
@@ -544,8 +546,8 @@ def test_logn() -> None:
         env = mock_env(
             step_index=3,
             stack_contents=(
-                [_test_group("2"), _test_group("4")]
-                + [_test_group(HexString(str(i)).as_size(32), i) for i in range(n)]
+                [_test_group32("2"), _test_group32("4")]
+                + [_test_group32(HexString(str(i)).as_size(32), i) for i in range(n)]
             ),  # type: ignore
             memory_content="001122334455667788",
         )
@@ -723,9 +725,9 @@ def test_sload_unknown() -> None:
     assert accesses.persistent_storage[0].key.get_hexstring() == key.get_hexstring()
     assert accesses.persistent_storage[0].key.depends_on_instruction_indexes() == {2}
     assert accesses.persistent_storage[0].value.get_hexstring() == value
-    # the value has not been set in this transaction, thus PRESTATE
+    # the value has not been set in this transaction, thus SPECIAL_STEP_INDEXES.PRESTATE
     assert accesses.persistent_storage[0].value.depends_on_instruction_indexes() == {
-        PRESTATE
+        SPECIAL_STEP_INDEXES.PRESTATE
     }
 
     writes = sload.get_writes()
@@ -1020,6 +1022,7 @@ def test_codecopy() -> None:
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
 
 
+# TODO
 @pytest.mark.skip()
 def test_extcodecopy() -> None:
     env = mock_env(

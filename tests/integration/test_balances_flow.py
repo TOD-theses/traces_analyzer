@@ -10,7 +10,9 @@ from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import PRESTATE
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
@@ -79,7 +81,7 @@ def test_balances_across_calls() -> None:
         step_index,
         [
             ("balance_known", {"push_balance_known_0", "call"}),
-            ("balance_other", {"push_balance_other_0", PRESTATE}),
+            ("balance_other", {"push_balance_other_0", SPECIAL_STEP_INDEXES.PRESTATE}),
         ],
     )
 
