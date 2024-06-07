@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from traces_analyzer.features.feature_extraction_runner import (
     FeatureExtractionRunner,
     RunInfo,
@@ -25,6 +27,7 @@ from traces_analyzer.parser.instructions_parser import (
 from traces_analyzer.utils.hexstring import HexString
 
 
+@pytest.mark.slow
 def test_sample_traces_analysis_e2e(sample_traces_path: Path) -> None:
     attack_id = "62a8b9ece30161692b68cbb5"
 

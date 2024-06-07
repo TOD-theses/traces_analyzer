@@ -35,6 +35,11 @@ lint:             ## Run ruff check and pyright
 	$(ENV_PREFIX)ruff check
 	$(ENV_PREFIX)pyright
 
+.PHONY: unittest
+unittest:         ## Run quick tests
+	$(ENV_PREFIX)pytest -v -m 'not slow' -v tests/
+
+
 .PHONY: test
 test: lint        ## Run tests and generate coverage report.
 	$(ENV_PREFIX)pytest -v --cov-config .coveragerc --cov=traces_analyzer -l --tb=short --maxfail=1 tests/

@@ -15,7 +15,9 @@ Run `make install` to install the project in develop mode.
 
 ## Run the tests to ensure everything is working
 
-Run `make test` to run the tests.
+Run `make test` to run all the tests.
+
+Run `make unittest` to run a quick subset of tests.
 
 ## Format the code
 
@@ -57,6 +59,7 @@ show:             ## Show the current environment.
 install:          ## Install the project in dev mode.
 fmt:              ## Format/auto-lint code using ruff.
 lint:             ## Run ruff check and pyright
+unittest:         ## Run quick tests
 test: lint        ## Run tests and generate coverage report.
 watch:            ## Run tests on every change.
 clean:            ## Clean unused files.

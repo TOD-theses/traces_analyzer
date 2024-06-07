@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import pytest
+
 
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 
 
+@pytest.mark.slow
 def test_directory_loader(sample_traces_path: Path):
     id = "62a8b9ece30161692b68cbb5"
     dir = sample_traces_path / id

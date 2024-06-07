@@ -82,6 +82,8 @@ class CallInstruction(Instruction, ABC):
 class CALL(CallInstruction):
     flow_spec = combine(
         stack_arg(0),
+        # TODO: ensure that balance transfer is marked as reverted (or something like that)
+        # if the call_context did not execute/got reverted (double check specification)
         balance_transfer(current_storage_address(), stack_arg(1), stack_arg(2)),
         calldata_write(mem_range(stack_arg(3), stack_arg(4))),
         stack_arg(5),
