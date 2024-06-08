@@ -19,6 +19,8 @@ Run `make test` to run all the tests.
 
 Run `make unittest` to run a quick subset of tests.
 
+We use some snapshot testing. To update those tests, either run `make snapshots` for unittests, `pytest --snapshot-update` for all tests, or remove the relevant snapshot files. Then compare in git if the updated snapshots look reasonable.
+
 ## Format the code
 
 Run `make fmt` to format the code.

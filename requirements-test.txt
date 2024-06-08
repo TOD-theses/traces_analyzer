@@ -7,5 +7,6 @@ mkdocs
 plantuml_markdown
 pyright
 ruff
+snapshottest
 types-requests
 types-tqdm

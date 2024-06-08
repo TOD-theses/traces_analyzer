@@ -20,9 +20,10 @@ from traces_analyzer.parser.instructions.instruction import Instruction
 from traces_analyzer.parser.instructions.instructions import CALL, SLOAD
 from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
 from traces_analyzer.utils.hexstring import HexString
+from snapshottest.pytest import PyTestSnapshotTest
 
 
-def test_instruction_differences_evaluation() -> None:
+def test_instruction_differences_evaluation(snapshot: PyTestSnapshotTest) -> None:
     call_context = _test_root()
     input_changes = [
         InstructionInputChange(
@@ -95,77 +96,10 @@ def test_instruction_differences_evaluation() -> None:
     )
 
     evaluation_dict = evaluation.dict_report()
-    assert evaluation_dict == {
-        "evaluation_type": "instruction_differences",
-        "report": {
-            "input_changes": [
-                {
-                    "location": {
-                        "address": _test_hash_addr("0xtest").with_prefix(),
-                        "pc": 5,
-                    },
-                    "instruction": {
-                        "opcode": CALL.opcode,
-                    },
-                    "inputs": [
-                        {
-                            "stack": (
-                                HexString("val_1").as_size(32).with_prefix(),
-                                HexString("val_2").as_size(32).with_prefix(),
-                                HexString("val_3").as_size(32).with_prefix(),
-                            ),
-                            "memory": "0x1111",
-                        },
-                        {
-                            "stack": (
-                                HexString("val_1").as_size(32).with_prefix(),
-                                HexString("val_2_x").as_size(32).with_prefix(),
-                                HexString("val_3_x").as_size(32).with_prefix(),
-                            ),
-                            "memory": "0x2222",
-                        },
-                    ],
-                    "stack_input_changes": [
-                        {
-                            "index": 1,
-                            "first_value": "0x0val_2",
-                            "second_value": "0x0val_2_x",
-                        },
-                        {
-                            "index": 2,
-                            "first_value": "0x0val_3",
-                            "second_value": "0x0val_3_x",
-                        },
-                    ],
-                    "memory_input_change": {
-                        "first_value": "0x1111",
-                        "second_value": "0x2222",
-                    },
-                }
-            ],
-            "occurrence_changes": {
-                "only_in_first_trace": [
-                    {
-                        "location": {
-                            "address": _test_hash_addr("0xtest").with_prefix(),
-                            "pc": 10,
-                        },
-                        "instruction": {
-                            "opcode": SLOAD.opcode,
-                            "stack_inputs": (
-                                HexString("key").as_size(32).with_prefix(),
-                            ),
-                        },
-                    }
-                ],
-                "only_in_second_trace": [],
-            },
-        },
-    }
+    snapshot.assert_match(evaluation_dict, "evaluation_dict")
 
     evaluation_str = evaluation.cli_report()
-
-    assert "Instruction differences" in evaluation_str
+    snapshot.assert_match(evaluation_str, "evaluation_str")
 
     # check if it's serializable
     json.dumps(evaluation_dict)

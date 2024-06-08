@@ -4,10 +4,10 @@ from tests.test_utils.test_utils import _test_root, _test_sload
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import SLOAD
+from snapshottest.pytest import PyTestSnapshotTest
 
 
-def test_tod_source_evaluation_found():
+def test_tod_source_evaluation_found(snapshot: PyTestSnapshotTest):
     root = _test_root()
     tod_source = TODSource(
         found=True,
@@ -18,26 +18,10 @@ def test_tod_source_evaluation_found():
     evaluation = TODSourceEvaluation(tod_source)
 
     evaluation_dict = evaluation.dict_report()
-    assert evaluation_dict == {
-        "evaluation_type": "tod_source",
-        "report": {
-            "found": True,
-            "source": {
-                "location": {
-                    "address": root.code_address.with_prefix(),
-                    "pc": 1234,
-                },
-                "instruction": {
-                    "opcode": SLOAD.opcode,
-                },
-            },
-        },
-    }
+    snapshot.assert_match(evaluation_dict, "evaluation_dict")
 
     evaluation_str = evaluation.cli_report()
-
-    assert "TOD source" in evaluation_str
-    assert "SLOAD" in evaluation_str
+    snapshot.assert_match(evaluation_str, "evaluation_str")
 
 
 def test_tod_source_serializable():
@@ -53,7 +37,7 @@ def test_tod_source_serializable():
     json.dumps(evaluation.dict_report())
 
 
-def test_tod_source_not_found():
+def test_tod_source_not_found(snapshot: PyTestSnapshotTest):
     tod_source = TODSource(
         found=False,
         instruction_one=cast(Instruction, None),
@@ -63,15 +47,7 @@ def test_tod_source_not_found():
     evaluation = TODSourceEvaluation(tod_source)
 
     evaluation_dict = evaluation.dict_report()
-    assert evaluation_dict == {
-        "evaluation_type": "tod_source",
-        "report": {
-            "found": False,
-            "source": None,
-        },
-    }
+    snapshot.assert_match(evaluation_dict, "evaluation_dict_not_found")
 
     evaluation_str = evaluation.cli_report()
-
-    assert "TOD source" in evaluation_str
-    assert "not found" in evaluation_str
+    snapshot.assert_match(evaluation_str, "evaluation_str_not_found")

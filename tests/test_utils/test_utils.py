@@ -1,3 +1,4 @@
+import hashlib
 from typing import Iterable, TypeVar
 from unittest.mock import MagicMock
 from traces_analyzer.parser.environment.call_context import CallContext, HaltType
@@ -43,7 +44,7 @@ TestVal = str | HexString | StorageByteGroup
 
 def _test_hash_addr(name: str) -> HexString:
     """Map a name to a 20 bytes address"""
-    return HexString.from_int(abs(hash(name))).as_address()
+    return HexString(hashlib.sha256(name.encode("utf-8")).hexdigest()).as_address()
 
 
 def _test_stack(

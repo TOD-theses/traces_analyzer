@@ -61,11 +61,8 @@ class CallTree:
         new_node.parent = parent_node  # type: ignore
 
     def __str__(self) -> str:
-        hex_signature = self.call_context.calldata[:8]
-        signature = (
-            signature_lookup.lookup_by_hex(hex_signature.get_hexstring())
-            or hex_signature
-        )
+        hex_signature = self.call_context.calldata[:4].get_hexstring()
+        signature = signature_lookup.lookup_by_hex(hex_signature) or hex_signature
         s = f"> {self.call_context.code_address}.{signature}(...)\n"
         for child in self.children:
             s += "  " + "  ".join(str(child).splitlines(True))
