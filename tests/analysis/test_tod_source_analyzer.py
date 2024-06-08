@@ -2,14 +2,23 @@ from itertools import zip_longest
 from tests.test_utils.test_utils import (
     _test_flow,
     _test_flow_stack_accesses,
+    _test_group32,
+    _test_hash_addr,
     _test_instruction,
     _test_push32,
     _test_stack_accesses,
     _test_stack_pushes,
 )
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.instructions.instructions import POP, SLOAD
-from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
+from traces_analyzer.parser.storage.storage_writes import (
+    PersistentStorageAccess,
+    StorageAccesses,
+    StorageWrites,
+)
 from traces_analyzer.utils.hexstring import HexString
 
 
@@ -20,7 +29,16 @@ def test_tod_source_analyzer() -> None:
             SLOAD,
             pc=2,
             flow=_test_flow(
-                StorageAccesses(stack=_test_stack_accesses(["0x1"])),
+                StorageAccesses(
+                    stack=_test_stack_accesses(["0x1"]),
+                    persistent_storage=[
+                        PersistentStorageAccess(
+                            _test_hash_addr("abcd"),
+                            _test_group32("0x1"),
+                            _test_group32("0x1234", SPECIAL_STEP_INDEXES.PRESTATE),
+                        )
+                    ],
+                ),
                 StorageWrites(stack_pushes=_test_stack_pushes(["0x1234"])),
             ),
         ),
@@ -32,7 +50,16 @@ def test_tod_source_analyzer() -> None:
             SLOAD,
             pc=2,
             flow=_test_flow(
-                StorageAccesses(stack=_test_stack_accesses(["0x1"])),
+                StorageAccesses(
+                    stack=_test_stack_accesses(["0x1"]),
+                    persistent_storage=[
+                        PersistentStorageAccess(
+                            _test_hash_addr("abcd"),
+                            _test_group32("0x1"),
+                            _test_group32("0x5678", SPECIAL_STEP_INDEXES.PRESTATE),
+                        )
+                    ],
+                ),
                 StorageWrites(stack_pushes=_test_stack_pushes(["0x5678"])),
             ),
         ),

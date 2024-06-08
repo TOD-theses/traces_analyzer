@@ -2,13 +2,11 @@
 
 This page describes how features will be extracted from trace pairs.
 
-## Instruction effect changes
+## TOD source
 
 To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the `Instruction`s and stop as soon as we find the TOD source.
 
-If two instructions have a different output (eg an `SLOAD` that loads a different value from storage), we consider them to be the TOD source.
-
-If this did not happen yet, but two instructions differ otherwise (inputs, program counter, etc), we take the previous instructions as TOD source. For example, this can happen if a `CALL` occurs and in one trace there is enough balance to do this, while the other trace has insufficient balance to do so.
+If two instructions both depend on the prestate (ie the state before the transaction started), and they have a different output (eg an `SLOAD` that loads a different value from storage), we consider them to be the TOD source.
 
 **Requires**:
 
@@ -25,7 +23,7 @@ If this did not happen yet, but two instructions differ otherwise (inputs, progr
 
 !!! note
 
-    There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.
+    Currently we only detect the first TOD source. We could detect more, by matching all instructions that depend on prestate and are the same location, and then comparing their accesses and writes.
 
 ## Instruction changes
 

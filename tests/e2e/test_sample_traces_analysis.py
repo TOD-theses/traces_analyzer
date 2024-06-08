@@ -116,7 +116,9 @@ def test_sample_traces_analysis_e2e(
     assert len(changed_logs_with_3_topics) == 3
     # event Transfer(address indexed _from, address indexed _to, uint256 _value)
     # TODO: the order of the changed inputs is non-deterministc. Should we change it to be deterministic somehow?
-    transfer_log = next(log for log in changed_logs_with_3_topics if log.program_counter == 10748)
+    transfer_log = next(
+        log for log in changed_logs_with_3_topics if log.program_counter == 10748
+    )
     assert transfer_log.stack_input_changes == []
     assert (
         transfer_log.instruction_one.get_accesses().stack

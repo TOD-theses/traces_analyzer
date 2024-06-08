@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
+from traces_analyzer.parser.information_flow.constant_step_indexes import (
+    SPECIAL_STEP_INDEXES,
+)
 from traces_analyzer.parser.instructions.instruction import Instruction
 
 
@@ -31,17 +34,15 @@ class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
             return
 
         if not first_instruction or not second_instruction:
-            # TODO: simply take previous instruction?
-            raise Exception(
-                "Instructions from one trace stopped before the TOD source was found"
-            )
+            return
 
-        if first_instruction.get_writes() != second_instruction.get_writes():
-            self._tod_source_instructions = first_instruction, second_instruction
-        elif first_instruction != second_instruction:
-            self._tod_source_instructions = self._previous_instructions
-
-        self._previous_instructions = (first_instruction, second_instruction)
+        # TODO: this does not work if both instructions depend on the prestate
+        # but something else caused the write change (ie it is no TOD)
+        if depends_on_prestate(first_instruction) and depends_on_prestate(
+            second_instruction
+        ):
+            if first_instruction.get_writes() != second_instruction.get_writes():
+                self._tod_source_instructions = first_instruction, second_instruction
 
     def get_tod_source(self) -> TODSource:
         if not self._tod_source_instructions:
@@ -51,3 +52,10 @@ class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
             instruction_one=self._tod_source_instructions[0],
             instruction_two=self._tod_source_instructions[1],
         )
+
+
+def depends_on_prestate(instruction: Instruction):
+    return any(
+        step_index == SPECIAL_STEP_INDEXES.PRESTATE
+        for step_index, _, _ in instruction.get_accesses().get_dependencies()
+    )
