@@ -50,7 +50,7 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="./">Feature extraction</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#instruction-effect-changes">Instruction effect changes</a>
+    <li class="toctree-l2"><a class="reference internal" href="#tod-source">TOD source</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#instruction-changes">Instruction changes</a>
     </li>
@@ -96,10 +96,9 @@
               
                 <h1 id="feature-extraction">Feature extraction</h1>
 <p>This page describes how features will be extracted from trace pairs.</p>
-<h2 id="instruction-effect-changes">Instruction effect changes</h2>
+<h2 id="tod-source">TOD source</h2>
 <p>To understand, where the TOD occurs we compare the transaction trace from the normal and attack executions. At each iteration, we compare the <code>Instruction</code>s and stop as soon as we find the TOD source.</p>
-<p>If two instructions have a different output (eg an <code>SLOAD</code> that loads a different value from storage), we consider them to be the TOD source.</p>
-<p>If this did not happen yet, but two instructions differ otherwise (inputs, program counter, etc), we take the previous instructions as TOD source. For example, this can happen if a <code>CALL</code> occurs and in one trace there is enough balance to do this, while the other trace has insufficient balance to do so.</p>
+<p>If two instructions both depend on the prestate (ie the state before the transaction started), and they have a different output (eg an <code>SLOAD</code> that loads a different value from storage), we consider them to be the TOD source.</p>
 <p><strong>Requires</strong>:</p>
 <ul>
 <li>comparison of two traces</li>
@@ -115,7 +114,7 @@
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>There could be multiple instructions that are directly affected by the previous transaction, however for all but the first instruction, it is hard to differentiate between a direct effect of the previous transaction, or an indirect effect through the first divergent instruction.</p>
+<p>Currently we only detect the first TOD source. We could detect more, by matching all instructions that depend on prestate and are the same location, and then comparing their accesses and writes.</p>
 </div>
 <h2 id="instruction-changes">Instruction changes</h2>
 <p>To understand, which instructions are affected by the TOD, we compare if the same instructions were executed, and if they were given the same inputs.</p>
