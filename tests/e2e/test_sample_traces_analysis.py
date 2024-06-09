@@ -68,7 +68,6 @@ def test_sample_traces_analysis_e2e(
             tod_source_analyzer,
             instruction_input_analyzer,
         ],
-        # TODO: why is the reverse one first? check this and document it
         transactions=(transactions_actual, transactions_reverse),
     )
 

@@ -250,7 +250,7 @@ class StorageAccesses:
             return_data_access = return_data_access or access.return_data
 
         return StorageAccesses(
-            stack=stack_accesses,
+            stack=StorageAccesses.unify_stack_accesses(stack_accesses),
             memory=memory_accesses,
             persistent_storage=persistent_storage_accesses,
             transient_storage=transient_storage_accesses,
@@ -259,3 +259,14 @@ class StorageAccesses:
             callvalue=callvalue_accesses,
             return_data=return_data_access,
         )
+
+    @staticmethod
+    def unify_stack_accesses(accesses: list[StackAccess]) -> list[StackAccess]:
+        indices = set()
+        result = []
+        for access in accesses:
+            if access.index not in indices:
+                indices.add(access.index)
+                result.append(access)
+
+        return result

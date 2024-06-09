@@ -1011,9 +1011,7 @@ def test_codecopy() -> None:
     codecopy = _test_parse_instruction(CODECOPY, env, oracle)
 
     accesses = codecopy.get_accesses()
-    # TODO: should be three
-    # if possible, rewrite access merging to merge stack accesses with the same index and value
-    assert len(accesses.stack) == 4
+    assert len(accesses.stack) == 3
 
     writes = codecopy.get_writes()
     assert len(writes.memory) == 1
@@ -1123,8 +1121,6 @@ def test_returndatacopy() -> None:
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
 
 
-# TODO: update call enter tests
-# TODO: add call (immediate) exists tests
 def test_call_enter() -> None:
     call_context = _test_root()
     env = mock_env(
@@ -1181,8 +1177,6 @@ def test_call_enter() -> None:
     assert call.get_data()["updates_storage_address"]
 
 
-# TODO: update staticcall enter tests
-# TODO: add staticcall (immediate) exists tests
 def test_staticcall_enter() -> None:
     env = mock_env(
         storage_step_index=1,
@@ -1215,8 +1209,6 @@ def test_staticcall_enter() -> None:
     assert staticcall.get_data()["updates_storage_address"]
 
 
-# TODO: update callcode enter tests
-# TODO: add callcode (immediate) exists tests
 def test_callcode_enter() -> None:
     call_context = _test_root()
     env = mock_env(
@@ -1272,8 +1264,6 @@ def test_callcode_enter() -> None:
     assert not callcode.get_data()["updates_storage_address"]
 
 
-# TODO: update delegatecall enter tests
-# TODO: add delegatecall (immediate) exists tests
 def test_delegatecall_enter() -> None:
     env = mock_env(
         storage_step_index=1,
