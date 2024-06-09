@@ -128,7 +128,9 @@ def update_call_context(
             storage_address=storage_address,
         )
     elif creates_contract(instruction, current_call_context.depth, next_depth):
-        # NOTE: we currently do not compute the correct addresses
+        # TODO: use an address factory/provider to compute a fake method.
+        # this way we can ensure different addresses on multiple creations
+        # and we can simply lookup if an address was created by the factory
         created_contract_addr = (
             "0x"
             + sha256(

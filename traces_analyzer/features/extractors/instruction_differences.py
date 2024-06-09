@@ -76,6 +76,7 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
         return (only_first, only_second)
 
     def get_instructions_with_different_inputs(self) -> list[InstructionInputChange]:
+        # TODO: the order of the comparison is non-deterministc. Should we change it to be deterministic somehow?
         comparison = _compare_instructions(
             self._instructions_one,
             self._instructions_two,

@@ -1,6 +1,7 @@
+from io import TextIOWrapper
 import json
 from pathlib import Path
-from typing import Iterable
+from typing_extensions import override
 
 from traces_analyzer.loader.loader import PotentialAttack, TraceLoader, TraceBundle
 from traces_analyzer.utils.hexstring import HexString
@@ -12,8 +13,10 @@ class DirectoryLoader(TraceLoader):
     def __init__(self, dir: Path) -> None:
         super().__init__()
         self._dir = dir
+        self._files: list[TextIOWrapper] = []
 
-    def load(self) -> PotentialAttack:
+    @override
+    def __enter__(self):
         with open(self._dir / self.METADATA_FILENAME) as metadata_file:
             metadata = json.load(metadata_file)
 
@@ -26,6 +29,18 @@ class DirectoryLoader(TraceLoader):
                 id,
                 victim_tx,
             )
+
+    @override
+    def __exit__(self, exc_type, exc_value, traceback):
+        for file in self._files:
+            if not file.closed:
+                file.close()
+
+    def _lazy_load_file(self, path: Path):
+        file = open(path)
+        self._files.append(file)
+        for line in file:
+            yield line
 
     def _load_potential_attack(
         self, id: str, victim_tx: dict[str, str]
@@ -44,19 +59,10 @@ class DirectoryLoader(TraceLoader):
             to=HexString(tx["to"]),
             calldata=HexString(tx["input"]),
             value=HexString(tx["value"]),
-            trace_actual=lazy_load_file(
+            trace_actual=self._lazy_load_file(
                 self._dir / "actual" / (hash.with_prefix() + ".jsonl")
             ),
-            trace_reverse=lazy_load_file(
+            trace_reverse=self._lazy_load_file(
                 self._dir / "reverse" / (hash.with_prefix() + ".jsonl")
             ),
         )
-
-
-# TODO: implement a cleaner solution (maybe making the class closable?)
-# I think this does not close except if everything in the file was read
-# Hence, it does not close on errors
-def lazy_load_file(path: Path) -> Iterable[str]:
-    with open(path) as file:
-        for line in file:
-            yield line

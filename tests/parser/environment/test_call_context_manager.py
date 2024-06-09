@@ -244,7 +244,6 @@ def test_call_context_manager_enters_on_contract_creation(create):
     assert next_call_context.depth == 2
     assert next_call_context.msg_sender == root.code_address
     # NOTE: the manager DOES NOT compute the correct addresses for the created contracts
-    # TODO: should we bother to compute the correct addresses (also depending on CREATE/CREATE2)?
     assert next_call_context.code_address == next_call_context.storage_address
     assert next_call_context.calldata.get_hexstring() == ""
     assert next_call_context.is_contract_initialization

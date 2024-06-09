@@ -79,9 +79,9 @@ def main():  # pragma: no cover
     out.mkdir(exist_ok=True)
 
     for path in (bar := tqdm(bundles, dynamic_ncols=True)):
-        bundle = DirectoryLoader(path).load()
-        bar.set_postfix_str(bundle.id)
-        analyze_transactions_in_dir(bundle, out, verbose)
+        with DirectoryLoader(path) as bundle:
+            bar.set_postfix_str(bundle.id)
+            analyze_transactions_in_dir(bundle, out, verbose)
 
 
 def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose: bool):

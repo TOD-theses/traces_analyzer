@@ -26,5 +26,9 @@ class PotentialAttack:
 
 class TraceLoader(ABC):
     @abstractmethod
-    def load(self) -> PotentialAttack:
+    def __enter__(self) -> PotentialAttack:
+        pass
+
+    @abstractmethod
+    def __exit__(self, exc_type, exc_value, traceback):
         pass
