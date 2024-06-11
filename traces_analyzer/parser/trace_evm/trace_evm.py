@@ -117,7 +117,8 @@ class TraceEVM:
                 return_writes = call.get_return_writes(self.env, output_oracle)
                 self._apply_storage_writes(return_writes, call)
             else:
-                # for CREATE and CREATE2 and exceptional halts
+                # for CREATE and CREATE2
+                # TODO: do not replace the whole stack when returning from CREATE(2)
                 self._apply_stack_oracle(instruction, output_oracle)
         else:
             # immediate call exit (call to EOA or precompiled contract)
@@ -132,7 +133,7 @@ class TraceEVM:
                 )
                 self._apply_storage_writes(return_writes, instruction)
             else:
-                # for CREATE and CREATE2 and exceptional halts
+                # for CREATE and CREATE2
                 self._apply_stack_oracle(instruction, output_oracle)
 
     def _update_call_context_on_exit(self, next_call_context: CallContext):
@@ -144,6 +145,7 @@ class TraceEVM:
     def _apply_stack_oracle(
         self, instruction: Instruction, output_oracle: InstructionOutputOracle
     ):
+        # TODO: remove this method, as it overwrites all the data flow info we previously had
         self.env.stack.clear()
         self.env.stack.push_all(
             [

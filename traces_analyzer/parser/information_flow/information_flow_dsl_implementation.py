@@ -623,10 +623,6 @@ def _calldata_range_node(
     size = args[1].result.get_hexstring().as_int()
     result = env.current_call_context.calldata[offset : offset + size]
     if len(result) < size:
-        # TODO: traces/benchmark_traces/62a84cf6e30161692b6607c2
-        # this attack behaves differently in REVM
-        # probably it detects that something is off in the environment
-        # and as a response fails
         missing_hexstring = HexString.zeros(size - len(result))
         result += StorageByteGroup.from_hexstring(
             missing_hexstring, env.current_step_index
