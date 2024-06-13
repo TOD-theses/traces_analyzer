@@ -1170,8 +1170,8 @@ def test_call_enter() -> None:
     assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x10
     assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
 
-    assert call.get_data()["address"] == _test_hash_addr("call target")
-    assert call.get_data()["updates_storage_address"]
+    assert call.child_code_address == _test_hash_addr("call target")
+    assert call.child_storage_address == _test_hash_addr("call target")
 
 
 def test_staticcall_enter() -> None:
@@ -1202,8 +1202,8 @@ def test_staticcall_enter() -> None:
     assert writes.calldata.value.get_hexstring() == "33445566"
     assert writes.calldata.value.depends_on_instruction_indexes() == {1}
 
-    assert staticcall.get_data()["address"] == _test_hash_addr("call target")
-    assert staticcall.get_data()["updates_storage_address"]
+    assert staticcall.child_code_address == _test_hash_addr("call target")
+    assert staticcall.child_storage_address == _test_hash_addr("call target")
 
 
 def test_callcode_enter() -> None:
@@ -1257,12 +1257,14 @@ def test_callcode_enter() -> None:
     assert writes.balance_transfers[0].value.get_hexstring().as_int() == 0x10
     assert writes.balance_transfers[0].value.depends_on_instruction_indexes() == {1}
 
-    assert callcode.get_data()["address"] == _test_hash_addr("call target")
-    assert not callcode.get_data()["updates_storage_address"]
+    assert callcode.child_code_address == _test_hash_addr("call target")
+    assert callcode.child_storage_address == call_context.storage_address
 
 
 def test_delegatecall_enter() -> None:
+    call_context = _test_root()
     env = mock_env(
+        current_call_context=call_context,
         storage_step_index=1,
         stack_contents=[
             "1234",
@@ -1289,8 +1291,8 @@ def test_delegatecall_enter() -> None:
     assert writes.calldata.value.get_hexstring() == "33445566"
     assert writes.calldata.value.depends_on_instruction_indexes() == {1}
 
-    assert delegatecall.get_data()["address"] == _test_hash_addr("call target")
-    assert not delegatecall.get_data()["updates_storage_address"]
+    assert delegatecall.child_code_address == _test_hash_addr("call target")
+    assert delegatecall.child_storage_address == call_context.storage_address
 
 
 def test_create() -> None:

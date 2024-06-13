@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from typing_extensions import Mapping
 
 from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import (
@@ -31,10 +30,6 @@ class Instruction:
     def get_writes(self) -> StorageWrites:
         return self.flow.writes
 
-    def get_data(self) -> Mapping[str, object]:
-        """Return formatted instruction data, depending on the instruction type"""
-        return {}
-
     @classmethod
     def parse_flow(
         cls, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -50,10 +45,7 @@ class Instruction:
         )
 
     def __str__(self) -> str:
-        return (
-            f"<{self.name}@{self.call_context.code_address}:{self.program_counter}#{self.step_index} "
-            f"{self.get_data()}>"
-        )
+        return f"<{self.name}@{self.call_context.code_address}:{self.program_counter}#{self.step_index}>"
 
     def __repr__(self) -> str:
         return self.__str__()

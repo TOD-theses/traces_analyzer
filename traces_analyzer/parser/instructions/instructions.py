@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Mapping, TypedDict
 
 from typing_extensions import override
 
+from traces_analyzer.parser.environment.call_context import CallContext
 from traces_analyzer.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
@@ -58,11 +60,52 @@ CallDataNew = TypedDict(
 )
 
 
-class CallInstruction(Instruction, ABC):
+class CallContextEnteringInstruction(Instruction, ABC):
+    def create_call_context(self) -> CallContext:
+        return CallContext(
+            parent=self.call_context,
+            initiating_instruction=self,
+            calldata=self.child_input,
+            value=self.child_value,
+            depth=self.call_context.depth + 1,
+            msg_sender=self.child_caller,
+            code_address=self.child_code_address,
+            storage_address=self.child_storage_address,
+            is_contract_initialization=self.child_is_created,
+        )
+
+    @property
     @abstractmethod
-    def get_data(self) -> CallDataNew:
+    def child_code_address(self) -> HexString:
         pass
 
+    @property
+    @abstractmethod
+    def child_storage_address(self) -> HexString:
+        pass
+
+    @property
+    @abstractmethod
+    def child_value(self) -> StorageByteGroup:
+        pass
+
+    @property
+    @abstractmethod
+    def child_input(self) -> StorageByteGroup:
+        pass
+
+    @property
+    @abstractmethod
+    def child_caller(self) -> HexString:
+        pass
+
+    @property
+    @abstractmethod
+    def child_is_created(self) -> bool:
+        pass
+
+
+class CallInstruction(CallContextEnteringInstruction, ABC):
     @abstractmethod
     def get_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -77,6 +120,18 @@ class CallInstruction(Instruction, ABC):
         """Writes that occur on a call to a precompiled contract or an EOA"""
         pass
 
+    @property
+    @override
+    def child_is_created(self) -> bool:
+        return False
+
+
+class ContractCreatingInstruction(CallContextEnteringInstruction, ABC):
+    @property
+    @override
+    def child_is_created(self) -> bool:
+        return True
+
 
 @dataclass(frozen=True, repr=False, eq=False)
 class CALL(CallInstruction):
@@ -90,17 +145,33 @@ class CALL(CallInstruction):
         stack_arg(6),
     )
 
+    @property
     @override
-    def get_data(self) -> CallDataNew:
+    def child_code_address(self) -> HexString:
+        return self.flow.accesses.stack[1].value.get_hexstring().as_address()
+
+    @property
+    @override
+    def child_storage_address(self) -> HexString:
+        return self.flow.accesses.stack[1].value.get_hexstring().as_address()
+
+    @property
+    @override
+    def child_value(self) -> StorageByteGroup:
+        return self.flow.accesses.stack[2].value
+
+    @property
+    @override
+    def child_input(self) -> StorageByteGroup:
         assert (
             self.flow.writes.calldata is not None
         ), f"Tried to get CALL data but contains no write for it: {self.flow}"
-        return {
-            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
-            "value": self.flow.accesses.stack[2].value,
-            "updates_storage_address": True,
-            "input": self.flow.writes.calldata.value,
-        }
+        return self.flow.writes.calldata.value
+
+    @property
+    @override
+    def child_caller(self) -> HexString:
+        return self.call_context.storage_address
 
     def get_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -156,19 +227,33 @@ class STATICCALL(CallInstruction):
         stack_arg(5),
     )
 
+    @property
     @override
-    def get_data(self) -> CallDataNew:
+    def child_code_address(self) -> HexString:
+        return self.flow.accesses.stack[1].value.get_hexstring().as_address()
+
+    @property
+    @override
+    def child_storage_address(self) -> HexString:
+        return self.flow.accesses.stack[1].value.get_hexstring().as_address()
+
+    @property
+    @override
+    def child_value(self) -> StorageByteGroup:
+        return StorageByteGroup.from_hexstring(HexString.zeros(32), self.step_index)
+
+    @property
+    @override
+    def child_input(self) -> StorageByteGroup:
         assert (
             self.flow.writes.calldata is not None
-        ), f"Tried to get STATICCALL data but contains no memory: {self.flow}"
-        return {
-            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
-            "value": StorageByteGroup.from_hexstring(
-                HexString.from_int(0).as_size(32), self.step_index
-            ),
-            "updates_storage_address": True,
-            "input": self.flow.writes.calldata.value,
-        }
+        ), f"Tried to get STATICCALL data but contains no write for it: {self.flow}"
+        return self.flow.writes.calldata.value
+
+    @property
+    @override
+    def child_caller(self) -> HexString:
+        return self.call_context.storage_address
 
     def get_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -224,17 +309,33 @@ class DELEGATECALL(CallInstruction):
         callvalue(),
     )
 
+    @property
     @override
-    def get_data(self) -> CallDataNew:
+    def child_code_address(self) -> HexString:
+        return self.flow.accesses.stack[1].value.get_hexstring().as_address()
+
+    @property
+    @override
+    def child_storage_address(self) -> HexString:
+        return self.call_context.storage_address
+
+    @property
+    @override
+    def child_value(self) -> StorageByteGroup:
+        return self.flow.accesses.callvalue[0].value
+
+    @property
+    @override
+    def child_input(self) -> StorageByteGroup:
         assert (
             self.flow.writes.calldata is not None
-        ), f"Tried to get DELEGATECALL data but contains no memory: {self.flow}"
-        return {
-            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
-            "value": self.flow.accesses.callvalue[0].value,
-            "updates_storage_address": False,
-            "input": self.flow.writes.calldata.value,
-        }
+        ), f"Tried to get DELEGATECALL data but contains no write for it: {self.flow}"
+        return self.flow.writes.calldata.value
+
+    @property
+    @override
+    def child_caller(self) -> HexString:
+        return self.call_context.msg_sender
 
     @override
     def get_return_writes(
@@ -291,17 +392,33 @@ class CALLCODE(CallInstruction):
         stack_arg(6),
     )
 
+    @property
     @override
-    def get_data(self) -> CallDataNew:
+    def child_code_address(self) -> HexString:
+        return self.flow.accesses.stack[1].value.get_hexstring().as_address()
+
+    @property
+    @override
+    def child_storage_address(self) -> HexString:
+        return self.call_context.storage_address
+
+    @property
+    @override
+    def child_value(self) -> StorageByteGroup:
+        return self.flow.accesses.stack[2].value
+
+    @property
+    @override
+    def child_input(self) -> StorageByteGroup:
         assert (
             self.flow.writes.calldata is not None
-        ), f"Tried to get CALLCODE data but contains no memory: {self.flow}"
-        return {
-            "address": self.flow.accesses.stack[1].value.get_hexstring().as_address(),
-            "value": self.flow.accesses.stack[2].value,
-            "updates_storage_address": False,
-            "input": self.flow.writes.calldata.value,
-        }
+        ), f"Tried to get CALLCODE data but contains no write for it: {self.flow}"
+        return self.flow.writes.calldata.value
+
+    @property
+    @override
+    def child_caller(self) -> HexString:
+        return self.call_context.storage_address
 
     def get_return_writes(
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
@@ -558,7 +675,7 @@ LOG4 = _make_flow(
 
 
 @dataclass(frozen=True, repr=False, eq=False)
-class CREATE(Instruction):
+class CREATE(ContractCreatingInstruction):
     # NOTE: we don't use the correct creation address here,
     # but we probably should sync it with how we compute it later on
     flow_spec = combine(
@@ -571,11 +688,46 @@ class CREATE(Instruction):
     ) -> StorageWrites:
         return StorageWrites()
 
+    def _compute_child_address(self) -> HexString:
+        # we do not care about correctness of this value
+        # we only want determinism if the same CREATE is called in another run
+        return HexString(
+            "0x"
+            + sha256(self.call_context.code_address.with_prefix().encode()).hexdigest()[
+                12:
+            ]
+        )
+
+    @property
+    @override
+    def child_code_address(self) -> HexString:
+        return self._compute_child_address()
+
+    @property
+    @override
+    def child_storage_address(self) -> HexString:
+        return self._compute_child_address()
+
+    @property
+    @override
+    def child_value(self) -> StorageByteGroup:
+        # TODO: no value?
+        return StorageByteGroup.from_hexstring(HexString.zeros(32), self.step_index)
+
+    @property
+    @override
+    def child_input(self) -> StorageByteGroup:
+        # TODO: has CREATE no calldata? Is initialization code no calldata?
+        return StorageByteGroup()
+
+    @property
+    @override
+    def child_caller(self) -> HexString:
+        return self.call_context.storage_address
+
 
 @dataclass(frozen=True, repr=False, eq=False)
-class CREATE2(Instruction):
-    # NOTE: we don't use the correct creation address here,
-    # but we probably should sync it with how we compute it later on
+class CREATE2(ContractCreatingInstruction):
     flow_spec = combine(
         balance_transfer(current_storage_address(), "abcd1234" * 8, stack_arg(0)),
         mem_range(stack_arg(1), stack_arg(2)),
@@ -586,6 +738,43 @@ class CREATE2(Instruction):
         self, env: ParsingEnvironment, output_oracle: InstructionOutputOracle
     ) -> StorageWrites:
         return StorageWrites()
+
+    def _compute_child_address(self) -> HexString:
+        # we do not care about correctness of this value
+        # we only want determinism if the same CREATE is called in another run
+        return HexString(
+            "0x"
+            + sha256(self.call_context.code_address.with_prefix().encode()).hexdigest()[
+                12:
+            ]
+        )
+
+    @property
+    @override
+    def child_code_address(self) -> HexString:
+        return self._compute_child_address()
+
+    @property
+    @override
+    def child_storage_address(self) -> HexString:
+        return self._compute_child_address()
+
+    @property
+    @override
+    def child_value(self) -> StorageByteGroup:
+        # TODO: no value?
+        return StorageByteGroup.from_hexstring(HexString.zeros(32), self.step_index)
+
+    @property
+    @override
+    def child_input(self) -> StorageByteGroup:
+        # TODO: has CREATE2 no calldata? Is initialization code no calldata?
+        return StorageByteGroup()
+
+    @property
+    @override
+    def child_caller(self) -> HexString:
+        return self.call_context.storage_address
 
 
 RETURN = _make_flow(return_data_write(mem_range(stack_arg(0), stack_arg(1))))

@@ -11,9 +11,7 @@ from traces_analyzer.utils.hexstring import HexString
 
 if TYPE_CHECKING:
     from traces_analyzer.parser.instructions.instructions import (
-        CREATE,
-        CREATE2,
-        CallInstruction,
+        CallContextEnteringInstruction,
     )
 
 
@@ -31,7 +29,7 @@ class CallContext:
     msg_sender: HexString
     code_address: HexString
     storage_address: HexString
-    initiating_instruction: CallInstruction | CREATE | CREATE2 | None = field(
+    initiating_instruction: CallContextEnteringInstruction | None = field(
         default=None, compare=False, hash=False
     )
     return_data: StorageByteGroup = field(default_factory=StorageByteGroup)

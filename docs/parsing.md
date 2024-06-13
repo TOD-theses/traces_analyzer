@@ -34,7 +34,6 @@ class Instruction {
   name: str
   program_counter: int
   {static} io_specification: InstructionIOSpec
-  get_data(): Mapping[str, object]
 }
 
 class Inputs {

@@ -325,7 +325,7 @@ def _test_instruction(
 
     return instruction_type(
         instruction_type.opcode,
-        opcode_to_name(instruction_type.opcode, "UKNOWN"),
+        opcode_to_name(instruction_type.opcode, "UKNOWN") or "UNKNOWN",
         pc,
         step_index,
         call_context,
