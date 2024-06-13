@@ -1,6 +1,5 @@
 from typing import TypeVar, cast
 
-import pytest
 from tests.test_utils.test_utils import (
     _test_addr,
     _test_call_context,
@@ -1020,12 +1019,10 @@ def test_codecopy() -> None:
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
 
 
-# TODO
-@pytest.mark.skip()
 def test_extcodecopy() -> None:
     env = mock_env(
         step_index=1234,
-        stack_contents=["abcdef", "8", "4", hex(16)],
+        stack_contents=["abcdef", "4", "1234", hex(16)],
     )
     oracle = _test_oracle(memory="0011223344556677")
 
@@ -1036,7 +1033,7 @@ def test_extcodecopy() -> None:
 
     writes = extcodecopy.get_writes()
     assert len(writes.memory) == 1
-    assert writes.memory[0].offset == 8
+    assert writes.memory[0].offset == 4
     assert writes.memory[0].value.get_hexstring() == "44556677" + "00" * 12
     assert writes.memory[0].value.depends_on_instruction_indexes() == {1234}
 

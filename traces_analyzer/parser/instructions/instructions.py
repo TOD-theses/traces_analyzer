@@ -419,7 +419,7 @@ CODECOPY = _make_flow(
 EXTCODECOPY = _make_flow(
     combine(
         stack_arg(0),
-        # TODO
+        stack_arg(2),
         mem_write(stack_arg(1), oracle_mem_range_peek(stack_arg(1), stack_arg(3))),
     )
 )
