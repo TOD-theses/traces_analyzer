@@ -7,7 +7,7 @@ from tests.test_utils.test_utils import (
 from traces_analyzer.features.extractors.instruction_usages import (
     InstructionUsagesFeatureExtractor,
 )
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.instructions.instructions import (
     JUMPDEST,
     POP,
     PUSH32,

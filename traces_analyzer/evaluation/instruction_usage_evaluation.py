@@ -3,8 +3,8 @@ from typing import Iterable, Mapping
 from typing_extensions import override
 
 from traces_analyzer.evaluation.evaluation import Evaluation
-from traces_analyzer.utils.hexstring import HexString
-from traces_analyzer.utils.mnemonics import opcode_to_name
+from traces_parser.datatypes import HexString
+from traces_parser.utils.mnemonics import opcode_to_name
 
 
 class InstructionUsageEvaluation(Evaluation):

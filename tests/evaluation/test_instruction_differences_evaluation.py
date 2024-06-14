@@ -16,10 +16,10 @@ from traces_analyzer.features.extractors.instruction_differences import (
 from traces_analyzer.evaluation.instruction_differences_evaluation import (
     InstructionDifferencesEvaluation,
 )
-from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import CALL, SLOAD
-from traces_analyzer.parser.storage.storage_writes import StorageAccesses, StorageWrites
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions.instructions import CALL, SLOAD
+from traces_parser.parser.storage.storage_writes import StorageAccesses, StorageWrites
+from traces_parser.datatypes import HexString
 from snapshottest.pytest import PyTestSnapshotTest
 
 

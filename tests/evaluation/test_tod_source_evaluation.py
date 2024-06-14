@@ -3,7 +3,7 @@ from typing import cast
 from tests.test_utils.test_utils import _test_root, _test_sload
 from traces_analyzer.features.extractors.tod_source import TODSource
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
-from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions.instruction import Instruction
 from snapshottest.pytest import PyTestSnapshotTest
 
 

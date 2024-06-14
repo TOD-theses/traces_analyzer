@@ -6,8 +6,8 @@ from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.features.extractors.instruction_differences import (
     InstructionInputChange,
 )
-from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions.instructions import (
     CALL,
     LOG0,
     LOG1,
@@ -16,8 +16,8 @@ from traces_analyzer.parser.instructions.instructions import (
     LOG4,
     STATICCALL,
 )
-from traces_analyzer.utils.hexstring import HexString
-from traces_analyzer.utils.mnemonics import opcode_to_name
+from traces_parser.datatypes import HexString
+from traces_parser.utils.mnemonics import opcode_to_name
 
 
 class InstructionDifferencesEvaluation(Evaluation):

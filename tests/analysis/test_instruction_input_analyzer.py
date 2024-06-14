@@ -11,13 +11,13 @@ from tests.test_utils.test_utils import (
 from traces_analyzer.features.extractors.instruction_differences import (
     InstructionDifferencesFeatureExtractor,
 )
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.instructions.instructions import (
     CALL,
     JUMPDEST,
     STOP,
 )
-from traces_analyzer.parser.storage.storage_writes import StorageAccesses
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.parser.storage.storage_writes import StorageAccesses
+from traces_parser.datatypes import HexString
 
 
 def test_instruction_input_analyzer():

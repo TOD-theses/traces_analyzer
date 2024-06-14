@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 
 
 class Evaluation(ABC):

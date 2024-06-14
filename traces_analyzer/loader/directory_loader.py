@@ -4,7 +4,8 @@ from pathlib import Path
 from typing_extensions import override
 
 from traces_analyzer.loader.loader import PotentialAttack, TraceLoader, TraceBundle
-from traces_analyzer.utils.hexstring import HexString
+
+from traces_parser.datatypes import HexString
 
 
 class DirectoryLoader(TraceLoader):

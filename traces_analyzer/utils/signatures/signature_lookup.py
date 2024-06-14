@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 
 
 class SignatureLookup(ABC):

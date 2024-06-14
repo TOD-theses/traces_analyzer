@@ -10,16 +10,16 @@ from tests.test_utils.test_utils import (
     _test_stack_pushes,
 )
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
-from traces_analyzer.parser.information_flow.constant_step_indexes import (
+from traces_parser.parser.information_flow.constant_step_indexes import (
     SPECIAL_STEP_INDEXES,
 )
-from traces_analyzer.parser.instructions.instructions import POP, SLOAD
-from traces_analyzer.parser.storage.storage_writes import (
+from traces_parser.parser.instructions.instructions import POP, SLOAD
+from traces_parser.parser.storage.storage_writes import (
     PersistentStorageAccess,
     StorageAccesses,
     StorageWrites,
 )
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 
 
 def test_tod_source_analyzer() -> None:

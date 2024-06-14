@@ -7,14 +7,14 @@ from tests.test_utils.test_utils import (
     _test_push_steps,
     _test_root,
 )
-from traces_analyzer.parser.environment.parsing_environment import (
+from traces_parser.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.information_flow_graph import (
+from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.instructions.instructions import (
     CALL,
     CALLDATACOPY,
     CALLVALUE,
@@ -26,7 +26,7 @@ from traces_analyzer.parser.instructions.instructions import (
     RETURN,
     RETURNDATASIZE,
 )
-from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
+from traces_parser.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
 
 def test_call_data_and_return_data_flow() -> None:

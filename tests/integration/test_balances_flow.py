@@ -6,24 +6,24 @@ from tests.test_utils.test_utils import (
     _test_root,
     assert_flow_dependencies,
 )
-from traces_analyzer.parser.environment.parsing_environment import (
+from traces_parser.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import (
+from traces_parser.parser.information_flow.constant_step_indexes import (
     SPECIAL_STEP_INDEXES,
 )
-from traces_analyzer.parser.information_flow.information_flow_graph import (
+from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.instructions.instructions import (
     BALANCE,
     CALL,
     POP,
     REVERT,
     STOP,
 )
-from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
+from traces_parser.parser.trace_evm.trace_evm import InstructionMetadata, TraceEVM
 
 
 def test_balances_across_calls() -> None:

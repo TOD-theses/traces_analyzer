@@ -1,32 +1,32 @@
 import hashlib
 from typing import Iterable, TypeVar
 from unittest.mock import MagicMock
-from traces_analyzer.parser.environment.call_context import CallContext, HaltType
-from traces_analyzer.parser.environment.parsing_environment import (
+from traces_parser.parser.environment.call_context import CallContext, HaltType
+from traces_parser.parser.environment.parsing_environment import (
     InstructionOutputOracle,
     ParsingEnvironment,
 )
-from traces_analyzer.parser.information_flow.constant_step_indexes import (
+from traces_parser.parser.information_flow.constant_step_indexes import (
     SPECIAL_STEP_INDEXES,
 )
-from traces_analyzer.parser.information_flow.information_flow_graph import (
+from traces_parser.parser.information_flow.information_flow_graph import (
     InformationFlowGraph,
 )
-from traces_analyzer.parser.information_flow.information_flow_spec import Flow
-from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.information_flow.information_flow_spec import Flow
+from traces_parser.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions.instructions import (
     CREATE,
     CREATE2,
     PUSH32,
     SLOAD,
     CallInstruction,
 )
-from traces_analyzer.parser.storage.address_key_storage import AddressKeyStorage
-from traces_analyzer.parser.storage.balances import Balances
-from traces_analyzer.parser.storage.memory import Memory
-from traces_analyzer.parser.storage.stack import Stack
-from traces_analyzer.parser.storage.storage_value import StorageByteGroup
-from traces_analyzer.parser.storage.storage_writes import (
+from traces_parser.parser.storage.address_key_storage import AddressKeyStorage
+from traces_parser.parser.storage.balances import Balances
+from traces_parser.parser.storage.memory import Memory
+from traces_parser.parser.storage.stack import Stack
+from traces_parser.datatypes.storage_byte_group import StorageByteGroup, HexString
+from traces_parser.parser.storage.storage_writes import (
     MemoryAccess,
     PersistentStorageAccess,
     PersistentStorageWrite,
@@ -35,9 +35,8 @@ from traces_analyzer.parser.storage.storage_writes import (
     StorageAccesses,
     StorageWrites,
 )
-from traces_analyzer.parser.trace_evm.trace_evm import InstructionMetadata
-from traces_analyzer.utils.hexstring import HexString
-from traces_analyzer.utils.mnemonics import opcode_to_name
+from traces_parser.parser.trace_evm.trace_evm import InstructionMetadata
+from traces_parser.utils.mnemonics import opcode_to_name
 
 TestVal = str | HexString | StorageByteGroup
 

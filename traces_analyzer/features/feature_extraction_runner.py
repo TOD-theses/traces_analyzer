@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from itertools import zip_longest
 
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
-from traces_analyzer.parser.environment.call_context_manager import CallTree
-from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.parser.instructions_parser import ParsedTransaction
+from traces_parser.parser.environment.call_context_manager import CallTree
+from traces_parser.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions_parser import ParsedTransaction
 
 
 @dataclass

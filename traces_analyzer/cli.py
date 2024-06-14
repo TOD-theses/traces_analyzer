@@ -32,12 +32,12 @@ from traces_analyzer.features.feature_extractor import (
 )
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import PotentialAttack
-from traces_analyzer.parser.environment.call_context import CallContext
-from traces_analyzer.parser.events_parser import parse_events
-from traces_analyzer.parser.information_flow.information_flow_graph import (
+from traces_parser.parser.environment.call_context import CallContext
+from traces_parser.parser.events_parser import parse_events
+from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
-from traces_analyzer.parser.instructions.instructions import (
+from traces_parser.parser.instructions.instructions import (
     CALL,
     LOG0,
     LOG1,
@@ -45,11 +45,11 @@ from traces_analyzer.parser.instructions.instructions import (
     LOG3,
     STATICCALL,
 )
-from traces_analyzer.parser.instructions_parser import (
+from traces_parser.parser.instructions_parser import (
     TransactionParsingInfo,
-    parse_instructions,
+    parse_transaction,
 )
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 
@@ -120,10 +120,10 @@ def compare_traces(
         InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
 
-    transaction_one = parse_instructions(
+    transaction_one = parse_transaction(
         TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[0])
     )
-    transaction_two = parse_instructions(
+    transaction_two = parse_transaction(
         TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[1])
     )
 

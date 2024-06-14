@@ -6,9 +6,9 @@ from traces_analyzer.features.feature_extraction_runner import (
     RunInfo,
     FeatureExtractionRunner,
 )
-from traces_analyzer.parser.environment.call_context_manager import CallTree
-from traces_analyzer.parser.instructions_parser import ParsedTransaction
-from traces_analyzer.parser.instructions.instructions import POP
+from traces_parser.parser.environment.call_context_manager import CallTree
+from traces_parser.parser.instructions_parser import ParsedTransaction
+from traces_parser.parser.instructions.instructions import POP
 
 
 def test_analysis_runner_empty_does_not_call_analyzer():

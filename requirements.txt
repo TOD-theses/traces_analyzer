@@ -3,3 +3,4 @@ typing_extensions==4.10.0
 requests==2.31.0
 networkx==3.3
 types_networkx==3.2.1.20240425
+traces_parser @ git+https://github.com/TOD-theses/traces_parser@e210157775dc15c7b5bead669918a789631a07ba

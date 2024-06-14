@@ -4,8 +4,8 @@ from typing import Mapping
 from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import SingleInstructionFeatureExtractor
-from traces_analyzer.parser.instructions.instruction import Instruction
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.parser.instructions.instruction import Instruction
+from traces_parser.datatypes import HexString
 
 
 class InstructionUsagesFeatureExtractor(SingleInstructionFeatureExtractor):

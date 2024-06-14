@@ -2,7 +2,7 @@ import json
 from traces_analyzer.evaluation.instruction_usage_evaluation import (
     InstructionUsageEvaluation,
 )
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 from snapshottest.pytest import PyTestSnapshotTest
 
 

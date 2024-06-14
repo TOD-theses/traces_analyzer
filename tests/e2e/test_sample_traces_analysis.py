@@ -18,13 +18,13 @@ from traces_analyzer.features.extractors.instruction_usages import (
 )
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.parser.events_parser import parse_events
-from traces_analyzer.parser.instructions.instructions import LOG3, SLOAD
-from traces_analyzer.parser.instructions_parser import (
+from traces_parser.parser.instructions.instructions import LOG3, SLOAD
+from traces_parser.parser.events_parser import parse_events
+from traces_parser.parser.instructions_parser import (
+    parse_transaction,
     TransactionParsingInfo,
-    parse_instructions,
 )
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 from snapshottest.pytest import PyTestSnapshotTest
 
 
@@ -35,7 +35,7 @@ def test_sample_traces_analysis_e2e(
     attack_id = "62a8b9ece30161692b68cbb5"
 
     with DirectoryLoader(sample_traces_path / attack_id) as bundle:
-        transactions_actual = parse_instructions(
+        transactions_actual = parse_transaction(
             TransactionParsingInfo(
                 bundle.tx_victim.caller,
                 bundle.tx_victim.to,
@@ -44,7 +44,7 @@ def test_sample_traces_analysis_e2e(
             ),
             parse_events(bundle.tx_victim.trace_actual),
         )
-        transactions_reverse = parse_instructions(
+        transactions_reverse = parse_transaction(
             TransactionParsingInfo(
                 bundle.tx_victim.caller,
                 bundle.tx_victim.to,

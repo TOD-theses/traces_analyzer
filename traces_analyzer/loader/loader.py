@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Iterable
 
-from traces_analyzer.utils.hexstring import HexString
+from traces_parser.datatypes import HexString
 
 
 @dataclass

@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
-from traces_analyzer.parser.information_flow.constant_step_indexes import (
+from traces_parser.parser.information_flow.constant_step_indexes import (
     SPECIAL_STEP_INDEXES,
 )
-from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions.instruction import Instruction
 
 
 @dataclass

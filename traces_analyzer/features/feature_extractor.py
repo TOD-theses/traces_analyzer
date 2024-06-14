@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 
 from typing_extensions import override
 
-from traces_analyzer.parser.instructions.instruction import Instruction
+from traces_parser.parser.instructions.instruction import Instruction
 
 
 class SingleInstructionFeatureExtractor(ABC):
