@@ -68,7 +68,9 @@ def test_instruction_differences_evaluation(snapshot: PyTestSnapshotTest) -> Non
                     second_value=HexString("val_3_x"),
                 ),
             ],
-            memory_input_change=MemoryInputChange(HexString("1111"), HexString("2222")),
+            memory_input_changes=[
+                MemoryInputChange(HexString("1111"), HexString("2222"))
+            ],
         )
     ]
     only_first = [

@@ -35,10 +35,9 @@ snapshots["test_instruction_differences_evaluation evaluation_dict"] = {
                     "address": "0xd42cca38a1fc2110ac5d726dd2d8a53bd5249168",
                     "pc": 5,
                 },
-                "memory_input_change": {
-                    "first_value": "0x1111",
-                    "second_value": "0x2222",
-                },
+                "memory_input_changes": [
+                    {"first_value": "0x1111", "second_value": "0x2222"}
+                ],
                 "stack_input_changes": [
                     {
                         "first_value": "0x0val_2",

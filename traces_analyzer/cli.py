@@ -167,7 +167,7 @@ def compare_traces(
             for i in changed_instructions
             if i.opcode
             in [CALL.opcode, LOG0.opcode, LOG1.opcode, LOG2.opcode, LOG3.opcode]
-            and i.memory_input_change
+            and i.memory_input_changes
         ]
         potential_sink_instructions = [
             change.instruction_one for change in potential_sinks

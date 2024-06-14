@@ -117,7 +117,7 @@ class InstructionDifferencesEvaluation(Evaluation):
                     )
                     + "\n"
                 )
-            if change.memory_input_change:
+            if change.memory_input_changes:
                 result += f'> memory input first trace:   "{get_mem_input(change.instruction_one)}"\n'
                 result += f'> memory input second trace:  "{get_mem_input(change.instruction_two)}"\n'
             result += "\n"
@@ -180,9 +180,7 @@ def instruction_input_change_to_dict(input_change: InstructionInputChange) -> di
         "stack_input_changes": [
             asdict(change) for change in input_change.stack_input_changes
         ],
-        "memory_input_change": asdict(input_change.memory_input_change)
-        if input_change.memory_input_change
-        else None,
+        "memory_input_changes": [asdict(m) for m in input_change.memory_input_changes],
     }
 
 

@@ -114,6 +114,6 @@ def test_instruction_input_analyzer_reports_memory_differences():
     change = instruction_input_changes[0]
 
     assert change.opcode == CALL.opcode
-    assert change.memory_input_change is not None
-    assert change.memory_input_change.first_value == "1111"
-    assert change.memory_input_change.second_value == "2222"
+    assert len(change.memory_input_changes) == 1
+    assert change.memory_input_changes[0].first_value == "1111"
+    assert change.memory_input_changes[0].second_value == "2222"

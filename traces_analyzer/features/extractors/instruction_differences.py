@@ -36,7 +36,7 @@ class InstructionInputChange:
     instruction_two: Instruction
 
     stack_input_changes: list[StackInputChange]
-    memory_input_change: MemoryInputChange | None
+    memory_input_changes: list[MemoryInputChange]
 
 
 class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
@@ -93,13 +93,24 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
 def _create_input_change(
     instruction_one: Instruction, instruction_two: Instruction
 ) -> InstructionInputChange:
+    accesses_one = instruction_one.get_accesses()
+    accesses_two = instruction_two.get_accesses()
+
     stack_input_changes = _create_stack_input_changes(
-        instruction_one.get_accesses().stack, instruction_two.get_accesses().stack
+        accesses_one.stack, accesses_two.stack
     )
-    memory_change = _create_memory_input_change(
-        _get_mem_accesses_hexstring(instruction_one),
-        _get_mem_accesses_hexstring(instruction_two),
+    memory_inputs = max(len(accesses_one.memory), len(accesses_two.memory))
+    mem_inputs_one = [m.value.get_hexstring() for m in accesses_one.memory] + [None] * (
+        memory_inputs - len(accesses_one.memory)
     )
+    mem_inputs_two = [m.value.get_hexstring() for m in accesses_two.memory] + [None] * (
+        memory_inputs - len(accesses_two.memory)
+    )
+    memory_changes = [
+        _create_memory_input_change(m1, m2)
+        for m1, m2 in zip(mem_inputs_one, mem_inputs_two)
+    ]
+    memory_changes = [m for m in memory_changes if m is not None]
 
     return InstructionInputChange(
         address=instruction_one.call_context.code_address,
@@ -108,7 +119,7 @@ def _create_input_change(
         instruction_one=instruction_one,
         instruction_two=instruction_two,
         stack_input_changes=stack_input_changes,
-        memory_input_change=memory_change,
+        memory_input_changes=memory_changes,
     )
 
 
@@ -153,16 +164,14 @@ def _get_location_opcode_inputs_key(instruction: Instruction) -> tuple:
     return (
         *_get_location_opcode_key(instruction),
         stack_inputs_tuple,
-        _get_mem_accesses_hexstring(instruction),
+        _get_mem_accesses_hexstrings(instruction),
     )
 
 
-def _get_mem_accesses_hexstring(instruction: Instruction) -> HexString | None:
+def _get_mem_accesses_hexstrings(instruction: Instruction) -> tuple[HexString, ...]:
     mem_accesses = instruction.get_accesses().memory
-    assert len(mem_accesses) <= 1
-    if mem_accesses:
-        return mem_accesses[0].value.get_hexstring()
-    return None
+
+    return tuple(access.value.get_hexstring() for access in mem_accesses)
 
 
 CommonKey = TypeVar("CommonKey", bound=Hashable)
