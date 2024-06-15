@@ -3,4 +3,5 @@ typing_extensions==4.10.0
 requests==2.31.0
 networkx==3.3
 types_networkx==3.2.1.20240425
-traces_parser @ git+https://github.com/TOD-theses/traces_parser@d613885ed2ca4a651557e7b27aca7c70e2c4285f
+# TODO: use specific commit
+traces_parser @ git+https://github.com/TOD-theses/traces_parser
