@@ -4,6 +4,7 @@ import json
 from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 from typing import Iterable
+from importlib.metadata import version
 
 from networkx import ancestors
 from tqdm import tqdm
@@ -53,8 +54,11 @@ from traces_parser.datatypes import HexString
 from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 
-def main():  # pragma: no cover
+def main():
     parser = ArgumentParser(description="Analyze bundles of transaction traces")
+    parser.add_argument(
+        "--version", action="version", version="%(prog)s " + version("traces_analyzer")
+    )
     parser.add_argument(
         "--out",
         type=Path,
