@@ -19,7 +19,6 @@ from traces_analyzer.features.extractors.instruction_usages import (
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_parser.parser.instructions.instructions import LOG3, SLOAD
-from traces_parser.parser.events_parser import parse_events_eip3155
 from traces_parser.parser.instructions_parser import (
     parse_transaction,
     TransactionParsingInfo,
@@ -27,14 +26,18 @@ from traces_parser.parser.instructions_parser import (
 from traces_parser.datatypes import HexString
 from snapshottest.pytest import PyTestSnapshotTest
 
+from traces_analyzer.loader.event_parser import StructLogEventsParser
+
 
 @pytest.mark.slow
 def test_sample_traces_analysis_e2e(
     sample_traces_path: Path, snapshot: PyTestSnapshotTest
 ) -> None:
-    attack_id = "62a8b9ece30161692b68cbb5"
+    attack_id = "62a8b9ece30161692b68cbb5_vm_traces"
 
-    with DirectoryLoader(sample_traces_path / attack_id) as bundle:
+    with DirectoryLoader(
+        sample_traces_path / attack_id, StructLogEventsParser()
+    ) as bundle:
         transactions_actual = parse_transaction(
             TransactionParsingInfo(
                 bundle.tx_victim.caller,
@@ -42,7 +45,7 @@ def test_sample_traces_analysis_e2e(
                 bundle.tx_victim.calldata,
                 bundle.tx_victim.value,
             ),
-            parse_events_eip3155(bundle.tx_victim.trace_actual),
+            bundle.tx_victim.events_normal,
         )
         transactions_reverse = parse_transaction(
             TransactionParsingInfo(
@@ -51,7 +54,7 @@ def test_sample_traces_analysis_e2e(
                 bundle.tx_victim.calldata,
                 bundle.tx_victim.value,
             ),
-            parse_events_eip3155(bundle.tx_victim.trace_reverse),
+            bundle.tx_victim.events_reverse,
         )
 
         instruction_usage_analyzer = SingleToDoubleInstructionFeatureExtractor(

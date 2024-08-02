@@ -19,5 +19,5 @@ $ python -m traces_analyzer --help
 $ traces_analyzer --help
 
 # for instance
-$ traces_analyzer traces_analyzer --bundles traces/benchmark_traces/*
+$ traces_analyzer --bundles traces/benchmark_traces/*
 ```

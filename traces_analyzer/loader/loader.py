@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from traces_parser.datatypes import HexString
+from traces_parser.parser.events_parser import TraceEvent
 
 
 @dataclass
@@ -14,8 +15,8 @@ class TraceBundle:
     to: HexString
     calldata: HexString
     value: HexString
-    trace_actual: Iterable[str]
-    trace_reverse: Iterable[str]
+    events_normal: Iterable[TraceEvent]
+    events_reverse: Iterable[TraceEvent]
 
 
 @dataclass

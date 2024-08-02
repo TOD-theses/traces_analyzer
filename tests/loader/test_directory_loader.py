@@ -4,14 +4,25 @@ import pytest
 
 
 from traces_analyzer.loader.directory_loader import DirectoryLoader
+from traces_analyzer.loader.event_parser import (
+    EIP3155EventsParser,
+    EventsParser,
+    StructLogEventsParser,
+)
 
 
 @pytest.mark.slow
-def test_directory_loader(sample_traces_path: Path):
-    id = "62a8b9ece30161692b68cbb5"
+@pytest.mark.parametrize(
+    "id,parser",
+    [
+        ("62a8b9ece30161692b68cbb5", EIP3155EventsParser()),
+        ("62a8b9ece30161692b68cbb5_vm_traces", StructLogEventsParser()),
+    ],
+)
+def test_directory_loader(sample_traces_path: Path, id: str, parser: EventsParser):
     dir = sample_traces_path / id
 
-    with DirectoryLoader(dir) as bundle:
+    with DirectoryLoader(dir, parser) as bundle:
         assert bundle.id == id
 
         assert (
@@ -32,5 +43,5 @@ def test_directory_loader(sample_traces_path: Path):
         )
         assert bundle.tx_victim.value.as_int() == 0
 
-        assert len(list(bundle.tx_victim.trace_actual)) == 90075
-        assert len(list(bundle.tx_victim.trace_reverse)) == 90075
+        assert len(list(bundle.tx_victim.events_normal)) == 90074
+        assert len(list(bundle.tx_victim.events_reverse)) == 90074

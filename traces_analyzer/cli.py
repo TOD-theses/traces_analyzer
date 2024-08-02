@@ -32,9 +32,10 @@ from traces_analyzer.features.feature_extractor import (
     SingleToDoubleInstructionFeatureExtractor,
 )
 from traces_analyzer.loader.directory_loader import DirectoryLoader
+from traces_analyzer.loader.event_parser import StructLogEventsParser
 from traces_analyzer.loader.loader import PotentialAttack
 from traces_parser.parser.environment.call_context import CallContext
-from traces_parser.parser.events_parser import parse_events_eip3155
+from traces_parser.parser.events_parser import TraceEvent
 from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
@@ -83,7 +84,7 @@ def main():
     out.mkdir(exist_ok=True)
 
     for path in (bar := tqdm(bundles, dynamic_ncols=True)):
-        with DirectoryLoader(path) as bundle:
+        with DirectoryLoader(path, StructLogEventsParser()) as bundle:
             bar.set_postfix_str(bundle.id)
             analyze_transactions_in_dir(bundle, out, verbose)
 
@@ -95,7 +96,7 @@ def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose:
         bundle.tx_victim.to,
         bundle.tx_victim.calldata,
         bundle.tx_victim.value,
-        (bundle.tx_victim.trace_actual, bundle.tx_victim.trace_reverse),
+        (bundle.tx_victim.events_normal, bundle.tx_victim.events_reverse),
         verbose,
     )
 
@@ -115,7 +116,7 @@ def compare_traces(
     to: HexString,
     calldata: HexString,
     value: HexString,
-    traces: tuple[Iterable[str], Iterable[str]],
+    traces: tuple[Iterable[TraceEvent], Iterable[TraceEvent]],
     verbose: bool,
 ) -> list[Evaluation]:
     tod_source_analyzer = TODSourceFeatureExtractor()
@@ -126,11 +127,11 @@ def compare_traces(
 
     transaction_one = parse_transaction(
         TransactionParsingInfo(sender, to, calldata, value),
-        parse_events_eip3155(traces[0]),
+        traces[0],
     )
     transaction_two = parse_transaction(
         TransactionParsingInfo(sender, to, calldata, value),
-        parse_events_eip3155(traces[1]),
+        traces[1],
     )
 
     runner = FeatureExtractionRunner(
