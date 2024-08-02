@@ -34,7 +34,7 @@ from traces_analyzer.features.feature_extractor import (
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.loader import PotentialAttack
 from traces_parser.parser.environment.call_context import CallContext
-from traces_parser.parser.events_parser import parse_events
+from traces_parser.parser.events_parser import parse_events_eip3155
 from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
@@ -125,10 +125,12 @@ def compare_traces(
     )
 
     transaction_one = parse_transaction(
-        TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[0])
+        TransactionParsingInfo(sender, to, calldata, value),
+        parse_events_eip3155(traces[0]),
     )
     transaction_two = parse_transaction(
-        TransactionParsingInfo(sender, to, calldata, value), parse_events(traces[1])
+        TransactionParsingInfo(sender, to, calldata, value),
+        parse_events_eip3155(traces[1]),
     )
 
     runner = FeatureExtractionRunner(

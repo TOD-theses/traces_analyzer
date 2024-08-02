@@ -19,7 +19,7 @@ from traces_analyzer.features.extractors.instruction_usages import (
 from traces_analyzer.features.extractors.tod_source import TODSourceFeatureExtractor
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_parser.parser.instructions.instructions import LOG3, SLOAD
-from traces_parser.parser.events_parser import parse_events
+from traces_parser.parser.events_parser import parse_events_eip3155
 from traces_parser.parser.instructions_parser import (
     parse_transaction,
     TransactionParsingInfo,
@@ -42,7 +42,7 @@ def test_sample_traces_analysis_e2e(
                 bundle.tx_victim.calldata,
                 bundle.tx_victim.value,
             ),
-            parse_events(bundle.tx_victim.trace_actual),
+            parse_events_eip3155(bundle.tx_victim.trace_actual),
         )
         transactions_reverse = parse_transaction(
             TransactionParsingInfo(
@@ -51,7 +51,7 @@ def test_sample_traces_analysis_e2e(
                 bundle.tx_victim.calldata,
                 bundle.tx_victim.value,
             ),
-            parse_events(bundle.tx_victim.trace_reverse),
+            parse_events_eip3155(bundle.tx_victim.trace_reverse),
         )
 
         instruction_usage_analyzer = SingleToDoubleInstructionFeatureExtractor(
