@@ -7,7 +7,7 @@ from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.event_parser import (
     EIP3155EventsParser,
     EventsParser,
-    StructLogEventsParser,
+    VmTraceEventsParser,
 )
 
 
@@ -16,7 +16,7 @@ from traces_analyzer.loader.event_parser import (
     "id,parser",
     [
         ("62a8b9ece30161692b68cbb5", EIP3155EventsParser()),
-        ("62a8b9ece30161692b68cbb5_vm_traces", StructLogEventsParser()),
+        ("62a8b9ece30161692b68cbb5_vm_traces", VmTraceEventsParser()),
     ],
 )
 def test_directory_loader(sample_traces_path: Path, id: str, parser: EventsParser):

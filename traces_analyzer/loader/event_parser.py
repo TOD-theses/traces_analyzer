@@ -17,12 +17,16 @@ class EventsParser(ABC):
 
 
 class EIP3155EventsParser(EventsParser):
+    """Parse a EIP-3155 traces where each step is passed as a separate JSON string"""
+
     @override
     def parse(self, lines: Iterable[str]) -> Iterable[TraceEvent]:
         return parse_events_eip3155(lines)
 
 
-class StructLogEventsParser(EventsParser):
+class VmTraceEventsParser(EventsParser):
+    """Parse a vm trace, where the whole iterable is a single JSON string"""
+
     @override
     def parse(self, lines: Iterable[str]) -> Iterable[TraceEvent]:
         json_str = "".join(lines)

@@ -26,7 +26,7 @@ from traces_parser.parser.instructions_parser import (
 from traces_parser.datatypes import HexString
 from snapshottest.pytest import PyTestSnapshotTest
 
-from traces_analyzer.loader.event_parser import StructLogEventsParser
+from traces_analyzer.loader.event_parser import VmTraceEventsParser
 
 
 @pytest.mark.slow
@@ -36,7 +36,7 @@ def test_sample_traces_analysis_e2e(
     attack_id = "62a8b9ece30161692b68cbb5_vm_traces"
 
     with DirectoryLoader(
-        sample_traces_path / attack_id, StructLogEventsParser()
+        sample_traces_path / attack_id, VmTraceEventsParser()
     ) as bundle:
         transactions_actual = parse_transaction(
             TransactionParsingInfo(

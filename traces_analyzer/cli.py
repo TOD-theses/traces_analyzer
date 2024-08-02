@@ -32,7 +32,7 @@ from traces_analyzer.features.feature_extractor import (
     SingleToDoubleInstructionFeatureExtractor,
 )
 from traces_analyzer.loader.directory_loader import DirectoryLoader
-from traces_analyzer.loader.event_parser import StructLogEventsParser
+from traces_analyzer.loader.event_parser import VmTraceEventsParser
 from traces_analyzer.loader.loader import PotentialAttack
 from traces_parser.parser.environment.call_context import CallContext
 from traces_parser.parser.events_parser import TraceEvent
@@ -84,7 +84,7 @@ def main():
     out.mkdir(exist_ok=True)
 
     for path in (bar := tqdm(bundles, dynamic_ncols=True)):
-        with DirectoryLoader(path, StructLogEventsParser()) as bundle:
+        with DirectoryLoader(path, VmTraceEventsParser()) as bundle:
             bar.set_postfix_str(bundle.id)
             analyze_transactions_in_dir(bundle, out, verbose)
 

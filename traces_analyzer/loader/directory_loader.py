@@ -26,8 +26,6 @@ class DirectoryLoader(TraceLoader):
             id = metadata["id"]
             victim_tx_hash: str = metadata["transactions_order"][-1]
             victim_tx: dict[str, str] = metadata["transactions"][victim_tx_hash]
-            metadata["transaction_replays"]["actual"]
-            metadata["transaction_replays"]["reverse"]
             return self._load_potential_attack(
                 id,
                 victim_tx,
