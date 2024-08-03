@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import json
-from typing import Iterable
+from typing import Generic, Iterable, TypeVar
 from typing_extensions import override
 
 from traces_parser.parser.events_parser import (
@@ -9,10 +9,12 @@ from traces_parser.parser.events_parser import (
     parse_events_struct_logs,
 )
 
+T = TypeVar("T")
 
-class EventsParser(ABC):
+
+class EventsParser(ABC, Generic[T]):
     @abstractmethod
-    def parse(self, lines: Iterable[str]) -> Iterable[TraceEvent]:
+    def parse(self, lines: T) -> Iterable[TraceEvent]:
         pass
 
 
@@ -31,3 +33,11 @@ class VmTraceEventsParser(EventsParser):
     def parse(self, lines: Iterable[str]) -> Iterable[TraceEvent]:
         json_str = "".join(lines)
         return parse_events_struct_logs(json.loads(json_str)["structLogs"])
+
+
+class VmTraceDictEventsParser(EventsParser):
+    """Parse a vm trace, where the whole iterable is a single JSON string"""
+
+    @override
+    def parse(self, lines: dict) -> Iterable[TraceEvent]:
+        return parse_events_struct_logs(lines["structLogs"])

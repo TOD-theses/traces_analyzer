@@ -1,19 +1,21 @@
-from typing import Iterable
+from typing import Generic, TypeVar
 from traces_analyzer.loader.event_parser import EventsParser
 from traces_analyzer.loader.loader import PotentialAttack, TraceBundle, TraceLoader
 from traces_analyzer.loader.types import TxData
 
 from traces_parser.datatypes.hexstring import HexString
 
+T = TypeVar("T")
 
-class InMemoryLoader(TraceLoader):
+
+class InMemoryLoader(TraceLoader, Generic[T]):
     def __init__(
         self,
         id: str,
         tx: TxData,
-        data_normal: Iterable[str],
-        data_reverse: Iterable[str],
-        parser: EventsParser,
+        data_normal: T,
+        data_reverse: T,
+        parser: EventsParser[T],
     ) -> None:
         self.id = id
         self.tx = tx

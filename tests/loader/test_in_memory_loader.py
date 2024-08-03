@@ -1,4 +1,7 @@
+import json
+import pytest
 from traces_analyzer.loader.event_parser import (
+    VmTraceDictEventsParser,
     VmTraceEventsParser,
 )
 from traces_analyzer.loader.in_memory_loader import InMemoryLoader
@@ -195,7 +198,14 @@ vm_trace = """{
 """
 
 
-def test_in_memory_loader():
+@pytest.mark.parametrize(
+    "data,parser",
+    [
+        (vm_trace, VmTraceEventsParser()),
+        (json.loads(vm_trace), VmTraceDictEventsParser()),
+    ],
+)
+def test_in_memory_loader(data, parser):
     id = "test"
     tx: TxData = {
         "hash": "0xb8fbee3430ed8cfb8793407b61c4d801e61b48c08123ceaed4137643aa9c79a6",
@@ -208,9 +218,9 @@ def test_in_memory_loader():
     with InMemoryLoader(
         id,
         tx,
-        data_normal=vm_trace,
-        data_reverse=vm_trace,
-        parser=VmTraceEventsParser(),
+        data_normal=data,
+        data_reverse=data,
+        parser=parser,
     ) as bundle:
         assert bundle.id == id
 
