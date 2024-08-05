@@ -6,10 +6,12 @@ from pathlib import Path
 from typing import Iterable
 from importlib.metadata import version
 
-from networkx import ancestors
 from tqdm import tqdm
 
 from traces_analyzer.evaluation.evaluation import Evaluation
+from traces_analyzer.evaluation.financial_gain_loss_evaluation import (
+    FinancialGainLossEvaluation,
+)
 from traces_analyzer.evaluation.instruction_differences_evaluation import (
     InstructionDifferencesEvaluation,
 )
@@ -20,6 +22,9 @@ from traces_analyzer.evaluation.securify_properties_evaluation import (
     SecurifyPropertiesEvaluation,
 )
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
+from traces_analyzer.features.extractors.currency_changes import (
+    CurrencyChangesFeatureExtractor,
+)
 from traces_analyzer.features.extractors.instruction_differences import (
     InstructionDifferencesFeatureExtractor,
 )
@@ -40,17 +45,12 @@ from traces_analyzer.features.feature_extractor import (
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.event_parser import VmTraceEventsParser
 from traces_analyzer.loader.loader import PotentialAttack
-from traces_parser.parser.environment.call_context import CallContext
 from traces_parser.parser.events_parser import TraceEvent
 from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
 )
 from traces_parser.parser.instructions.instructions import (
     CALL,
-    LOG0,
-    LOG1,
-    LOG2,
-    LOG3,
     STATICCALL,
 )
 from traces_parser.parser.instructions_parser import (
@@ -58,7 +58,6 @@ from traces_parser.parser.instructions_parser import (
     parse_transaction,
 )
 from traces_parser.datatypes import HexString
-from traces_analyzer.utils.signatures.signature_registry import SignatureRegistry
 
 
 def main():
@@ -138,6 +137,9 @@ def compare_traces(
     instruction_usage_analyzers = SingleToDoubleInstructionFeatureExtractor(
         InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
     )
+    currency_changes_analyzer = SingleToDoubleInstructionFeatureExtractor(
+        CurrencyChangesFeatureExtractor(), CurrencyChangesFeatureExtractor()
+    )
     calls_grouper = SingleToDoubleInstructionFeatureExtractor(
         InstructionLocationsGrouperFeatureExtractor([CALL.opcode]),
         InstructionLocationsGrouperFeatureExtractor([CALL.opcode]),
@@ -158,6 +160,7 @@ def compare_traces(
                 tod_source_analyzer,
                 instruction_changes_analyzer,
                 instruction_usage_analyzers,
+                currency_changes_analyzer,
                 calls_grouper,
             ],
             transactions=(transaction_one, transaction_two),
@@ -165,89 +168,89 @@ def compare_traces(
     )
     runner.run()
 
-    information_flow_graph_one = build_information_flow_graph(
-        transaction_one.instructions
-    )
-    information_flow_graph_two = build_information_flow_graph(
-        transaction_two.instructions
-    )
+    build_information_flow_graph(transaction_one.instructions)
+    build_information_flow_graph(transaction_two.instructions)
 
-    if verbose:
-        call_tree_normal, call_tree_reverse = runner.get_call_trees()
-        print(f"Transaction: {hash}")
-        print("Call tree actual")
-        print(call_tree_normal)
-        print("Call tree reverse")
-        print(call_tree_reverse)
+    # if verbose:
+    #     call_tree_normal, call_tree_reverse = runner.get_call_trees()
+    #     print(f"Transaction: {hash}")
+    #     print("Call tree actual")
+    #     print(call_tree_normal)
+    #     print("Call tree reverse")
+    #     print(call_tree_reverse)
 
-        print("Source to Sink")
-        print()
-        all_instructions = transaction_one.instructions
-        tod_source_instruction = tod_source_analyzer.get_tod_source().instruction_one
-        changed_instructions = (
-            instruction_changes_analyzer.get_instructions_with_different_inputs()
-        )
-        # only memory input changes for CALL/LOGs
-        potential_sinks = [
-            i
-            for i in changed_instructions
-            if i.opcode
-            in [CALL.opcode, LOG0.opcode, LOG1.opcode, LOG2.opcode, LOG3.opcode]
-            and i.memory_input_changes
-        ]
-        potential_sink_instructions = [
-            change.instruction_one for change in potential_sinks
-        ]
+    #     print("Source to Sink")
+    #     print()
+    #     all_instructions = transaction_one.instructions
+    #     tod_source_instruction = tod_source_analyzer.get_tod_source().instruction_one
+    #     changed_instructions = (
+    #         instruction_changes_analyzer.get_instructions_with_different_inputs()
+    #     )
+    #     # only memory input changes for CALL/LOGs
+    #     potential_sinks = [
+    #         i
+    #         for i in changed_instructions
+    #         if i.opcode
+    #         in [CALL.opcode, LOG0.opcode, LOG1.opcode, LOG2.opcode, LOG3.opcode]
+    #         and i.memory_input_changes
+    #     ]
+    #     potential_sink_instructions = [
+    #         change.instruction_one for change in potential_sinks
+    #     ]
 
-        tod_source_instruction_index = all_instructions.index(tod_source_instruction)
-        potential_sink_instruction_indexes = [
-            all_instructions.index(instr) for instr in potential_sink_instructions
-        ]
-        sink_instruction_index = min(potential_sink_instruction_indexes)
-        sink_instruction = all_instructions[sink_instruction_index]
+    #     tod_source_instruction_index = all_instructions.index(tod_source_instruction)
+    #     potential_sink_instruction_indexes = [
+    #         all_instructions.index(instr) for instr in potential_sink_instructions
+    #     ]
+    #     sink_instruction_index = min(potential_sink_instruction_indexes)
+    #     sink_instruction = all_instructions[sink_instruction_index]
 
-        print(information_flow_graph_one)
-        print(information_flow_graph_two)
-        print(list(ancestors(information_flow_graph_one, sink_instruction.step_index)))
+    #     print(information_flow_graph_one)
+    #     print(information_flow_graph_two)
+    #     print(list(ancestors(information_flow_graph_one, sink_instruction.step_index)))
 
-        source_to_sink_contexts: list[CallContext] = []
+    #     source_to_sink_contexts: list[CallContext] = []
 
-        # NOTE: call contexts will go up and down and repeat themselves
-        for instr in all_instructions[
-            tod_source_instruction_index : sink_instruction_index + 1
-        ]:
-            if (
-                not source_to_sink_contexts
-                or instr.call_context is not source_to_sink_contexts[-1]
-            ):
-                source_to_sink_contexts.append(instr.call_context)
+    #     # NOTE: call contexts will go up and down and repeat themselves
+    #     for instr in all_instructions[
+    #         tod_source_instruction_index : sink_instruction_index + 1
+    #     ]:
+    #         if (
+    #             not source_to_sink_contexts
+    #             or instr.call_context is not source_to_sink_contexts[-1]
+    #         ):
+    #             source_to_sink_contexts.append(instr.call_context)
 
-        """
-        TODO:
-        - the source instruction is not necessarily related to the sink
-            -> should display all source instructions and the human can match it
-        - with information flow analysis, we could check which instruction is responsible for the change.
-            However, this would need to include stack, memory, tcache, calldata, returndata, and storage writes+reads
-        """
-        signature_lookup = SignatureRegistry("http://localhost:8000")
-        min_depth = min(context.depth for context in source_to_sink_contexts)
-        source_indent = "  " * (tod_source_instruction.call_context.depth - min_depth)
-        sink_indent = "  " * (sink_instruction.call_context.depth - min_depth)
-        print(f"{source_indent}> {tod_source_instruction}")
-        for context in source_to_sink_contexts:
-            # print(context)
-            signature = (
-                signature_lookup.lookup_by_hex(context.calldata[:8].get_hexstring())
-                or context.calldata[:8]
-            )
-            indent = "  " * (context.depth - min_depth)
-            print(f"{indent}> {context.code_address}.{signature}")
-        print(f"{sink_indent}> {sink_instruction}")
+    #     """
+    #     TODO:
+    #     - the source instruction is not necessarily related to the sink
+    #         -> should display all source instructions and the human can match it
+    #     - with information flow analysis, we could check which instruction is responsible for the change.
+    #         However, this would need to include stack, memory, tcache, calldata, returndata, and storage writes+reads
+    #     """
+    #     signature_lookup = SignatureRegistry("http://localhost:8000")
+    #     min_depth = min(context.depth for context in source_to_sink_contexts)
+    #     source_indent = "  " * (tod_source_instruction.call_context.depth - min_depth)
+    #     sink_indent = "  " * (sink_instruction.call_context.depth - min_depth)
+    #     print(f"{source_indent}> {tod_source_instruction}")
+    #     for context in source_to_sink_contexts:
+    #         # print(context)
+    #         signature = (
+    #             signature_lookup.lookup_by_hex(context.calldata[:8].get_hexstring())
+    #             or context.calldata[:8]
+    #         )
+    #         indent = "  " * (context.depth - min_depth)
+    #         print(f"{indent}> {context.code_address}.{signature}")
+    #     print(f"{sink_indent}> {sink_instruction}")
 
     evaluations: list[Evaluation] = [
         SecurifyPropertiesEvaluation(
             calls_grouper.normal.instruction_groups,  # type: ignore
             calls_grouper.reverse.instruction_groups,  # type: ignore
+        ),
+        FinancialGainLossEvaluation(
+            currency_changes_analyzer.normal.currency_changes,
+            currency_changes_analyzer.reverse.currency_changes,
         ),
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
         InstructionDifferencesEvaluation(

@@ -21,6 +21,7 @@ from traces_parser.parser.instructions.instructions import (
     SLOAD,
     CallInstruction,
     CALL,
+    CALLCODE,
 )
 from traces_parser.parser.storage.address_key_storage import AddressKeyStorage
 from traces_parser.parser.storage.balances import Balances
@@ -405,11 +406,38 @@ def _test_sstore(
     )
 
 
-def _test_call(current_address: str, pc: int, value: str, address: str):
+def _test_call(current_address: str, pc: int, value: str, address: str, reverted=False):
     return _test_instruction(
         CALL,
         pc=pc,
-        call_context=_test_call_context(code_address=_test_addr(current_address)),
+        call_context=_test_call_context(
+            code_address=_test_addr(current_address),
+            storage_address=_test_addr(current_address),
+            reverted=reverted,
+        ),
+        flow=_test_flow(
+            accesses=StorageAccesses(
+                stack=_test_stack_accesses(
+                    ["0x1234", address, value, "0x0", "0x4", "0x0", "0x0"]
+                ),
+                memory=[_test_mem_access("11111111")],
+            ),
+            writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
+        ),
+    )
+
+
+def _test_callcode(
+    current_address: str, pc: int, value: str, address: str, reverted=False
+):
+    return _test_instruction(
+        CALLCODE,
+        pc=pc,
+        call_context=_test_call_context(
+            code_address=_test_addr(current_address),
+            storage_address=_test_addr(current_address),
+            reverted=reverted,
+        ),
         flow=_test_flow(
             accesses=StorageAccesses(
                 stack=_test_stack_accesses(
