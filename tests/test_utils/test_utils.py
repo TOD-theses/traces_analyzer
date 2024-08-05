@@ -20,6 +20,7 @@ from traces_parser.parser.instructions.instructions import (
     PUSH32,
     SLOAD,
     CallInstruction,
+    CALL,
 )
 from traces_parser.parser.storage.address_key_storage import AddressKeyStorage
 from traces_parser.parser.storage.balances import Balances
@@ -34,6 +35,7 @@ from traces_parser.parser.storage.storage_writes import (
     StackPush,
     StorageAccesses,
     StorageWrites,
+    CalldataWrite,
 )
 from traces_parser.parser.trace_evm.trace_evm import InstructionMetadata
 from traces_parser.utils.mnemonics import opcode_to_name
@@ -324,7 +326,7 @@ def _test_instruction(
 
     return instruction_type(
         instruction_type.opcode,
-        opcode_to_name(instruction_type.opcode, "UKNOWN") or "UNKNOWN",
+        opcode_to_name(instruction_type.opcode, "UNKNOWN") or "UNKNOWN",
         pc,
         step_index,
         call_context,
@@ -399,5 +401,22 @@ def _test_sstore(
                     PersistentStorageWrite(call_context.storage_address, key, value)
                 ]
             ),
+        ),
+    )
+
+
+def _test_call(current_address: str, pc: int, value: str, address: str):
+    return _test_instruction(
+        CALL,
+        pc=pc,
+        call_context=_test_call_context(code_address=_test_addr(current_address)),
+        flow=_test_flow(
+            accesses=StorageAccesses(
+                stack=_test_stack_accesses(
+                    ["0x1234", address, value, "0x0", "0x4", "0x0", "0x0"]
+                ),
+                memory=[_test_mem_access("11111111")],
+            ),
+            writes=StorageWrites(calldata=CalldataWrite(_test_group("11111111"))),
         ),
     )

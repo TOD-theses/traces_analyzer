@@ -16,9 +16,15 @@ from traces_analyzer.evaluation.instruction_differences_evaluation import (
 from traces_analyzer.evaluation.instruction_usage_evaluation import (
     InstructionUsageEvaluation,
 )
+from traces_analyzer.evaluation.securify_properties_evaluation import (
+    SecurifyPropertiesEvaluation,
+)
 from traces_analyzer.evaluation.tod_source_evaluation import TODSourceEvaluation
 from traces_analyzer.features.extractors.instruction_differences import (
     InstructionDifferencesFeatureExtractor,
+)
+from traces_analyzer.features.extractors.instruction_location_grouper import (
+    InstructionLocationsGrouperFeatureExtractor,
 )
 from traces_analyzer.features.extractors.instruction_usages import (
     InstructionUsagesFeatureExtractor,
@@ -119,10 +125,22 @@ def compare_traces(
     traces: tuple[Iterable[TraceEvent], Iterable[TraceEvent]],
     verbose: bool,
 ) -> list[Evaluation]:
+    """
+    I want this analysis of normal vs reverse to return:
+    - gains
+    - losses
+    - TOD Transfer
+    - TOD Amount
+    - TOD Receiver
+    """
     tod_source_analyzer = TODSourceFeatureExtractor()
     instruction_changes_analyzer = InstructionDifferencesFeatureExtractor()
     instruction_usage_analyzers = SingleToDoubleInstructionFeatureExtractor(
         InstructionUsagesFeatureExtractor(), InstructionUsagesFeatureExtractor()
+    )
+    calls_grouper = SingleToDoubleInstructionFeatureExtractor(
+        InstructionLocationsGrouperFeatureExtractor([CALL.opcode]),
+        InstructionLocationsGrouperFeatureExtractor([CALL.opcode]),
     )
 
     transaction_one = parse_transaction(
@@ -140,6 +158,7 @@ def compare_traces(
                 tod_source_analyzer,
                 instruction_changes_analyzer,
                 instruction_usage_analyzers,
+                calls_grouper,
             ],
             transactions=(transaction_one, transaction_two),
         )
@@ -226,6 +245,10 @@ def compare_traces(
         print(f"{sink_indent}> {sink_instruction}")
 
     evaluations: list[Evaluation] = [
+        SecurifyPropertiesEvaluation(
+            calls_grouper.one.instruction_groups,  # type: ignore
+            calls_grouper.two.instruction_groups,  # type: ignore
+        ),
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
         InstructionDifferencesEvaluation(
             occurrence_changes=instruction_changes_analyzer.get_instructions_only_executed_by_one_trace(),

@@ -59,10 +59,10 @@ class InstructionDifferencesEvaluation(Evaluation):
             ],
             "occurrence_changes": {
                 "only_in_first_trace": [
-                    occurence_change_to_dict(c) for c in self._only_first
+                    occurrence_change_to_dict(c) for c in self._only_first
                 ],
                 "only_in_second_trace": [
-                    occurence_change_to_dict(c) for c in self._only_second
+                    occurrence_change_to_dict(c) for c in self._only_second
                 ],
             },
         }
@@ -136,7 +136,7 @@ class InstructionDifferencesEvaluation(Evaluation):
         return result
 
 
-def occurence_change_to_dict(changed_instruction: Instruction) -> dict:
+def occurrence_change_to_dict(changed_instruction: Instruction) -> dict:
     return {
         "location": {
             "address": changed_instruction.call_context.code_address.with_prefix(),
