@@ -246,8 +246,8 @@ def compare_traces(
 
     evaluations: list[Evaluation] = [
         SecurifyPropertiesEvaluation(
-            calls_grouper.one.instruction_groups,  # type: ignore
-            calls_grouper.two.instruction_groups,  # type: ignore
+            calls_grouper.normal.instruction_groups,  # type: ignore
+            calls_grouper.reverse.instruction_groups,  # type: ignore
         ),
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
         InstructionDifferencesEvaluation(
@@ -255,8 +255,8 @@ def compare_traces(
             input_changes=instruction_changes_analyzer.get_instructions_with_different_inputs(),
         ),
         InstructionUsageEvaluation(
-            instruction_usage_analyzers.one.get_used_opcodes_per_contract(),
-            instruction_usage_analyzers.two.get_used_opcodes_per_contract(),
+            instruction_usage_analyzers.normal.get_used_opcodes_per_contract(),
+            instruction_usage_analyzers.reverse.get_used_opcodes_per_contract(),
             filter_opcodes=[CALL.opcode, STATICCALL.opcode],
         ),
     ]

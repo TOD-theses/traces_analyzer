@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 from tests.test_utils.test_utils import _test_flow, _test_root
-from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
+from traces_analyzer.features.feature_extractor import DoubleInstructionFeatureExtractor
 from traces_analyzer.features.feature_extraction_runner import (
     RunInfo,
     FeatureExtractionRunner,
@@ -12,7 +12,7 @@ from traces_parser.parser.instructions.instructions import POP
 
 
 def test_analysis_runner_empty_does_not_call_analyzer():
-    feature_extractor_mock = Mock(spec_set=DoulbeInstructionFeatureExtractor)
+    feature_extractor_mock = Mock(spec_set=DoubleInstructionFeatureExtractor)
     empty_call_tree = CallTree(_test_root())
     empty_transaction = ParsedTransaction([], empty_call_tree)
 
@@ -28,7 +28,7 @@ def test_analysis_runner_empty_does_not_call_analyzer():
 
 
 def test_analysis_runner_calls_analyzer() -> None:
-    feature_extractor_mock = Mock(spec_set=DoulbeInstructionFeatureExtractor)
+    feature_extractor_mock = Mock(spec_set=DoubleInstructionFeatureExtractor)
     empty_call_tree = CallTree(_test_root())
     instructions_one = [POP(POP.opcode, "POP", 1, 1, _test_root(), _test_flow())]
     instructions_two = instructions_one + [

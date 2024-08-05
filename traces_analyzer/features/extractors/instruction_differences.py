@@ -5,7 +5,7 @@ from typing import Callable, Generic, Hashable, Mapping, Sequence, TypeVar
 
 from typing_extensions import override
 
-from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
+from traces_analyzer.features.feature_extractor import DoubleInstructionFeatureExtractor
 from traces_parser.parser.instructions.instruction import Instruction
 from traces_parser.parser.storage.storage_writes import StackAccess
 from traces_parser.datatypes import HexString
@@ -39,7 +39,7 @@ class InstructionInputChange:
     memory_input_changes: list[MemoryInputChange]
 
 
-class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
+class InstructionDifferencesFeatureExtractor(DoubleInstructionFeatureExtractor):
     """Analyze how the instruction inputs of two traces differ"""
 
     def __init__(self) -> None:
@@ -50,14 +50,14 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
     @override
     def on_instructions(
         self,
-        first_instruction: Instruction | None,
-        second_instruction: Instruction | None,
+        normal_instruction: Instruction | None,
+        reverse_instruction: Instruction | None,
     ):
-        if first_instruction:
-            self._instructions_one.append(first_instruction)
+        if normal_instruction:
+            self._instructions_one.append(normal_instruction)
 
-        if second_instruction:
-            self._instructions_two.append(second_instruction)
+        if reverse_instruction:
+            self._instructions_two.append(reverse_instruction)
 
     def get_instructions_only_executed_by_one_trace(
         self,
@@ -76,7 +76,7 @@ class InstructionDifferencesFeatureExtractor(DoulbeInstructionFeatureExtractor):
         return (only_first, only_second)
 
     def get_instructions_with_different_inputs(self) -> list[InstructionInputChange]:
-        # TODO: the order of the comparison is non-deterministc. Should we change it to be deterministic somehow?
+        # TODO: the order of the comparison is non-deterministic. Should we change it to be deterministic somehow?
         comparison = _compare_instructions(
             self._instructions_one,
             self._instructions_two,

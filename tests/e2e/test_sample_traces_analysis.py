@@ -81,8 +81,8 @@ def test_sample_traces_analysis_e2e(
         )
 
         # Instruction usage has found 17 contracts
-        assert len(instruction_usage_analyzer.one.get_used_opcodes_per_contract()) == 17
-        assert len(instruction_usage_analyzer.two.get_used_opcodes_per_contract()) == 17
+        assert len(instruction_usage_analyzer.normal.get_used_opcodes_per_contract()) == 17
+        assert len(instruction_usage_analyzer.reverse.get_used_opcodes_per_contract()) == 17
 
         # TOD source
         tod_source = tod_source_analyzer.get_tod_source()

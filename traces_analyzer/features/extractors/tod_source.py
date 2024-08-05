@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from typing_extensions import override
 
-from traces_analyzer.features.feature_extractor import DoulbeInstructionFeatureExtractor
+from traces_analyzer.features.feature_extractor import DoubleInstructionFeatureExtractor
 from traces_parser.parser.information_flow.constant_step_indexes import (
     SPECIAL_STEP_INDEXES,
 )
@@ -16,7 +16,7 @@ class TODSource:
     instruction_two: Instruction
 
 
-class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
+class TODSourceFeatureExtractor(DoubleInstructionFeatureExtractor):
     """Analyze at which instruction the TOD first had an effect"""
 
     def __init__(self) -> None:
@@ -27,22 +27,22 @@ class TODSourceFeatureExtractor(DoulbeInstructionFeatureExtractor):
     @override
     def on_instructions(
         self,
-        first_instruction: Instruction | None,
-        second_instruction: Instruction | None,
+        normal_instruction: Instruction | None,
+        reverse_instruction: Instruction | None,
     ):
         if self._tod_source_instructions:
             return
 
-        if not first_instruction or not second_instruction:
+        if not normal_instruction or not reverse_instruction:
             return
 
         # TODO: this does not work if both instructions depend on the prestate
         # but something else caused the write change (ie it is no TOD)
-        if depends_on_prestate(first_instruction) and depends_on_prestate(
-            second_instruction
+        if depends_on_prestate(normal_instruction) and depends_on_prestate(
+            reverse_instruction
         ):
-            if first_instruction.get_writes() != second_instruction.get_writes():
-                self._tod_source_instructions = first_instruction, second_instruction
+            if normal_instruction.get_writes() != reverse_instruction.get_writes():
+                self._tod_source_instructions = normal_instruction, reverse_instruction
 
     def get_tod_source(self) -> TODSource:
         if not self._tod_source_instructions:
