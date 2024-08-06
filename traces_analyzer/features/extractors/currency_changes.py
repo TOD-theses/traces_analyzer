@@ -1,5 +1,3 @@
-from typing import TypedDict
-
 from typing_extensions import override
 
 from traces_analyzer.features.feature_extractor import SingleInstructionFeatureExtractor
@@ -14,20 +12,20 @@ from traces_parser.parser.instructions.instructions import (
     LOG4,
 )
 
-
-class CURRENCY:
-    ETHER = "ETHER"
-
-
-class CurrencyChange(TypedDict):
-    type: str
-    """Type of the currency, e.g. ETHER or ERC-20, ..."""
-    token_address: str | None
-    """ID for the currency. For Ether this is None, for tokens this is the storage address that emitted the LOG"""
-    owner: str
-    """Address for which a change occurred"""
-    change: int
-    """Positive or negative change"""
+from traces_analyzer.types.currency_change import CURRENCY_TYPE, CurrencyChange
+from traces_analyzer.utils.events.event import CurrencyChangeEvent
+from traces_analyzer.utils.events.events_decoder import EventsDecoder
+from traces_analyzer.utils.events.tokens.erc_1155 import (
+    ERC1155TransferBatchEvent,
+    ERC1155TransferSingleEvent,
+)
+from traces_analyzer.utils.events.tokens.erc_20 import ERC20TransferEvent
+from traces_analyzer.utils.events.tokens.erc_721 import ERC721TransferEvent
+from traces_analyzer.utils.events.tokens.erc_777 import (
+    ERC777BurnedEvent,
+    ERC777MintedEvent,
+    ERC777SentEvent,
+)
 
 
 class CurrencyChangesFeatureExtractor(SingleInstructionFeatureExtractor):
@@ -35,6 +33,17 @@ class CurrencyChangesFeatureExtractor(SingleInstructionFeatureExtractor):
 
     def __init__(self) -> None:
         super().__init__()
+        self.event_decoder = EventsDecoder(
+            [
+                ERC20TransferEvent,
+                ERC721TransferEvent,
+                ERC777MintedEvent,
+                ERC777SentEvent,
+                ERC777BurnedEvent,
+                ERC1155TransferSingleEvent,
+                ERC1155TransferBatchEvent,
+            ]
+        )
         self.currency_changes: list[tuple[Instruction, CurrencyChange]] = []
 
     @override
@@ -50,8 +59,8 @@ class CurrencyChangesFeatureExtractor(SingleInstructionFeatureExtractor):
                 (
                     instruction,
                     {
-                        "type": CURRENCY.ETHER,
-                        "token_address": None,
+                        "type": CURRENCY_TYPE.ETHER,
+                        "currency_identifier": "Wei",
                         "owner": sender.with_prefix(),
                         "change": -value,
                     },
@@ -61,8 +70,8 @@ class CurrencyChangesFeatureExtractor(SingleInstructionFeatureExtractor):
                 (
                     instruction,
                     {
-                        "type": CURRENCY.ETHER,
-                        "token_address": None,
+                        "type": CURRENCY_TYPE.ETHER,
+                        "currency_identifier": "Wei",
                         "owner": receiver.with_prefix(),
                         "change": value,
                     },
@@ -70,5 +79,17 @@ class CurrencyChangesFeatureExtractor(SingleInstructionFeatureExtractor):
             )
 
         if isinstance(instruction, (LOG0, LOG1, LOG2, LOG3, LOG4)):
-            # TODO
-            pass
+            accesses = instruction.get_accesses()
+            topics = [access.value.get_hexstring() for access in accesses.stack[2:]]
+            data = accesses.memory[0].value.get_hexstring()
+            if not topics:
+                return
+
+            event = self.event_decoder.decode_event(
+                topics, data, instruction.call_context.storage_address
+            )
+            if event:
+                assert isinstance(event, CurrencyChangeEvent), f"Invalid event: {event}"
+                self.currency_changes.extend(
+                    [(instruction, c) for c in event.get_currency_changes()]
+                )

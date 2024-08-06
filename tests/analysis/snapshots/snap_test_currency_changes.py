@@ -12,8 +12,8 @@ snapshots["test_currency_changes_extractor currency changes"] = [
         GenericRepr("<CALL@000000000000000000000000000000000000aaaa:1#0>"),
         {
             "change": -10,
+            "currency_identifier": "Wei",
             "owner": "0x000000000000000000000000000000000000aaaa",
-            "token_address": None,
             "type": "ETHER",
         },
     ),
@@ -21,8 +21,8 @@ snapshots["test_currency_changes_extractor currency changes"] = [
         GenericRepr("<CALL@000000000000000000000000000000000000aaaa:1#0>"),
         {
             "change": 10,
+            "currency_identifier": "Wei",
             "owner": "0x000000000000000000000000000000000000bbbb",
-            "token_address": None,
             "type": "ETHER",
         },
     ),
@@ -30,8 +30,8 @@ snapshots["test_currency_changes_extractor currency changes"] = [
         GenericRepr("<CALLCODE@000000000000000000000000000000000000aaaa:1#0>"),
         {
             "change": -20,
+            "currency_identifier": "Wei",
             "owner": "0x000000000000000000000000000000000000aaaa",
-            "token_address": None,
             "type": "ETHER",
         },
     ),
@@ -39,8 +39,8 @@ snapshots["test_currency_changes_extractor currency changes"] = [
         GenericRepr("<CALLCODE@000000000000000000000000000000000000aaaa:1#0>"),
         {
             "change": 20,
+            "currency_identifier": "Wei",
             "owner": "0x000000000000000000000000000000000000cccc",
-            "token_address": None,
             "type": "ETHER",
         },
     ),
@@ -48,8 +48,8 @@ snapshots["test_currency_changes_extractor currency changes"] = [
         GenericRepr("<CALL@000000000000000000000000000000000000bbbb:1#0>"),
         {
             "change": -10,
+            "currency_identifier": "Wei",
             "owner": "0x000000000000000000000000000000000000bbbb",
-            "token_address": None,
             "type": "ETHER",
         },
     ),
@@ -57,8 +57,8 @@ snapshots["test_currency_changes_extractor currency changes"] = [
         GenericRepr("<CALL@000000000000000000000000000000000000bbbb:1#0>"),
         {
             "change": 10,
+            "currency_identifier": "Wei",
             "owner": "0x000000000000000000000000000000000000cccc",
-            "token_address": None,
             "type": "ETHER",
         },
     ),

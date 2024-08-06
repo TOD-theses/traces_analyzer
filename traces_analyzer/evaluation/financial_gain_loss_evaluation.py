@@ -46,11 +46,11 @@ class FinancialGainLossEvaluation(Evaluation):
         s = "Gains in normal compared to reverse scenario:\n"
         for addr, gains in self._gains_and_losses["gains"].items():
             for change in gains.values():
-                s += f'> {addr} gained {change["change"]} {change["type"]} {change["token_address"] or "(in Wei)"}\n'
+                s += f'> {addr} gained {change["change"]} {change["type"]} {change["currency_identifier"]}\n'
         s = "Losses in normal compared to reverse scenario:\n"
         for addr, gains in self._gains_and_losses["gains"].items():
             for change in gains.values():
-                s += f'> {addr} lost {change["change"]} {change["type"]} {change["token_address"] or "(in Wei)"}\n'
+                s += f'> {addr} lost {change["change"]} {change["type"]} {change["currency_identifier"]}\n'
 
         return s
 
@@ -59,6 +59,7 @@ def compute_gains_and_losses(
     changes_normal: Sequence[tuple[Instruction, CurrencyChange]],
     changes_reverse: Sequence[tuple[Instruction, CurrencyChange]],
 ) -> GainsAndLosses:
+    # TODO: we should add T_A and T_B together and then compare them
     grouped_normal = group_by_address(changes_normal)
     grouped_reverse = group_by_address(changes_reverse)
 
@@ -86,7 +87,7 @@ def group_by_address(
 
     for _, change in changes:
         addr = change["owner"]
-        key = change["type"] + (change["token_address"] or "")
+        key = f'{change["type"]}-{change["currency_identifier"]}'
         if key not in groups[addr]:
             groups[addr][key] = deepcopy(change)
         else:

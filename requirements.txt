@@ -5,3 +5,4 @@ networkx==3.3
 types_networkx==3.2.1.20240425
 # TODO: use specific commit
 traces_parser @ git+https://github.com/TOD-theses/traces_parser
+eth_abi==5.1.0

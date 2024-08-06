@@ -12,28 +12,28 @@ snapshots["test_financial_gain_loss_evaluation evaluation_dict"] = {
     "report": {
         "gains": {
             "0x000000000000000000000000000000000000cccc": {
-                "ETHER": {
+                "ETHER-Wei": {
                     "change": 10,
+                    "currency_identifier": "Wei",
                     "owner": "0x000000000000000000000000000000000000cccc",
-                    "token_address": None,
                     "type": "ETHER",
                 }
             }
         },
         "losses": {
             "0x000000000000000000000000000000000000aaaa": {
-                "ETHER": {
+                "ETHER-Wei": {
                     "change": -8,
+                    "currency_identifier": "Wei",
                     "owner": "0x000000000000000000000000000000000000aaaa",
-                    "token_address": None,
                     "type": "ETHER",
                 }
             },
             "0x000000000000000000000000000000000000bbbb": {
-                "ETHER": {
+                "ETHER-Wei": {
                     "change": -2,
+                    "currency_identifier": "Wei",
                     "owner": "0x000000000000000000000000000000000000bbbb",
-                    "token_address": None,
                     "type": "ETHER",
                 }
             },
@@ -45,7 +45,7 @@ snapshots[
     "test_financial_gain_loss_evaluation evaluation_str"
 ] = """=== Evaluation: Financial gains and losses ===
 Losses in normal compared to reverse scenario:
-> 0x000000000000000000000000000000000000cccc lost 10 ETHER (in Wei)
+> 0x000000000000000000000000000000000000cccc lost 10 ETHER Wei
 
 
 """
