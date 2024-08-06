@@ -44,7 +44,7 @@ from traces_analyzer.features.feature_extractor import (
 )
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.event_parser import VmTraceEventsParser
-from traces_analyzer.loader.loader import PotentialAttack
+from traces_analyzer.loader.loader import TxInBothScenarios
 from traces_parser.parser.events_parser import TraceEvent
 from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
@@ -94,24 +94,24 @@ def main():
             analyze_transactions_in_dir(bundle, out, verbose)
 
 
-def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose: bool):
-    evaluations_victim = compare_traces(
-        bundle.tx_victim.hash,
-        bundle.tx_victim.caller,
-        bundle.tx_victim.to,
-        bundle.tx_victim.calldata,
-        bundle.tx_victim.value,
-        (bundle.tx_victim.events_normal, bundle.tx_victim.events_reverse),
+def analyze_transactions_in_dir(
+    bundle: TxInBothScenarios, out_dir: Path, verbose: bool
+):
+    evaluations = compare_traces(
+        bundle.tx.hash,
+        bundle.tx.caller,
+        bundle.tx.to,
+        bundle.tx.calldata,
+        bundle.tx.value,
+        (bundle.tx.events_normal, bundle.tx.events_reverse),
         verbose,
     )
 
-    save_evaluations(
-        evaluations_victim, out_dir / f"{bundle.id}_{bundle.tx_victim.hash}.json"
-    )
+    save_evaluations(evaluations, out_dir / f"{bundle.id}_{bundle.tx.hash}.json")
 
     if verbose:
-        print(f"Transaction: {bundle.tx_victim.hash}")
-        for evaluation in evaluations_victim:
+        print(f"Transaction: {bundle.tx.hash}")
+        for evaluation in evaluations:
             print(evaluation.cli_report())
 
 

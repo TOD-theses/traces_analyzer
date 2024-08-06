@@ -1,6 +1,6 @@
 from typing import Generic, TypeVar
 from traces_analyzer.loader.event_parser import EventsParser
-from traces_analyzer.loader.loader import PotentialAttack, TraceBundle, TraceLoader
+from traces_analyzer.loader.loader import TxInBothScenarios, TraceBundle, TraceLoader
 from traces_analyzer.loader.types import TxData
 
 from traces_parser.datatypes.hexstring import HexString
@@ -22,10 +22,10 @@ class InMemoryLoader(TraceLoader, Generic[T]):
         self.events_normal = parser.parse(data_normal)
         self.events_reverse = parser.parse(data_reverse)
 
-    def __enter__(self) -> PotentialAttack:
-        return PotentialAttack(
+    def __enter__(self) -> TxInBothScenarios:
+        return TxInBothScenarios(
             id=self.id,
-            tx_victim=TraceBundle(
+            tx=TraceBundle(
                 hash=HexString(self.tx["hash"]),
                 caller=HexString(self.tx["from"]),
                 to=HexString(self.tx["to"]),

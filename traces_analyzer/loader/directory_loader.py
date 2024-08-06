@@ -4,7 +4,7 @@ from pathlib import Path
 from typing_extensions import override
 
 from traces_analyzer.loader.event_parser import EventsParser
-from traces_analyzer.loader.loader import PotentialAttack, TraceLoader, TraceBundle
+from traces_analyzer.loader.loader import TxInBothScenarios, TraceLoader, TraceBundle
 
 from traces_parser.datatypes import HexString
 
@@ -24,12 +24,9 @@ class DirectoryLoader(TraceLoader):
             metadata = json.load(metadata_file)
 
             id = metadata["id"]
-            victim_tx_hash: str = metadata["transactions_order"][-1]
-            victim_tx: dict[str, str] = metadata["transactions"][victim_tx_hash]
-            return self._load_potential_attack(
-                id,
-                victim_tx,
-            )
+            tx_hash: str = metadata["transactions_order"][-1]
+            tx: dict[str, str] = metadata["transactions"][tx_hash]
+            return self._load(id, tx)
 
     @override
     def __exit__(self, exc_type, exc_value, traceback):
@@ -43,12 +40,10 @@ class DirectoryLoader(TraceLoader):
         for line in file:
             yield line
 
-    def _load_potential_attack(
-        self, id: str, victim_tx: dict[str, str]
-    ) -> PotentialAttack:
-        return PotentialAttack(
+    def _load(self, id: str, tx: dict[str, str]) -> TxInBothScenarios:
+        return TxInBothScenarios(
             id=id,
-            tx_victim=self._load_transaction_bundle(victim_tx),
+            tx=self._load_transaction_bundle(tx),
         )
 
     def _load_transaction_bundle(self, tx: dict[str, str]) -> TraceBundle:

@@ -20,14 +20,14 @@ class TraceBundle:
 
 
 @dataclass
-class PotentialAttack:
+class TxInBothScenarios:
     id: str
-    tx_victim: TraceBundle
+    tx: TraceBundle
 
 
 class TraceLoader(ABC):
     @abstractmethod
-    def __enter__(self) -> PotentialAttack:
+    def __enter__(self) -> TxInBothScenarios:
         pass
 
     @abstractmethod
