@@ -12,11 +12,8 @@ from traces_analyzer.evaluation.evaluation import Evaluation
 from traces_analyzer.evaluation.financial_gain_loss_evaluation import (
     FinancialGainLossEvaluation,
 )
-from traces_analyzer.evaluation.instruction_differences_evaluation import (
-    InstructionDifferencesEvaluation,
-)
-from traces_analyzer.evaluation.instruction_usage_evaluation import (
-    InstructionUsageEvaluation,
+from traces_analyzer.evaluation.overall_properties_evaluation import (
+    OverallPropertiesEvaluation,
 )
 from traces_analyzer.evaluation.securify_properties_evaluation import (
     SecurifyPropertiesEvaluation,
@@ -51,7 +48,6 @@ from traces_parser.parser.information_flow.information_flow_graph import (
 )
 from traces_parser.parser.instructions.instructions import (
     CALL,
-    STATICCALL,
 )
 from traces_parser.parser.instructions_parser import (
     TransactionParsingInfo,
@@ -114,8 +110,18 @@ def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose:
         verbose,
     )
 
+    overall_properties_evaluation = OverallPropertiesEvaluation(
+        attackers=(bundle.tx_a.caller, bundle.tx_a.to),
+        victim=bundle.tx_b.caller,
+        securify_properties_evaluations=(evaluations_a[0], evaluations_b[0]),  # type: ignore
+        financial_gain_loss_evaluations=(evaluations_a[1], evaluations_b[1]),  # type: ignore
+    )
+
     save_evaluations(evaluations_a, out_dir / f"{bundle.id}_{bundle.tx_a.hash}.json")
     save_evaluations(evaluations_b, out_dir / f"{bundle.id}_{bundle.tx_b.hash}.json")
+    save_evaluations([overall_properties_evaluation], out_dir / f"{bundle.id}.json")
+
+    print(overall_properties_evaluation.cli_report())
 
     if verbose:
         print(f"Tx A: {bundle.tx_b.hash}")
@@ -265,15 +271,15 @@ def compare_traces(
             currency_changes_analyzer.reverse.currency_changes,
         ),
         TODSourceEvaluation(tod_source_analyzer.get_tod_source()),
-        InstructionDifferencesEvaluation(
-            occurrence_changes=instruction_changes_analyzer.get_instructions_only_executed_by_one_trace(),
-            input_changes=instruction_changes_analyzer.get_instructions_with_different_inputs(),
-        ),
-        InstructionUsageEvaluation(
-            instruction_usage_analyzers.normal.get_used_opcodes_per_contract(),
-            instruction_usage_analyzers.reverse.get_used_opcodes_per_contract(),
-            filter_opcodes=[CALL.opcode, STATICCALL.opcode],
-        ),
+        # InstructionDifferencesEvaluation(
+        #     occurrence_changes=instruction_changes_analyzer.get_instructions_only_executed_by_one_trace(),
+        #     input_changes=instruction_changes_analyzer.get_instructions_with_different_inputs(),
+        # ),
+        # InstructionUsageEvaluation(
+        #     instruction_usage_analyzers.normal.get_used_opcodes_per_contract(),
+        #     instruction_usage_analyzers.reverse.get_used_opcodes_per_contract(),
+        #     filter_opcodes=[CALL.opcode, STATICCALL.opcode],
+        # ),
     ]
 
     return evaluations

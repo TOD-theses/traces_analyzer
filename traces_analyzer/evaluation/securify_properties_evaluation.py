@@ -51,6 +51,9 @@ TOD Amount: {self._properties['TOD_Amount']}
 TOD Receiver: {self._properties['TOD_Receiver']}
 """
 
+    def get_properties(self) -> SecurifyProperties:
+        return self._properties
+
 
 def check_securify_properties(
     calls_normal: CALLS_BY_LOC, calls_reverse: CALLS_BY_LOC

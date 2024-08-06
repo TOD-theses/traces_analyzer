@@ -54,30 +54,19 @@ class FinancialGainLossEvaluation(Evaluation):
 
         return s
 
+    def get_gains_and_losses(self) -> GainsAndLosses:
+        return self._gains_and_losses
+
 
 def compute_gains_and_losses(
     changes_normal: Sequence[tuple[Instruction, CurrencyChange]],
     changes_reverse: Sequence[tuple[Instruction, CurrencyChange]],
 ) -> GainsAndLosses:
-    # TODO: we should add T_A and T_B together and then compare them
     grouped_normal = group_by_address(changes_normal)
     grouped_reverse = group_by_address(changes_reverse)
 
-    net_changes = subtract_changes(grouped_normal, grouped_reverse)
-
-    gains: dict[str, dict[str, CurrencyChange]] = defaultdict(dict)
-    losses: dict[str, dict[str, CurrencyChange]] = defaultdict(dict)
-    for addr, changes in net_changes.items():
-        for key, change in changes.items():
-            if change["change"] > 0:
-                gains[addr][key] = change
-            if change["change"] < 0:
-                losses[addr][key] = change
-
-    return {
-        "gains": gains,
-        "losses": losses,
-    }
+    net_changes = add_changes(grouped_normal, negated_changes(grouped_reverse))
+    return split_to_gains_and_losses(net_changes)
 
 
 def group_by_address(
@@ -96,15 +85,41 @@ def group_by_address(
     return groups
 
 
-def subtract_changes(base: CURRENCY_CHANGES_BY_ADDR, operand: CURRENCY_CHANGES_BY_ADDR):
+def split_to_gains_and_losses(changes: CURRENCY_CHANGES_BY_ADDR) -> GainsAndLosses:
+    gains: dict[str, dict[str, CurrencyChange]] = defaultdict(dict)
+    losses: dict[str, dict[str, CurrencyChange]] = defaultdict(dict)
+    for addr, c in changes.items():
+        for key, change in c.items():
+            if change["change"] > 0:
+                gains[addr][key] = change
+            if change["change"] < 0:
+                losses[addr][key] = change
+
+    return {
+        "gains": gains,
+        "losses": losses,
+    }
+
+
+def add_changes(base: CURRENCY_CHANGES_BY_ADDR, *operands: CURRENCY_CHANGES_BY_ADDR):
     result = deepcopy(base)
 
-    for addr, changes in operand.items():
-        for key, change in changes.items():
-            if key not in result[addr]:
-                result[addr][key] = deepcopy(change)
-                result[addr][key]["change"] *= -1
-            else:
-                result[addr][key]["change"] -= change["change"]
+    for operand in operands:
+        for addr, changes in operand.items():
+            for key, change in changes.items():
+                if key not in result[addr]:
+                    result[addr][key] = deepcopy(change)
+                else:
+                    result[addr][key]["change"] += change["change"]
+
+    return result
+
+
+def negated_changes(changes: CURRENCY_CHANGES_BY_ADDR):
+    result = deepcopy(changes)
+
+    for addr, c in result.items():
+        for key in c:
+            result[addr][key]["change"] *= -1
 
     return result
