@@ -40,21 +40,21 @@ def test_sample_traces_analysis_e2e(
     ) as bundle:
         transactions_actual = parse_transaction(
             TransactionParsingInfo(
-                bundle.tx.caller,
-                bundle.tx.to,
-                bundle.tx.calldata,
-                bundle.tx.value,
+                bundle.tx_b.caller,
+                bundle.tx_b.to,
+                bundle.tx_b.calldata,
+                bundle.tx_b.value,
             ),
-            bundle.tx.events_normal,
+            bundle.tx_b.events_normal,
         )
         transactions_reverse = parse_transaction(
             TransactionParsingInfo(
-                bundle.tx.caller,
-                bundle.tx.to,
-                bundle.tx.calldata,
-                bundle.tx.value,
+                bundle.tx_b.caller,
+                bundle.tx_b.to,
+                bundle.tx_b.calldata,
+                bundle.tx_b.value,
             ),
-            bundle.tx.events_reverse,
+            bundle.tx_b.events_reverse,
         )
 
         instruction_usage_analyzer = SingleToDoubleInstructionFeatureExtractor(
@@ -76,7 +76,7 @@ def test_sample_traces_analysis_e2e(
         runner.run()
 
         assert (
-            bundle.tx.hash.with_prefix()
+            bundle.tx_b.hash.with_prefix()
             == "0xb8fbee3430ed8cfb8793407b61c4d801e61b48c08123ceaed4137643aa9c79a6"
         )
 

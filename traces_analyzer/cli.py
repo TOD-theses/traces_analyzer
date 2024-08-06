@@ -44,7 +44,7 @@ from traces_analyzer.features.feature_extractor import (
 )
 from traces_analyzer.loader.directory_loader import DirectoryLoader
 from traces_analyzer.loader.event_parser import VmTraceEventsParser
-from traces_analyzer.loader.loader import TxInBothScenarios
+from traces_analyzer.loader.loader import PotentialAttack
 from traces_parser.parser.events_parser import TraceEvent
 from traces_parser.parser.information_flow.information_flow_graph import (
     build_information_flow_graph,
@@ -94,24 +94,36 @@ def main():
             analyze_transactions_in_dir(bundle, out, verbose)
 
 
-def analyze_transactions_in_dir(
-    bundle: TxInBothScenarios, out_dir: Path, verbose: bool
-):
-    evaluations = compare_traces(
-        bundle.tx.hash,
-        bundle.tx.caller,
-        bundle.tx.to,
-        bundle.tx.calldata,
-        bundle.tx.value,
-        (bundle.tx.events_normal, bundle.tx.events_reverse),
+def analyze_transactions_in_dir(bundle: PotentialAttack, out_dir: Path, verbose: bool):
+    evaluations_a = compare_traces(
+        bundle.tx_a.hash,
+        bundle.tx_a.caller,
+        bundle.tx_a.to,
+        bundle.tx_a.calldata,
+        bundle.tx_a.value,
+        (bundle.tx_a.events_normal, bundle.tx_a.events_reverse),
+        verbose,
+    )
+    evaluations_b = compare_traces(
+        bundle.tx_b.hash,
+        bundle.tx_b.caller,
+        bundle.tx_b.to,
+        bundle.tx_b.calldata,
+        bundle.tx_b.value,
+        (bundle.tx_b.events_normal, bundle.tx_b.events_reverse),
         verbose,
     )
 
-    save_evaluations(evaluations, out_dir / f"{bundle.id}_{bundle.tx.hash}.json")
+    save_evaluations(evaluations_a, out_dir / f"{bundle.id}_{bundle.tx_a.hash}.json")
+    save_evaluations(evaluations_b, out_dir / f"{bundle.id}_{bundle.tx_b.hash}.json")
 
     if verbose:
-        print(f"Transaction: {bundle.tx.hash}")
-        for evaluation in evaluations:
+        print(f"Tx A: {bundle.tx_b.hash}")
+        for evaluation in evaluations_a:
+            print(evaluation.cli_report())
+
+        print(f"Tx B: {bundle.tx_b.hash}")
+        for evaluation in evaluations_b:
             print(evaluation.cli_report())
 
 
